@@ -7,4 +7,8 @@
 export interface Environment {
     /** Endereço base da API, sem barra no fim (`/api` ou `https://.../api`). */
     readonly apiBaseUrl: string;
+    /** Nível mínimo dos logs no console: `debug` mostra tudo; `warn` só avisos e erros. */
+    readonly logLevel: LogLevel;
 }
+
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';

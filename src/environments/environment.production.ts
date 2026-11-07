@@ -8,4 +8,5 @@ import type { Environment } from './environment.model';
  */
 export const environment: Environment = {
     apiBaseUrl: 'https://CHANGE_ME.vercel.app/api',
+    logLevel: 'warn',
 };

@@ -19,6 +19,16 @@ export class NotificationService {
         this.messages.add({ severity: 'info', summary: 'Aviso', detail: message, life: 4000 });
     }
 
+    /** Erro inesperado do próprio front (não veio da API): mensagem amigável e o código para o suporte. */
+    public unexpected(code: string): void {
+        this.messages.add({
+            severity: 'error',
+            summary: 'Algo deu errado',
+            detail: `Tente de novo. Se continuar, recarregue a página. Código de suporte: ${code}`,
+            life: 8000,
+        });
+    }
+
     /** Mostra a mensagem que veio do back (já em pt-BR). Erros 5xx levam o id da requisição para facilitar o suporte. */
     public error(error: unknown): void {
         const apiError = ApiError.from(error);

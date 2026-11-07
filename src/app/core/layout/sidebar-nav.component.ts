@@ -18,8 +18,8 @@ import { NAV_ITEMS } from './navigation';
                         [class]="linkClass"
                         (click)="navigate.emit()"
                     >
-                        <i class="pi pi-home" aria-hidden="true"></i>
-                        Início
+                        <i class="pi pi-chart-bar" aria-hidden="true"></i>
+                        Resumo
                     </a>
                 </li>
                 @for (item of items; track item.route) {

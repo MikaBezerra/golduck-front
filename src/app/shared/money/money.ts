@@ -49,6 +49,13 @@ export function amountToNumber(amount: string): number {
     return amountToCents(amount) / 100;
 }
 
+/** Quanto `part` representa de `whole` (`0.25` = 25%), calculado em centavos; 0 se `whole` não for positivo. */
+export function amountRatio(part: string, whole: string): number {
+    const wholeCents = amountToCents(whole);
+
+    return wholeCents > 0 ? amountToCents(part) / wholeCents : 0;
+}
+
 /** `"1234.56"` → `"R$ 1.234,56"` */
 export function formatBrl(amount: string): string {
     return BRL.format(amountToCents(amount) / 100);

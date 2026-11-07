@@ -70,11 +70,12 @@ src/app/
     ├── credit-cards/      # /cartoes
     ├── incomes/           # /entradas
     ├── manual-expenses/   # /despesas
-    └── people/            # /pessoas
-        ├── data-access/   # person.service.ts (chamadas HTTP) + person.models.ts (≈ DTOs)
-        ├── pages/         # telas ligadas a uma rota (≈ controllers)
-        ├── components/    # pedaços de tela usados só nesta feature (diálogos…)
-        └── people.routes.ts
+    ├── people/            # /pessoas
+    │   ├── data-access/   # person.service.ts (chamadas HTTP) + person.models.ts (≈ DTOs)
+    │   ├── pages/         # telas ligadas a uma rota (≈ controllers)
+    │   ├── components/    # pedaços de tela usados só nesta feature (diálogos…)
+    │   └── people.routes.ts
+    └── summary/           # / (página inicial): resumo do mês, por categoria, por pessoa e líquido
 ```
 
 Regra prática: **cada módulo novo no back ganha uma pasta com o mesmo nome em `features/`**,
@@ -152,11 +153,6 @@ Em desenvolvimento o proxy evita CORS. Em produção há dois caminhos:
   (ex.: `API_CORS_ORIGINS=https://financas.exemplo.com`). Se o front e a API ficarem em domínios
   diferentes, troque o prefixo `/api` pelo endereço completo da API em `API_BASE_URL`
   (`core/api/api.service.ts`).
-
-## Pendências que dependem do back
-
-- **Dashboard:** depende de um `GET /summary?month=AAAA-MM` (entrada, total de despesas, saldo,
-  totais por categoria e por pessoa). Até lá, a página inicial mostra atalhos.
 
 ## Problemas conhecidos do ambiente
 

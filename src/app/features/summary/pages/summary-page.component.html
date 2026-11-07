@@ -1,0 +1,170 @@
+<app-page-header title="Resumo" [subtitle]="month() | month" />
+
+@if (current(); as s) {
+    @if (isEmpty()) {
+        <section
+            class="flex flex-col items-center gap-3 rounded-xl border border-surface bg-surface-0 px-5 py-10 text-center"
+            aria-labelledby="summary-empty-title"
+        >
+            <i class="pi pi-chart-bar text-4xl text-muted-color" aria-hidden="true"></i>
+            <h2 id="summary-empty-title" class="m-0 text-lg font-semibold">Nada lançado em {{ s.month | month }}</h2>
+            <p class="m-0 text-muted-color">Cadastre a entrada e as despesas do mês para ver o resumo.</p>
+            <nav class="mt-2 flex flex-wrap justify-center gap-2" aria-label="Por onde começar">
+                <a routerLink="/entradas" [class]="shortcutClass">
+                    <i class="pi pi-arrow-circle-down" aria-hidden="true"></i>
+                    Entradas
+                </a>
+                <a routerLink="/despesas" [class]="shortcutClass">
+                    <i class="pi pi-receipt" aria-hidden="true"></i>
+                    Despesas
+                </a>
+                <a routerLink="/faturas" [class]="shortcutClass">
+                    <i class="pi pi-file-import" aria-hidden="true"></i>
+                    Faturas
+                </a>
+            </nav>
+        </section>
+    } @else {
+        <div class="grid gap-4 md:grid-cols-3" [attr.aria-busy]="summary.loading()">
+            <section [class]="tileClass" aria-labelledby="tile-income">
+                <h2 id="tile-income" [class]="tileLabelClass">Entrada</h2>
+                @if (s.income !== null) {
+                    <p [class]="tileValueClass">{{ s.income | brl }}</p>
+                    <a routerLink="/entradas" [class]="linkClass">Ver entradas do ano</a>
+                } @else {
+                    <p [class]="tileValueClass" class="text-muted-color">Não cadastrada</p>
+                    <a routerLink="/entradas" [class]="linkClass">Cadastrar a entrada do mês</a>
+                }
+            </section>
+
+            <section [class]="tileClass" aria-labelledby="tile-expenses">
+                <h2 id="tile-expenses" [class]="tileLabelClass">Despesas</h2>
+                <p [class]="tileValueClass">{{ s.expensesTotal | brl }}</p>
+                <p class="m-0 text-sm text-muted-color">
+                    {{ s.expensesCount }} {{ s.expensesCount === 1 ? 'lançamento' : 'lançamentos' }}
+                </p>
+                @if (incomeUsage(); as usage) {
+                    <div class="flex flex-col gap-1.5">
+                        <div class="h-1.5 bg-surface-100" aria-hidden="true">
+                            <div
+                                class="h-full rounded-r"
+                                [class.bg-primary-600]="!usage.over"
+                                [class.bg-red-600]="usage.over"
+                                [style.width.%]="usage.width"
+                            ></div>
+                        </div>
+                        <span class="flex items-center gap-1 text-sm" [class.text-red-700]="usage.over">
+                            @if (usage.over) {
+                                <i class="pi pi-exclamation-triangle text-xs" aria-hidden="true"></i>
+                            }
+                            {{ usage.label }} da entrada
+                        </span>
+                    </div>
+                }
+                <ul class="m-0 flex list-none flex-col gap-1 border-t border-surface p-0 pt-3 text-sm">
+                    <li class="flex justify-between gap-3">
+                        <a routerLink="/despesas" [class]="linkClass">Fora do cartão</a>
+                        <span class="tabular-nums">{{ s.bySource.manual.amount | brl }}</span>
+                    </li>
+                    <li class="flex justify-between gap-3">
+                        <a routerLink="/faturas" [class]="linkClass">Cartão</a>
+                        <span class="tabular-nums">{{ s.bySource.card.amount | brl }}</span>
+                    </li>
+                </ul>
+            </section>
+
+            <section [class]="tileClass" aria-labelledby="tile-balance">
+                <h2 id="tile-balance" [class]="tileLabelClass">Saldo</h2>
+                <p [class]="tileValueClass">{{ s.balance | brl }}</p>
+                @switch (balanceSign()) {
+                    @case (-1) {
+                        <p class="m-0 flex items-center gap-1.5 text-sm text-red-700">
+                            <i class="pi pi-arrow-down text-xs" aria-hidden="true"></i>
+                            Despesas acima da entrada
+                        </p>
+                    }
+                    @case (1) {
+                        <p class="m-0 flex items-center gap-1.5 text-sm text-muted-color">
+                            <i class="pi pi-check text-xs" aria-hidden="true"></i>
+                            Sobra do mês
+                        </p>
+                    }
+                    @default {
+                        <p class="m-0 text-sm text-muted-color">Entrada e despesas empatadas</p>
+                    }
+                }
+                @if (s.income === null) {
+                    <p class="m-0 text-xs text-muted-color">Sem entrada cadastrada, o saldo considera entrada zero.</p>
+                }
+            </section>
+        </div>
+
+        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+            <section [class]="cardClass" aria-labelledby="by-category-title">
+                <h2 id="by-category-title" [class]="cardTitleClass">Por categoria</h2>
+                @if (categoryBars().length > 0) {
+                    <app-summary-bar-list [items]="categoryBars()" label="Despesas por categoria" />
+                } @else {
+                    <p class="m-0 text-muted-color">Nenhuma despesa neste mês.</p>
+                }
+            </section>
+
+            <section [class]="cardClass" aria-labelledby="by-person-title">
+                <h2 id="by-person-title" [class]="cardTitleClass">Por pessoa</h2>
+                @if (personBars().length > 0) {
+                    <app-summary-bar-list [items]="personBars()" label="Despesas por pessoa" />
+                } @else {
+                    <p class="m-0 text-muted-color">Nenhuma despesa neste mês.</p>
+                }
+            </section>
+        </div>
+
+        <section [class]="cardClass" class="mt-4" aria-labelledby="net-title">
+            <h2 id="net-title" [class]="cardTitleClass">Líquido por pessoa</h2>
+            @if (s.income === null) {
+                <p class="m-0 text-muted-color">
+                    Cadastre a entrada de {{ s.month | month }} para ver quanto sobra para cada pessoa.
+                    <a routerLink="/entradas" [class]="linkClass">Ir para Entradas</a>
+                </p>
+            } @else if (netRows().length === 0) {
+                <p class="m-0 text-muted-color">
+                    Cadastre as pessoas da casa para dividir a entrada entre elas.
+                    <a routerLink="/pessoas" [class]="linkClass">Ir para Pessoas</a>
+                </p>
+            } @else {
+                <app-summary-net-table [rows]="netRows()" labelledBy="net-title" />
+                <p class="mt-3 mb-0 text-sm text-muted-color">
+                    A entrada, menos as despesas compartilhadas, é dividida igualmente entre as pessoas ativas. O
+                    líquido é essa parte menos as despesas individuais de cada uma.
+                </p>
+            }
+        </section>
+    }
+} @else if (failed()) {
+    <section
+        class="flex flex-col items-center gap-3 rounded-xl border border-surface bg-surface-0 px-5 py-10 text-center"
+        role="alert"
+    >
+        <i class="pi pi-exclamation-circle text-3xl text-muted-color" aria-hidden="true"></i>
+        <p class="m-0">Não foi possível carregar o resumo de {{ month() | month }}.</p>
+        <p-button label="Tentar de novo" icon="pi pi-refresh" [outlined]="true" (onClick)="summary.reload()" />
+    </section>
+} @else {
+    <div class="grid gap-4 md:grid-cols-3" aria-busy="true" aria-label="Carregando o resumo">
+        @for (tile of [1, 2, 3]; track tile) {
+            <div [class]="tileClass">
+                <p-skeleton width="5rem" height="1rem" />
+                <p-skeleton width="9rem" height="2rem" />
+                <p-skeleton width="7rem" height="1rem" />
+            </div>
+        }
+    </div>
+    <div class="mt-4 grid gap-4 lg:grid-cols-2" aria-hidden="true">
+        @for (block of [1, 2]; track block) {
+            <div [class]="cardClass">
+                <p-skeleton width="8rem" height="1.25rem" styleClass="mb-4" />
+                <p-skeleton height="8rem" />
+            </div>
+        }
+    </div>
+}

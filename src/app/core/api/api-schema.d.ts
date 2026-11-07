@@ -412,6 +412,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resumo do mês: entrada, despesas, saldo, totais por categoria e por pessoa e líquido individual
+         * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. Líquido individual = (entrada − compartilhadas) / pessoas ativas − despesas individuais.
+         */
+        get: operations["SummaryController_findByMonth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1003,6 +1023,97 @@ export interface components {
         };
         DeleteManualExpensesDto: {
             ids: string[];
+        };
+        SummarySourceDto: {
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            amount: string;
+            count: number;
+        };
+        SummaryBySourceDto: {
+            /** @description Despesas fora do cartão */
+            manual: components["schemas"]["SummarySourceDto"];
+            /** @description Despesas do cartão (sem as excluídas), pelo mês da fatura */
+            card: components["schemas"]["SummarySourceDto"];
+        };
+        SummaryCategoryDto: {
+            /** Format: uuid */
+            categoryId: string;
+            name: string;
+            active: boolean;
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            amount: string;
+            count: number;
+        };
+        SummaryPersonDto: {
+            /**
+             * Format: uuid
+             * @description null = despesas sem pessoa (compartilhadas)
+             */
+            personId: string | null;
+            name: string | null;
+            active: boolean | null;
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            amount: string;
+            count: number;
+        };
+        SummaryNetByPersonDto: {
+            /** Format: uuid */
+            personId: string;
+            name: string;
+            /**
+             * @description (entrada − compartilhadas) dividido entre as pessoas ativas
+             * @example 1234.56
+             */
+            share: string;
+            /**
+             * @description Despesas individuais da pessoa no mês
+             * @example 1234.56
+             */
+            individual: string;
+            /**
+             * @description share − individual; pode ser negativo
+             * @example 1234.56
+             */
+            net: string;
+        };
+        SummaryResponse: {
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description null quando não há entrada cadastrada no mês
+             * @example 1234.56
+             */
+            income: string | null;
+            /**
+             * @description Despesas fora do cartão + do cartão (sem as excluídas)
+             * @example 1234.56
+             */
+            expensesTotal: string;
+            expensesCount: number;
+            /**
+             * @description entrada (ou 0) − despesas; pode ser negativo
+             * @example 1234.56
+             */
+            balance: string;
+            bySource: components["schemas"]["SummaryBySourceDto"];
+            /** @description Valor decrescente; inclui categorias inativas com despesas no mês */
+            byCategory: components["schemas"]["SummaryCategoryDto"][];
+            /** @description Valor decrescente; o item com personId null são as despesas compartilhadas */
+            byPerson: components["schemas"]["SummaryPersonDto"][];
+            /** @description Líquido de cada pessoa ativa, em ordem alfabética */
+            netByPerson: components["schemas"]["SummaryNetByPersonDto"][];
         };
     };
     responses: never;
@@ -2280,6 +2391,40 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["ManualExpenseResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryController_findByMonth: {
+        parameters: {
+            query: {
+                /** @description Mês no formato AAAA-MM */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SummaryResponse"];
                     };
                 };
             };

@@ -1,4 +1,12 @@
-import { amountToCents, amountToNumber, centsToAmount, formatBrl, numberToAmount, sumAmounts } from './money';
+import {
+    amountRatio,
+    amountToCents,
+    amountToNumber,
+    centsToAmount,
+    formatBrl,
+    numberToAmount,
+    sumAmounts,
+} from './money';
 
 describe('money', () => {
     it('converte o formato da API para centavos', () => {
@@ -29,6 +37,12 @@ describe('money', () => {
         expect(numberToAmount(0.1 + 0.2)).toBe('0.30');
         expect(numberToAmount(10)).toBe('10.00');
         expect(amountToNumber('1234.56')).toBe(1234.56);
+    });
+
+    it('calcula a proporção entre valores em centavos', () => {
+        expect(amountRatio('25.00', '100.00')).toBe(0.25);
+        expect(amountRatio('150.00', '100.00')).toBe(1.5);
+        expect(amountRatio('10.00', '0.00')).toBe(0);
     });
 
     it('formata em reais', () => {

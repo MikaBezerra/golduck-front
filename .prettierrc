@@ -1,0 +1,20 @@
+{
+  "printWidth": 120,
+  "tabWidth": 4,
+  "singleQuote": true,
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "parser": "angular"
+      }
+    },
+    {
+      "files": ["*.json", "*.jsonc", ".prettierrc"],
+      "options": {
+        "tabWidth": 2
+      }
+    }
+  ]
+}

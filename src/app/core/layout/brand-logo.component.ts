@@ -1,0 +1,34 @@
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
+import { BrandNameComponent } from '../../shared/ui/brand-name.component';
+
+/** Marca da aplicação (ícone + nome). `compact` esconde o nome em telas bem pequenas. */
+@Component({
+    selector: 'app-brand-logo',
+    imports: [RouterLink, BrandMarkComponent, BrandNameComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
+        <a
+            routerLink="/"
+            class="flex items-center gap-3 text-color no-underline"
+            aria-label="Golduck: ir para o resumo"
+        >
+            <app-brand-mark />
+            <span [class]="nameClass()" aria-hidden="true">
+                <span class="block font-display text-xl leading-tight font-bold tracking-tight">
+                    <app-brand-name />
+                </span>
+                @if (!compact()) {
+                    <span class="block text-[11px] text-muted-color">Make your money count.</span>
+                }
+            </span>
+        </a>
+    `,
+})
+export class BrandLogoComponent {
+    public readonly compact = input(false);
+
+    protected readonly nameClass = computed(() => (this.compact() ? 'hidden min-[360px]:block' : 'block'));
+}

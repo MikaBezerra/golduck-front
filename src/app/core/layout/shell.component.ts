@@ -1,27 +1,41 @@
 import { ChangeDetectionStrategy, Component, effect, inject, type OnInit, signal, untracked } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Drawer } from 'primeng/drawer';
 
+import { AppFooterComponent } from '../../shared/ui/app-footer.component';
 import { AuthService } from '../auth/auth.service';
+import { BottomNavComponent } from './bottom-nav.component';
+import { BrandLogoComponent } from './brand-logo.component';
 import { MonthPickerComponent } from './month-picker.component';
 import { SidebarNavComponent } from './sidebar-nav.component';
 import { UserBadgeComponent } from './user-badge.component';
 
 /**
- * Moldura das telas logadas: menu lateral, barra do topo e a área onde
- * cada página é desenhada (`<router-outlet />`).
+ * Moldura das telas logadas: menu lateral (telas grandes) ou barra no pé da tela (celular),
+ * barra do topo com o mês e a área onde cada página é desenhada (`<router-outlet />`).
  */
 @Component({
     selector: 'app-shell',
-    imports: [RouterOutlet, RouterLink, Button, Drawer, MonthPickerComponent, SidebarNavComponent, UserBadgeComponent],
+    imports: [
+        RouterOutlet,
+        Button,
+        Drawer,
+        BottomNavComponent,
+        BrandLogoComponent,
+        MonthPickerComponent,
+        SidebarNavComponent,
+        UserBadgeComponent,
+        AppFooterComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './shell.component.html',
 })
 export class ShellComponent implements OnInit {
     private readonly auth = inject(AuthService);
 
-    protected readonly menuOpen = signal(false);
+    /** Folha "Mais" do celular (cadastros e conta). */
+    protected readonly moreOpen = signal(false);
 
     public constructor() {
         // Sessão encerrada em outra aba: sai desta também.
@@ -40,7 +54,7 @@ export class ShellComponent implements OnInit {
     }
 
     protected logout(): void {
-        this.menuOpen.set(false);
+        this.moreOpen.set(false);
         this.auth.logout();
     }
 }

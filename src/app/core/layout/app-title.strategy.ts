@@ -2,9 +2,9 @@ import { inject, Injectable } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { type RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
-const APP_NAME = 'Finanças';
+const APP_NAME = 'Golduck';
 
-/** Título da aba do navegador: "Categorias · Finanças". O texto vem do `title` de cada rota. */
+/** Título da aba do navegador: "Categorias · Golduck". O texto vem do `title` de cada rota. */
 @Injectable({ providedIn: 'root' })
 export class AppTitleStrategy extends TitleStrategy {
     private readonly title = inject(Title);

@@ -1,6 +1,6 @@
-# Finanças — front-end
+# Golduck — front-end
 
-Interface web do projeto **Finanças**. Consome a API do back-end
+Interface web do **Golduck** (projeto Finanças) — *Make your money count.* Consome a API do back-end
 ([`financas`](../financas), NestJS) e segue a mesma organização por módulos.
 
 ## Stack

@@ -9,33 +9,154 @@
 @import 'tailwindcss-primeui';
 @import 'primeicons/primeicons.css';
 
-html {
-    font-size: 14px;
+/*
+ * Cores e fontes da marca, disponíveis como classes do Tailwind:
+ * `bg-card`, `border-line`, `text-cantaloupe`, `bg-income`, `font-display`…
+ */
+@theme {
+    --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-display: 'Sora Variable', 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+
+    --color-midnight: #02070a;
+    --color-electric: #0297de;
+    --color-cantaloupe: #fc734d;
+    /* Séries dos gráficos (validadas para o fundo escuro: contraste e daltonismo). */
+    --color-income: #0297de;
+    --color-expense: #ee6238;
+    /* Cartões translúcidos sobre o fundo e linhas azuladas. */
+    --color-card: rgb(10 24 34 / 0.64);
+    --color-card-strong: rgb(10 24 34 / 0.86);
+    --color-line: rgb(141 211 245 / 0.12);
+    /* Estados (sempre acompanhados de ícone e texto). */
+    --color-negative: #ff8a80;
 }
 
-body {
-    margin: 0;
-    min-height: 100vh;
-    background: var(--p-surface-50);
-    color: var(--p-text-color);
-    font-family:
-        Inter,
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        'Segoe UI',
-        Roboto,
-        'Helvetica Neue',
-        Arial,
-        sans-serif;
-    -webkit-font-smoothing: antialiased;
+/*
+ * Cartão de vidro: fundo translúcido com desfoque, borda fina azulada e um toque de
+ * laranja cantalupo no canto de cima (brilho na borda e uma sombra quente bem leve).
+ */
+@utility surface-card {
+    position: relative;
+    background-color: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: 1.25rem;
+    backdrop-filter: blur(18px) saturate(140%);
+    box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.04),
+        -10px -10px 36px -28px rgb(252 115 77 / 0.45),
+        0 24px 48px -32px rgb(0 0 0 / 0.9);
+
+    /* Borda em degradê: laranja no canto superior esquerdo, some no meio, azul no canto oposto. */
+    &::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        padding: 1px;
+        border-radius: inherit;
+        background: linear-gradient(
+            135deg,
+            rgb(252 115 77 / 0.55),
+            rgb(252 115 77 / 0) 26%,
+            rgb(2 151 222 / 0) 72%,
+            rgb(2 151 222 / 0.35)
+        );
+        mask:
+            linear-gradient(#000 0 0) content-box exclude,
+            linear-gradient(#000 0 0);
+        pointer-events: none;
+    }
 }
 
-/* Tabelas mais compactas no celular (variáveis de tema do PrimeNG). */
+@layer base {
+    html {
+        font-size: 14px;
+        color-scheme: dark;
+        scrollbar-color: #233444 transparent;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100dvh;
+        background: var(--color-midnight);
+        color: var(--p-text-color);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    h1,
+    h2,
+    h3 {
+        font-family: var(--font-display);
+        letter-spacing: -0.02em;
+    }
+
+    ::selection {
+        background: rgb(2 151 222 / 0.45);
+        color: #ffffff;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-electric);
+        outline-offset: 2px;
+    }
+}
+
+/* Fundo da aplicação: preto meia-noite com brilho azul no alto e laranja embaixo. */
+.app-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background:
+        radial-gradient(56rem 40rem at 0% 0%, rgb(2 151 222 / 0.22), transparent 70%),
+        radial-gradient(44rem 34rem at 100% 100%, rgb(252 115 77 / 0.14), transparent 70%), var(--color-midnight);
+}
+
+/*
+ * Só na tela de login: os desenhos de dinheiro. A imagem não tem cor e é usada como máscara,
+ * então os traços ganham o degradê azul → laranja do tema.
+ */
+.login-art {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(115deg, #0297de 0%, #22a8e6 45%, #fc734d 100%);
+    mask: url('/images/money-doodles.webp') center / cover no-repeat;
+    opacity: 0.4;
+}
+
+/* No celular a imagem (larga) é cortada no meio, onde não há desenho: mostra cada lado num canto. */
+@media (max-width: 767px) {
+    .login-art {
+        mask:
+            url('/images/money-doodles.webp') left bottom / auto 52vh no-repeat,
+            url('/images/money-doodles.webp') right top / auto 38vh no-repeat;
+    }
+}
+
+/* Celular: tabelas mais compactas e diálogos abrindo de baixo, como uma folha. */
 @media (max-width: 639px) {
     :root {
         --p-datatable-header-cell-padding: 0.625rem 0.5rem;
-        --p-datatable-body-cell-padding: 0.625rem 0.5rem;
-        --p-datatable-footer-cell-padding: 0.625rem 0.5rem;
+        --p-datatable-body-cell-padding: 0.75rem 0.5rem;
+        --p-datatable-footer-cell-padding: 0.75rem 0.5rem;
+    }
+
+    .p-dialog-mask:has(> .p-dialog) {
+        align-items: flex-end !important;
+    }
+
+    /* `:not(...)` empata e supera a regra que o PrimeNG injeta para os `breakpoints` dos diálogos. */
+    .p-dialog-mask .p-dialog.p-component:not(.p-dialog-maximized) {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 92dvh !important;
+        margin: 0 !important;
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
+        padding-bottom: env(safe-area-inset-bottom);
     }
 }

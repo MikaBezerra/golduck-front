@@ -105,7 +105,7 @@
                             type="file"
                             [accept]="extension()"
                             (change)="onFileChange($event)"
-                            class="block w-full rounded-border border border-surface p-2 text-sm file:mr-3 file:cursor-pointer file:rounded-border file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:font-medium file:text-primary-700"
+                            class="block w-full rounded-border border border-surface p-2 text-sm file:mr-3 file:cursor-pointer file:rounded-border file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:font-medium file:text-primary-200"
                             aria-describedby="import-file-help"
                         />
                         <small id="import-file-help" class="text-muted-color">
@@ -117,7 +117,7 @@
                             }
                         </small>
                         @if (fileError(); as error) {
-                            <small class="text-sm text-red-600" role="alert">{{ error }}</small>
+                            <small class="text-sm text-red-400" role="alert">{{ error }}</small>
                         }
                     </div>
 

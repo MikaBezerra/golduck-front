@@ -13,7 +13,7 @@
 </app-page-header>
 
 @if (cardsLoaded() && cards().length === 0) {
-    <div class="rounded-xl border border-surface bg-surface-0 p-8 text-center">
+    <div class="surface-card p-8 text-center">
         <p class="mt-0 mb-3 text-muted-color">Cadastre um cartão de crédito para enviar as faturas.</p>
         <a routerLink="/cartoes" class="font-medium text-primary">Ir para Cartões</a>
     </div>
@@ -49,11 +49,11 @@
 
     @if (selected().length > 0) {
         <div
-            class="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2"
+            class="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/40 bg-primary/15 px-4 py-2.5 backdrop-blur-md"
             role="region"
             aria-label="Ações para as despesas selecionadas"
         >
-            <span class="font-medium text-primary-800">
+            <span class="font-medium text-white">
                 {{ selected().length }} {{ selected().length === 1 ? 'selecionada' : 'selecionadas' }} ·
                 {{ selectedTotal() | brl }}
             </span>
@@ -83,7 +83,7 @@
         </div>
     }
 
-    <div class="overflow-hidden rounded-xl border border-surface bg-surface-0">
+    <div class="overflow-hidden surface-card">
         <p-table
             [value]="rows()"
             [loading]="expenses.loading() || !cardsLoaded()"

@@ -8,7 +8,12 @@ import { Toast } from 'primeng/toast';
     imports: [RouterOutlet, Toast, ConfirmDialog],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <p-toast position="top-right" />
+        <!-- Fundo com as cores da marca, atrás de todas as telas. -->
+        <div class="app-backdrop" aria-hidden="true"></div>
+        <p-toast
+            position="top-right"
+            [breakpoints]="{ '640px': { width: 'calc(100vw - 2rem)', right: '1rem', left: '1rem' } }"
+        />
         <p-confirmdialog />
         <router-outlet />
     `,

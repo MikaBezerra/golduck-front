@@ -10,10 +10,23 @@ import { ApiError } from '../../../core/api/api-error';
 import { AuthService } from '../../../core/auth/auth.service';
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
 import { applyServerErrors, revealFormErrors } from '../../../shared/forms/form-errors';
+import { AppFooterComponent } from '../../../shared/ui/app-footer.component';
+import { BrandMarkComponent } from '../../../shared/ui/brand-mark.component';
+import { BrandNameComponent } from '../../../shared/ui/brand-name.component';
 
 @Component({
     selector: 'app-login-page',
-    imports: [ReactiveFormsModule, Button, InputText, Message, Password, FieldErrorComponent],
+    imports: [
+        ReactiveFormsModule,
+        Button,
+        InputText,
+        Message,
+        Password,
+        FieldErrorComponent,
+        BrandMarkComponent,
+        BrandNameComponent,
+        AppFooterComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './login-page.component.html',
 })

@@ -12,7 +12,7 @@ const ROLE_LABELS = { ADMIN: 'Administrador', USER: 'Usuário' } as const;
         @if (user(); as current) {
             <div class="flex min-w-0 items-center gap-3 px-3 py-2">
                 <span
-                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 font-semibold text-primary-700 uppercase"
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-135 from-cantaloupe to-primary-500 font-display font-bold text-midnight uppercase"
                     aria-hidden="true"
                 >
                     {{ initial() }}

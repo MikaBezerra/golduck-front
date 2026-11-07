@@ -2,7 +2,7 @@
     <p-button label="Novo cartão" icon="pi pi-plus" (onClick)="openCreate()" />
 </app-page-header>
 
-<div class="overflow-hidden rounded-xl border border-surface bg-surface-0">
+<div class="overflow-hidden surface-card">
     <p-table [value]="cards()" [loading]="loading()" dataKey="id" [rowHover]="true">
         <ng-template #header>
             <tr>

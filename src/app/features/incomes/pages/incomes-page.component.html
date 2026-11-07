@@ -21,7 +21,7 @@
     <p-button label="Nova entrada" icon="pi pi-plus" (onClick)="openCreate()" />
 </app-page-header>
 
-<div class="overflow-hidden rounded-xl border border-surface bg-surface-0">
+<div class="overflow-hidden surface-card">
     <p-table [value]="rows()" [loading]="incomes.loading()" dataKey="month">
         <ng-template #header>
             <tr>

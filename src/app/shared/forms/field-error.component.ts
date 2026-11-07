@@ -32,7 +32,7 @@ interface FirstError {
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @if (message(); as text) {
-            <small class="mt-1 block text-sm text-red-600" role="alert">{{ text }}</small>
+            <small class="mt-1 block text-sm text-red-400" role="alert">{{ text }}</small>
         }
     `,
 })

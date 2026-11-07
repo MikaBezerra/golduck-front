@@ -125,6 +125,23 @@ uma rota em `app.routes.ts` e um item em `core/layout/navigation.ts`.
 - Se o back recusar a renovação, aparece "Sua sessão expirou" e o usuário volta ao login;
   depois de entrar, retorna à página onde estava.
 
+## Tipos da API (gerados do back)
+
+Os tipos de tudo o que entra e sai da API vêm do OpenAPI (Swagger) do back:
+
+- `src/app/core/api/api-schema.d.ts`: gerado, **não edite à mão**;
+- `src/app/core/api/api-types.ts`: expõe esses tipos como `ApiSchemas`;
+- cada `*.models.ts` só dá nomes curtos a eles (`export type Category = ApiSchemas['CategoryResponse']`).
+
+Quando o back mudar um DTO, rode o back com `SWAGGER_ENABLE=1` no `.env` e:
+
+```sh
+npm run api:types
+```
+
+Se algum campo mudou, o `npm run build` aponta exatamente onde o front precisa ser ajustado.
+Commite o `api-schema.d.ts` junto com o ajuste.
+
 ## Produção
 
 Em desenvolvimento o proxy evita CORS. Em produção há dois caminhos:
@@ -140,8 +157,6 @@ Em desenvolvimento o proxy evita CORS. Em produção há dois caminhos:
 
 - **Dashboard:** depende de um `GET /summary?month=AAAA-MM` (entrada, total de despesas, saldo,
   totais por categoria e por pessoa). Até lá, a página inicial mostra atalhos.
-- **Tipos automáticos:** com o Swagger ligado no back, os `*.models.ts` podem ser gerados
-  (`openapi-typescript`) em vez de copiados à mão.
 
 ## Problemas conhecidos do ambiente
 

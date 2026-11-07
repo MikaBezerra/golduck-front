@@ -1,56 +1,21 @@
-/** Espelha financas/src/modules/card-imports/dto/card-import.dto.ts */
-
+import type { ApiSchemas } from '../../../core/api/api-types';
 import type { CardBank } from '../../credit-cards/data-access/credit-card.models';
 
-/** Um envio de fatura (arquivo ou lançamento manual). */
-export interface CardImport {
-    readonly id: string;
-    readonly cardId: string;
-    /** Mês da fatura: `"AAAA-MM"`. */
-    readonly month: string;
-    /** Nome do arquivo enviado, ou "Lançamento manual". */
-    readonly fileName: string;
-    readonly parserVersion: string;
-    /** Lançamentos lidos da fatura. */
-    readonly rowCount: number;
-    /** Linhas descartadas (pagamentos, estornos e créditos). */
-    readonly ignoredCount: number;
-    /** Despesas cuja última gravação veio deste envio: são as que a exclusão remove. */
-    readonly expenseCount: number;
-    readonly createdAt: string;
-}
+/**
+ * Um envio de fatura (arquivo ou lançamento manual). `expenseCount` são as despesas cuja
+ * última gravação veio deste envio: são as que a exclusão remove.
+ */
+export type CardImport = ApiSchemas['CardImportResponse'];
 
-export interface CardImportSummary {
-    readonly created: number;
-    readonly updated: number;
-    readonly removed: number;
-    /** Parcelas futuras lançadas nos meses seguintes. */
-    readonly projected: number;
-    readonly ignored: number;
-}
+/** O que o envio fez: compras novas, atualizadas, removidas, parcelas futuras e linhas ignoradas. */
+export type CardImportSummary = ApiSchemas['CardImportSummary'];
 
-export interface CardImportResult {
-    readonly import: CardImport;
-    readonly summary: CardImportSummary;
-}
+export type CardImportResult = ApiSchemas['CardImportResultResponse'];
 
-/** Um lançamento da fatura digitada à mão. */
-export interface ManualCardTransaction {
-    /** Data da compra: `"AAAA-MM-DD"`. */
-    readonly date: string;
-    readonly description: string;
-    /** Valor da parcela deste mês, em reais: `"120.50"`. */
-    readonly amount: string;
-    /** `null` para compra à vista. */
-    readonly installment: { number: number; total: number } | null;
-    readonly cardLastDigits: string | null;
-}
+/** Um lançamento da fatura digitada à mão (`installment: null` para compra à vista). */
+export type ManualCardTransaction = ApiSchemas['ManualCardTransactionDto'];
 
-export interface CreateManualCardImportRequest {
-    readonly cardId: string;
-    readonly month: string;
-    readonly transactions: ManualCardTransaction[];
-}
+export type CreateManualCardImportRequest = ApiSchemas['CreateManualCardImportDto'];
 
 /** Arquivo aceito por banco (o back confere a extensão). */
 export const STATEMENT_FILE_EXTENSION: Readonly<Record<CardBank, string>> = {

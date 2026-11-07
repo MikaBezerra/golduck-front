@@ -1,24 +1,9 @@
-/** Espelha financas/src/modules/incomes/dto/income.dto.ts */
+import type { ApiSchemas } from '../../../core/api/api-types';
 
-/** Entrada (receita) de um mês. Cada mês tem no máximo uma. */
-export interface Income {
-    readonly id: string;
-    /** `"AAAA-MM"` */
-    readonly month: string;
-    /** Em reais, como texto: `"5000.00"` */
-    readonly amount: string;
-    readonly createdAt: string;
-    readonly updatedAt: string;
-}
+/** Entrada (receita) de um mês: `month` é `"AAAA-MM"` e `amount` é texto em reais (`"5000.00"`). */
+export type Income = ApiSchemas['IncomeResponse'];
 
-/** Cria a mesma entrada em vários meses do ano de uma vez. */
-export interface CreateIncomeRequest {
-    readonly year: number;
-    /** 1 a 12 */
-    readonly months: number[];
-    readonly amount: string;
-}
+/** Cria a mesma entrada em vários meses (1 a 12) do ano de uma vez. */
+export type CreateIncomeRequest = ApiSchemas['CreateIncomeDto'];
 
-export interface UpdateIncomeRequest {
-    readonly amount: string;
-}
+export type UpdateIncomeRequest = ApiSchemas['UpdateIncomeDto'];

@@ -1,27 +1,15 @@
-/** Espelha financas/src/modules/credit-cards/dto/credit-card.dto.ts e o enum CardBank do Prisma. */
+import type { ApiSchemas } from '../../../core/api/api-types';
 
-export type CardBank = 'NUBANK' | 'C6' | 'NEON';
+/** Banco emissor: define o formato da fatura (NUBANK e C6 em CSV, NEON em PDF). */
+export type CardBank = ApiSchemas['CardBank'];
 
-export interface CreditCard {
-    readonly id: string;
-    readonly name: string;
-    /** Banco emissor. Definido na criação e não muda depois. */
-    readonly bank: CardBank;
-    readonly active: boolean;
-    readonly createdAt: string;
-    readonly updatedAt: string;
-}
+/** Cartão de crédito. O banco é definido na criação e não muda depois. */
+export type CreditCard = ApiSchemas['CreditCardResponse'];
 
-export interface CreateCreditCardRequest {
-    readonly name: string;
-    readonly bank: CardBank;
-}
+export type CreateCreditCardRequest = ApiSchemas['CreateCreditCardDto'];
 
 /** O back não permite trocar o banco: só nome e situação. */
-export interface UpdateCreditCardRequest {
-    readonly name?: string;
-    readonly active?: boolean;
-}
+export type UpdateCreditCardRequest = ApiSchemas['UpdateCreditCardDto'];
 
 export const CARD_BANK_LABELS: Readonly<Record<CardBank, string>> = {
     NUBANK: 'Nubank',

@@ -1,23 +1,14 @@
-/** Espelha financas/src/modules/categories/dto/category.dto.ts */
+import type { ApiSchemas } from '../../../core/api/api-types';
 
-export interface Category {
-    readonly id: string;
-    readonly name: string;
-    readonly active: boolean;
-    /** A categoria padrão ("Outros") recebe despesas sem categoria e não pode ser alterada. */
-    readonly isDefault: boolean;
-    readonly createdAt: string;
-    readonly updatedAt: string;
-}
+/**
+ * Categoria de despesa. A categoria padrão ("Outros", `isDefault`) recebe despesas
+ * sem categoria e não pode ser alterada.
+ */
+export type Category = ApiSchemas['CategoryResponse'];
 
-export interface CreateCategoryRequest {
-    readonly name: string;
-}
+export type CreateCategoryRequest = ApiSchemas['CreateCategoryDto'];
 
-export interface UpdateCategoryRequest {
-    readonly name?: string;
-    readonly active?: boolean;
-}
+export type UpdateCategoryRequest = ApiSchemas['UpdateCategoryDto'];
 
 /** Limite do back (VARCHAR 120). */
 export const CATEGORY_NAME_MAX_LENGTH = 120;

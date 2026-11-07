@@ -1,28 +1,11 @@
-/** Espelha financas/src/modules/people/dto/person.dto.ts e o model Person do Prisma. */
+import type { ApiSchemas } from '../../../core/api/api-types';
 
-export interface Person {
-    readonly id: string;
-    readonly name: string;
-    readonly email: string | null;
-    /** Formato internacional, ex.: `+5511999999999`. */
-    readonly phone: string | null;
-    readonly active: boolean;
-    readonly createdAt: string;
-    readonly updatedAt: string;
-}
+/** Pessoa da casa. O celular vem no formato internacional, ex.: `+5511999999999`. */
+export type Person = ApiSchemas['PersonResponse'];
 
-export interface CreatePersonRequest {
-    readonly name: string;
-    readonly email?: string | null;
-    readonly phone?: string | null;
-}
+export type CreatePersonRequest = ApiSchemas['CreatePersonDto'];
 
-export interface UpdatePersonRequest {
-    readonly name?: string;
-    readonly email?: string | null;
-    readonly phone?: string | null;
-    readonly active?: boolean;
-}
+export type UpdatePersonRequest = ApiSchemas['UpdatePersonDto'];
 
 /** Limites do back (VARCHAR). */
 export const PERSON_NAME_MAX_LENGTH = 120;

@@ -4,6 +4,9 @@ import { MessageService } from 'primeng/api';
 import { ApiError } from '../api/api-error';
 import { LoggerService } from '../logging/logger.service';
 
+/** Mesmo aviso de erro repetido dentro deste intervalo aparece uma vez só. */
+const REPEAT_WINDOW_MS = 3000;
+
 /**
  * Avisos rápidos no canto da tela (toasts).
  * Centraliza o visual e o texto para todas as telas falarem do mesmo jeito.
@@ -12,6 +15,7 @@ import { LoggerService } from '../logging/logger.service';
 export class NotificationService {
     private readonly messages = inject(MessageService);
     private readonly logger = inject(LoggerService);
+    private lastError = { detail: '', at: 0 };
 
     public success(message: string): void {
         this.messages.add({ severity: 'success', summary: 'Tudo certo', detail: message, life: 3500 });
@@ -51,6 +55,14 @@ export class NotificationService {
             return;
         }
 
+        // Várias requisições que falham juntas (ex.: a tela carrega três listas) mostram um aviso só.
+        const now = Date.now();
+
+        if (apiError.userMessage === this.lastError.detail && now - this.lastError.at < REPEAT_WINDOW_MS) {
+            return;
+        }
+
+        this.lastError = { detail: apiError.userMessage, at: now };
         this.messages.add({
             severity: 'error',
             summary: 'Não foi possível concluir',

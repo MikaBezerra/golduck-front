@@ -1,28 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-    <style>
-        .ink { stroke: #02070a; fill: none; }
-        .bar { fill: #02070a; }
-        @media (prefers-color-scheme: dark) {
-            .ink { stroke: #ffffff; }
-            .bar { fill: #ffffff; }
-        }
-    </style>
-    <!-- Raios -->
-    <g class="ink" stroke-width="26" stroke-linecap="round">
-        <line x1="256" y1="16" x2="256" y2="70" />
-        <line x1="256" y1="442" x2="256" y2="496" />
-        <line x1="16" y1="256" x2="70" y2="256" />
-        <line x1="442" y1="256" x2="496" y2="256" />
-        <line x1="86" y1="86" x2="124" y2="124" />
-        <line x1="388" y1="124" x2="426" y2="86" />
-        <line x1="86" y1="426" x2="124" y2="388" />
-        <line x1="388" y1="388" x2="426" y2="426" />
+    <defs>
+        <clipPath id="face">
+            <circle cx="256" cy="248" r="236" />
+        </clipPath>
+        <clipPath id="center">
+            <circle cx="256" cy="248" r="176" />
+        </clipPath>
+    </defs>
+    <!-- Contorno escuro e a espessura da moeda (aparece embaixo). -->
+    <circle cx="256" cy="256" r="252" fill="#8a3a05" />
+    <circle cx="256" cy="262" r="243" fill="#df6206" />
+    <!-- Face dourada com faixas de brilho. -->
+    <circle cx="256" cy="248" r="236" fill="#fdc52c" />
+    <g clip-path="url(#face)" fill="#ffe27c">
+        <polygon points="-40,380 380,-40 450,-40 30,380" />
+        <polygon points="80,560 560,80 600,80 120,560" />
+        <polygon points="-60,250 250,-60 275,-60 -35,250" />
     </g>
-    <!-- Cifrão -->
-    <rect class="bar" x="243" y="118" width="26" height="276" />
-    <path
-        class="ink"
-        stroke-width="54"
-        d="M330 200 C324 170 296 156 256 156 C212 156 186 176 186 206 C186 238 214 250 256 260 C302 271 332 286 332 322 C332 356 302 376 256 376 C208 376 180 356 174 320"
-    />
+    <!-- Borda clara em volta do miolo. -->
+    <circle cx="256" cy="248" r="184" fill="#ffd862" />
+    <!-- Miolo laranja com a sombra do relevo no alto. -->
+    <circle cx="256" cy="248" r="176" fill="#d65c04" />
+    <g clip-path="url(#center)">
+        <circle cx="256" cy="262" r="176" fill="#f38b07" />
+    </g>
+    <!-- R$ em relevo. -->
+    <g font-family="'Arial Black', 'Segoe UI Black', Arial, sans-serif" font-weight="900" font-size="196" text-anchor="middle">
+        <text x="248" y="332" fill="#c45204">R$</text>
+        <text x="256" y="322" fill="#ffd966">R$</text>
+    </g>
 </svg>

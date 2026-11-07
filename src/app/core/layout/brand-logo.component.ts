@@ -17,7 +17,7 @@ import { BrandNameComponent } from '../../shared/ui/brand-name.component';
             title="Ir para a visão geral"
         >
             <app-brand-mark
-                class="transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6 group-focus-visible:scale-110"
+                class="transition-transform duration-700 ease-out group-focus-visible:scale-110 motion-safe:group-hover:rotate-y-360"
             />
             <span [class]="nameClass()" aria-hidden="true">
                 <span class="block font-display text-xl leading-tight font-bold tracking-tight">

@@ -1,0 +1,52 @@
+<p-dialog
+    [header]="card() ? 'Editar cartão' : 'Novo cartão'"
+    [visible]="visible()"
+    (visibleChange)="visible.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: '28rem' }"
+    [breakpoints]="{ '640px': '95vw' }"
+>
+    <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4" novalidate>
+        <div class="flex flex-col gap-2">
+            <label for="card-name" class="font-medium">Nome</label>
+            <input
+                pInputText
+                id="card-name"
+                formControlName="name"
+                [maxlength]="nameMaxLength"
+                placeholder="Ex.: Nubank da Ana"
+                autocomplete="off"
+                [fluid]="true"
+            />
+            <app-field-error [control]="form.controls.name" />
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label for="card-bank" class="font-medium">Banco</label>
+            @if (card(); as current) {
+                <p class="m-0">{{ bankLabels[current.bank] }}</p>
+                <small class="text-muted-color">O banco não pode ser alterado depois do cadastro.</small>
+            } @else {
+                <p-select
+                    inputId="card-bank"
+                    formControlName="bank"
+                    [options]="bankOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Escolha o banco"
+                    appendTo="body"
+                    [fluid]="true"
+                />
+                <small class="text-muted-color">Não poderá ser alterado depois.</small>
+                <app-field-error [control]="form.controls.bank" [messages]="{ required: 'Escolha o banco' }" />
+            }
+        </div>
+
+        <!-- Botões dentro do <form>: assim "Salvar" e a tecla Enter enviam o formulário. -->
+        <div class="flex justify-end gap-2">
+            <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
+            <p-button type="submit" label="Salvar" icon="pi pi-check" [loading]="saving()" />
+        </div>
+    </form>
+</p-dialog>

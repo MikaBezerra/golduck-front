@@ -25,6 +25,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
         description: 'Quanto entra em cada mês do ano.',
     },
     {
+        label: 'Cartões',
+        icon: 'pi pi-credit-card',
+        route: '/cartoes',
+        description: 'Cartões de crédito usados nas despesas.',
+    },
+    {
         label: 'Categorias',
         icon: 'pi pi-tags',
         route: '/categorias',

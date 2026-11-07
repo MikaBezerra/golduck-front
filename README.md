@@ -64,6 +64,7 @@ src/app/
 └── features/              # uma pasta por módulo do back, com o mesmo nome
     ├── auth/              # tela de login
     ├── categories/        # /categorias
+    ├── credit-cards/      # /cartoes
     ├── incomes/           # /entradas
     ├── manual-expenses/   # /despesas
     └── people/            # /pessoas

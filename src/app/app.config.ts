@@ -13,6 +13,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
+import { requestIdInterceptor } from './core/api/request-id.interceptor';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { PRIMENG_PT_BR } from './core/config/primeng-pt-br';
 import { AppPreset } from './core/config/theme.preset';
@@ -31,7 +32,7 @@ export const appConfig: ApplicationConfig = {
         { provide: ErrorHandler, useClass: GlobalErrorHandler },
         provideRouter(routes, withComponentInputBinding()),
         { provide: TitleStrategy, useClass: AppTitleStrategy },
-        provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+        provideHttpClient(withFetch(), withInterceptors([requestIdInterceptor, authInterceptor])),
         { provide: LOCALE_ID, useValue: 'pt-BR' },
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'BRL' },
         providePrimeNG({

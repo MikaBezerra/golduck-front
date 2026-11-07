@@ -65,7 +65,7 @@ export class LoginPageComponent {
                 if (apiError.code === 'AUTH_INVALID_CREDENTIALS') {
                     this.errorMessage.set('E-mail ou senha incorretos.');
                 } else if (!applyServerErrors(this.form, apiError)) {
-                    this.errorMessage.set(apiError.message);
+                    this.errorMessage.set(apiError.userMessage);
                 }
             },
         });

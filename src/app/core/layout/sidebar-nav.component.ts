@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-import { HOME_ITEM, NAV_GROUPS } from './navigation';
+import { NAV_GROUPS, SUMMARY_ITEM } from './navigation';
 
 /** Menu em grupos (Lançamentos, Cadastros). Usado no menu lateral e na folha "Mais" do celular. */
 @Component({
@@ -10,13 +10,13 @@ import { HOME_ITEM, NAV_GROUPS } from './navigation';
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <nav [attr.aria-label]="label()" class="flex flex-col gap-6">
-            @if (showHome()) {
+            @if (showSummary()) {
                 <ul class="m-0 flex list-none flex-col gap-1 p-0">
                     <li>
                         <a
                             [routerLink]="home.route"
                             routerLinkActive="active"
-                            [routerLinkActiveOptions]="{ exact: true }"
+                            [routerLinkActiveOptions]="{ exact: home.exact ?? false }"
                             ariaCurrentWhenActive="page"
                             [class]="linkClass"
                             (click)="navigate.emit()"
@@ -58,7 +58,7 @@ import { HOME_ITEM, NAV_GROUPS } from './navigation';
 })
 export class SidebarNavComponent {
     /** Mostra o item Resumo no topo. */
-    public readonly showHome = input(true);
+    public readonly showSummary = input(true);
     /** Nomes dos grupos a mostrar; vazio = todos. */
     public readonly groups = input<readonly string[]>([]);
     public readonly label = input('Menu principal');
@@ -67,7 +67,7 @@ export class SidebarNavComponent {
     /** Avisa quem usa o menu que um link foi clicado (a folha do celular se fecha). */
     public readonly navigate = output();
 
-    protected readonly home = HOME_ITEM;
+    protected readonly home = SUMMARY_ITEM;
     protected readonly visibleGroups = computed(() => {
         const only = this.groups();
 

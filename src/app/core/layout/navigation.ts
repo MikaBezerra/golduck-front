@@ -14,8 +14,11 @@ export interface NavGroup {
     readonly inMobileBar: boolean;
 }
 
-/** Página inicial, sempre no topo do menu e na barra do celular. */
-export const HOME_ITEM: NavItem = { label: 'Resumo', icon: 'pi pi-chart-bar', route: '/', exact: true };
+/**
+ * Resumo do mês em tabela, sempre no topo do menu e na barra do celular.
+ * A página inicial (visão geral, com os gráficos) abre pelo logo.
+ */
+export const SUMMARY_ITEM: NavItem = { label: 'Resumo', icon: 'pi pi-table', route: '/resumo' };
 
 /**
  * Itens do menu, agrupados. Cada feature nova adiciona o seu item aqui.

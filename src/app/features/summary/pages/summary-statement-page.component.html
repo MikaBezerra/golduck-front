@@ -1,0 +1,182 @@
+<app-page-header title="Resumo" [subtitle]="subtitle()">
+    @if (expandableIds().length > 0) {
+        <p-button
+            [label]="allOpen() ? 'Fechar detalhes' : 'Abrir detalhes'"
+            [icon]="allOpen() ? 'pi pi-angle-double-up' : 'pi pi-angle-double-down'"
+            [outlined]="true"
+            severity="secondary"
+            (onClick)="toggleAll()"
+        />
+    }
+</app-page-header>
+
+@if (statement(); as s) {
+    @if (!s.hasPeople) {
+        <p class="m-0 mb-4 text-muted-color">
+            Cadastre as pessoas da casa para dividir a entrada e o compartilhado entre elas.
+            <a routerLink="/pessoas" class="font-medium text-primary-300">Ir para Pessoas</a>
+        </p>
+    }
+    @if (s.incomeMissing) {
+        <p class="m-0 mb-4 flex items-center gap-2 text-sm text-muted-color">
+            <i class="pi pi-info-circle text-cantaloupe" aria-hidden="true"></i>
+            Sem entrada cadastrada neste mês: as contas usam entrada zero.
+            <a routerLink="/entradas" class="font-medium text-primary-300">Cadastrar</a>
+        </p>
+    }
+
+    @if (s.columns.length > 1) {
+        <p class="m-0 mb-2 flex items-center gap-1.5 text-xs text-muted-color sm:hidden" aria-hidden="true">
+            <i class="pi pi-arrows-h text-cantaloupe"></i>
+            Deslize a tabela para o lado para ver todas as pessoas.
+        </p>
+    }
+
+    <section class="surface-card overflow-hidden" [attr.aria-busy]="source.loading()">
+        <!-- Em telas estreitas a tabela desliza para o lado; a primeira coluna fica parada. -->
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm sm:text-base">
+                <caption class="sr-only">
+                    Resumo de
+                    {{
+                        subtitle()
+                    }}: total e uma coluna por pessoa
+                </caption>
+                <thead>
+                    <tr class="border-b border-line text-xs text-muted-color sm:text-sm">
+                        <th scope="col" [class]="firstColumnClass" class="py-3 text-left font-medium">Item</th>
+                        <th scope="col" class="px-2 py-3 text-right font-medium sm:px-4">Total</th>
+                        @for (column of s.columns; track column.id) {
+                            <th scope="col" class="px-2 py-3 text-right font-medium sm:px-4">
+                                <span class="inline-flex max-w-32 items-center justify-end gap-1.5">
+                                    <span
+                                        class="hidden h-6 w-6 shrink-0 items-center justify-center rounded-full bg-linear-135 from-primary-400 to-primary-700 text-[11px] font-bold text-midnight sm:flex"
+                                        aria-hidden="true"
+                                    >
+                                        {{ column.initial }}
+                                    </span>
+                                    <span class="truncate text-color">{{ column.name }}</span>
+                                </span>
+                                @if (column.inactive) {
+                                    <span class="block text-[10px] font-normal">(inativa)</span>
+                                }
+                            </th>
+                        }
+                    </tr>
+                </thead>
+
+                @for (section of s.sections; track section.id) {
+                    <tbody>
+                        <tr>
+                            <th
+                                scope="colgroup"
+                                [attr.colspan]="2 + s.columns.length"
+                                class="px-3 pt-5 pb-2 text-left sm:px-5"
+                            >
+                                <span
+                                    class="sticky left-3 block text-[11px] font-semibold tracking-[0.14em] text-cantaloupe uppercase sm:left-5"
+                                >
+                                    {{ section.title }}
+                                    <span class="font-normal tracking-normal text-muted-color normal-case">
+                                        · {{ section.hint }}
+                                    </span>
+                                </span>
+                            </th>
+                        </tr>
+
+                        @for (row of section.rows; track row.id) {
+                            <tr [class]="rowClass(row)">
+                                <th scope="row" [class]="firstColumnClass" class="py-2.5 text-left font-[inherit]">
+                                    @if (row.children.length > 0) {
+                                        <button
+                                            type="button"
+                                            class="flex cursor-pointer items-start gap-1.5 border-0 bg-transparent p-0 text-left font-[inherit] text-[length:inherit] text-color"
+                                            [attr.aria-expanded]="isOpen(row.id)"
+                                            [attr.aria-label]="
+                                                (isOpen(row.id) ? 'Fechar' : 'Abrir') + ' detalhes de ' + row.label
+                                            "
+                                            (click)="toggle(row.id)"
+                                        >
+                                            <i
+                                                class="pi pi-chevron-right mt-1 text-[10px] text-cantaloupe transition-transform duration-200"
+                                                [class.rotate-90]="isOpen(row.id)"
+                                                aria-hidden="true"
+                                            ></i>
+                                            <span>
+                                                {{ row.label }}
+                                                <span class="text-xs font-normal text-muted-color">
+                                                    ({{ row.children.length }})
+                                                </span>
+                                            </span>
+                                        </button>
+                                    } @else {
+                                        <span [class.pl-4]="row.style !== 'detail'">{{ row.label }}</span>
+                                    }
+                                    @if (row.note) {
+                                        <span class="block pl-4 text-[11px] font-normal text-muted-color">
+                                            {{ row.note }}
+                                        </span>
+                                    }
+                                </th>
+                                <td
+                                    class="px-2 py-2.5 text-right whitespace-nowrap tabular-nums sm:px-4"
+                                    [class.text-negative]="isNegative(row.total)"
+                                >
+                                    {{ row.total === null ? blank(row) : (row.total | brl) }}
+                                </td>
+                                @for (cell of row.cells; track $index) {
+                                    <td
+                                        class="px-2 py-2.5 text-right whitespace-nowrap tabular-nums sm:px-4"
+                                        [class.text-negative]="isNegative(cell)"
+                                    >
+                                        {{ cell === null ? blank(row) : (cell | brl) }}
+                                    </td>
+                                }
+                            </tr>
+
+                            @if (isOpen(row.id)) {
+                                @for (child of row.children; track child.id) {
+                                    <tr class="bg-white/[0.025] text-sm text-muted-color">
+                                        <th
+                                            scope="row"
+                                            [class]="firstColumnClass"
+                                            class="py-2 pl-9 text-left font-normal sm:pl-11"
+                                        >
+                                            {{ child.label }}
+                                        </th>
+                                        <td class="px-2 py-2 text-right whitespace-nowrap tabular-nums sm:px-4">
+                                            {{ child.total === null ? '' : (child.total | brl) }}
+                                        </td>
+                                        @for (cell of child.cells; track $index) {
+                                            <td class="px-2 py-2 text-right whitespace-nowrap tabular-nums sm:px-4">
+                                                {{ cell === null ? '' : (cell | brl) }}
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            }
+                        }
+                    </tbody>
+                }
+            </table>
+        </div>
+    </section>
+
+    <p class="mt-4 mb-0 text-sm text-muted-color">
+        Compartilhado = gastos sem pessoa + reserva, dividido igualmente entre as pessoas ativas. Líquido compartilhado
+        = entrada − compartilhado. Líquido individual = a parte de cada um menos os gastos individuais. Compras
+        excluídas da fatura não entram.
+    </p>
+} @else if (failed()) {
+    <section class="surface-card flex flex-col items-center gap-3 px-5 py-10 text-center" role="alert">
+        <i class="pi pi-exclamation-circle text-3xl text-cantaloupe" aria-hidden="true"></i>
+        <p class="m-0">Não foi possível montar o resumo de {{ subtitle() }}.</p>
+        <p-button label="Tentar de novo" icon="pi pi-refresh" [outlined]="true" (onClick)="source.reload()" />
+    </section>
+} @else {
+    <div class="surface-card flex flex-col gap-3 p-5" aria-busy="true" aria-label="Carregando o resumo">
+        @for (line of [1, 2, 3, 4, 5, 6, 7, 8]; track line) {
+            <p-skeleton height="1.75rem" />
+        }
+    </div>
+}

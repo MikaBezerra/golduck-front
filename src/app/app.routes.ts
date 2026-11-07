@@ -21,11 +21,6 @@ export const routes: Routes = [
         canActivateChild: [authGuard],
         children: [
             {
-                path: '',
-                pathMatch: 'full',
-                loadChildren: async () => import('./features/summary/summary.routes').then((m) => m.SUMMARY_ROUTES),
-            },
-            {
                 path: 'despesas',
                 loadChildren: async () =>
                     import('./features/manual-expenses/manual-expenses.routes').then((m) => m.MANUAL_EXPENSES_ROUTES),
@@ -52,6 +47,11 @@ export const routes: Routes = [
             {
                 path: 'pessoas',
                 loadChildren: async () => import('./features/people/people.routes').then((m) => m.PEOPLE_ROUTES),
+            },
+            {
+                // Visão geral (/) e Resumo (/resumo). Por último: só é carregado quando nenhuma outra rota serve.
+                path: '',
+                loadChildren: async () => import('./features/summary/summary.routes').then((m) => m.SUMMARY_ROUTES),
             },
         ],
     },

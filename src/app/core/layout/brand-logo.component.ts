@@ -12,10 +12,13 @@ import { BrandNameComponent } from '../../shared/ui/brand-name.component';
     template: `
         <a
             routerLink="/"
-            class="flex items-center gap-3 text-color no-underline"
-            aria-label="Golduck: ir para o resumo"
+            class="group flex items-center gap-3 rounded-xl text-color no-underline"
+            aria-label="Golduck: ir para a visão geral"
+            title="Ir para a visão geral"
         >
-            <app-brand-mark />
+            <app-brand-mark
+                class="transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6 group-focus-visible:scale-110"
+            />
             <span [class]="nameClass()" aria-hidden="true">
                 <span class="block font-display text-xl leading-tight font-bold tracking-tight">
                     <app-brand-name />

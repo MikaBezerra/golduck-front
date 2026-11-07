@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter, map } from 'rxjs';
 
-import { HOME_ITEM, NAV_GROUPS, type NavItem } from './navigation';
+import { NAV_GROUPS, type NavItem, SUMMARY_ITEM } from './navigation';
 
 /**
  * Barra de navegação fixa no pé da tela (celular e tablet): Resumo, os lançamentos
@@ -59,7 +59,7 @@ export class BottomNavComponent {
     public readonly more = output();
 
     protected readonly items: readonly NavItem[] = [
-        HOME_ITEM,
+        SUMMARY_ITEM,
         ...NAV_GROUPS.filter((group) => group.inMobileBar).flatMap((group) => group.items),
     ];
     private readonly moreRoutes = NAV_GROUPS.filter((group) => !group.inMobileBar).flatMap((group) =>

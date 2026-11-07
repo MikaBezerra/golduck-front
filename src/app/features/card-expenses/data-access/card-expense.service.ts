@@ -18,6 +18,11 @@ export class CardExpenseService {
         });
     }
 
+    /** Despesas de todos os cartões no mês (sem as excluídas), para o resumo. */
+    public findByMonthAllCards(month: string): Observable<CardExpense[]> {
+        return this.api.get<CardExpense[]>('card-expenses', { month });
+    }
+
     public findById(id: string): Observable<CardExpense> {
         return this.api.get<CardExpense>(`card-expenses/${id}`);
     }

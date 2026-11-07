@@ -23,6 +23,10 @@ export const routes: Routes = [
         children: [
             { path: '', component: HomePageComponent, title: 'Início' },
             {
+                path: 'entradas',
+                loadChildren: async () => import('./features/incomes/incomes.routes').then((m) => m.INCOMES_ROUTES),
+            },
+            {
                 path: 'categorias',
                 loadChildren: async () =>
                     import('./features/categories/categories.routes').then((m) => m.CATEGORIES_ROUTES),

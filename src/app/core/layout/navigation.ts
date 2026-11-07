@@ -13,6 +13,12 @@ export interface NavItem {
  */
 export const NAV_ITEMS: readonly NavItem[] = [
     {
+        label: 'Entradas',
+        icon: 'pi pi-arrow-circle-down',
+        route: '/entradas',
+        description: 'Quanto entra em cada mês do ano.',
+    },
+    {
         label: 'Categorias',
         icon: 'pi pi-tags',
         route: '/categorias',

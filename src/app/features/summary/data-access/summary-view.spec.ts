@@ -17,9 +17,11 @@ const month = (
     expensesTotal: string,
     balance: string,
     count = 1,
+    reserve: string | null = null,
 ): SummaryMonth => ({
     month: key,
     income,
+    reserve,
     expensesTotal,
     expensesCount: count,
     balance,
@@ -101,6 +103,19 @@ describe('summary-view', () => {
         expect(chart.points[2]).toMatchObject({ expenseHeight: 92, negative: true, longLabel: 'Março de 2026' });
         expect(chart.points[1].ariaLabel).toContain('entrada não cadastrada');
         expect(chart.empty).toBe(false);
+    });
+
+    it('empilha a reserva sobre as despesas na mesma escala da entrada', () => {
+        const chart = yearChart([
+            month('2026-01', '5000.00', '3000.00', '1000.00', 1, '1000.00'),
+            month('2026-02', '5000.00', '7000.00', '-3000.00', 1, '1000.00'),
+        ]);
+
+        // Topo da escala vem da pilha de fevereiro (7.000 + 1.000), não da entrada.
+        expect(chart.ticks.at(-1)?.label.replace(/\s/g, ' ')).toBe('10 mil');
+        expect(chart.points[0]).toMatchObject({ incomeHeight: 50, expenseHeight: 30, reserveHeight: 10 });
+        expect(chart.points[1].ariaLabel).toContain('reserva');
+        expect(chart.points[1].ariaLabel).toContain('1.000,00');
     });
 
     it('desenha a sparkline com o zero visível', () => {

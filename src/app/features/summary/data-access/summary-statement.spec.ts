@@ -4,7 +4,6 @@ const source: StatementSource = {
     month: '2026-11',
     income: '6000.00',
     reserve: '500.00',
-    reserveAvailable: true,
     people: [
         { id: 'bruno', name: 'Bruno', active: true },
         { id: 'ana', name: 'Ana', active: true },
@@ -95,14 +94,14 @@ describe('summary-statement', () => {
         expect(rowOf('net-individual')).toMatchObject({ total: '1739.64', cells: ['1040.82', '698.82', null] });
     });
 
-    it('sem entrada e sem reserva no back, avisa e trata como zero', () => {
-        const statement = buildStatement({ ...source, income: null, reserve: null, reserveAvailable: false });
+    it('sem entrada e sem reserva no mês, avisa e trata como zero', () => {
+        const statement = buildStatement({ ...source, income: null, reserve: null });
         const rows = statement.sections.flatMap((section) => section.rows);
         const net = rows.find((item) => item.id === 'net-shared');
 
         expect(statement.incomeMissing).toBe(true);
         expect(rows.find((item) => item.id === 'income')).toMatchObject({ total: null, note: 'não cadastrada' });
-        expect(rows.find((item) => item.id === 'reserve')).toMatchObject({ total: null, note: 'em breve' });
+        expect(rows.find((item) => item.id === 'reserve')).toMatchObject({ total: '0.00', note: 'não cadastrada' });
         expect(net?.total).toBe('-3262.36');
     });
 });

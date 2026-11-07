@@ -19,21 +19,39 @@
         />
     </div>
     <p-button label="Nova entrada" icon="pi pi-plus" (onClick)="openCreate('income')" />
-    <p-button
-        label="Nova reserva"
-        icon="pi pi-shield"
-        [outlined]="true"
-        [disabled]="reservesUnavailable()"
-        (onClick)="openCreate('reserve')"
-    />
+    <p-button label="Nova reserva" icon="pi pi-shield" [outlined]="true" (onClick)="openCreate('reserve')" />
 </app-page-header>
 
-@if (reservesUnavailable()) {
-    <p-message severity="info" styleClass="mb-4">
-        A reserva ainda não está disponível no servidor. A coluna já está pronta e passa a funcionar assim que o back
-        tiver o cadastro de reservas.
-    </p-message>
-}
+<!-- Totais do ano e o que já foi guardado no total. -->
+<div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+    <div class="surface-card p-4">
+        <p [class]="statLabelClass">
+            <span class="h-2 w-2 rounded-full bg-income" aria-hidden="true"></span>Entrada em {{ year() }}
+        </p>
+        <p [class]="statValueClass">{{ incomeTotal() | brl }}</p>
+    </div>
+    <div class="surface-card p-4">
+        <p [class]="statLabelClass">
+            <span class="h-2 w-2 rounded-full bg-reserve" aria-hidden="true"></span>Reserva em {{ year() }}
+        </p>
+        <p [class]="statValueClass">{{ reserveTotal() | brl }}</p>
+    </div>
+    <div class="surface-card col-span-2 overflow-hidden p-4 md:col-span-1">
+        <div
+            class="pointer-events-none absolute -top-12 -right-12 h-32 w-32 rounded-full bg-reserve/20 blur-2xl"
+            aria-hidden="true"
+        ></div>
+        <p [class]="statLabelClass">
+            <i class="pi pi-shield text-[10px] text-reserve" aria-hidden="true"></i>Guardado até hoje
+        </p>
+        <p [class]="statValueClass">{{ reserveTotals.value()?.total ?? '0.00' | brl }}</p>
+        @if (reserveTotals.value(); as totals) {
+            <p class="m-0 mt-1 text-xs text-muted-color">
+                {{ totals.count }} {{ totals.count === 1 ? 'mês' : 'meses' }} com reserva
+            </p>
+        }
+    </div>
+</div>
 
 <div class="overflow-hidden surface-card">
     <p-table [value]="rows()" [loading]="incomes.loading() || reserves.loading()" dataKey="month">
@@ -47,7 +65,7 @@
                 </th>
                 <th class="text-right">
                     <span class="inline-flex items-center gap-1.5">
-                        <span class="h-2 w-2 rounded-full bg-cantaloupe" aria-hidden="true"></span>Reserva
+                        <span class="h-2 w-2 rounded-full bg-reserve" aria-hidden="true"></span>Reserva
                     </span>
                 </th>
             </tr>
@@ -91,8 +109,6 @@
                             {{ row.reserve.amount | brl }}
                             <i class="pi pi-pencil text-[10px] text-muted-color" aria-hidden="true"></i>
                         </button>
-                    } @else if (reservesUnavailable()) {
-                        <span class="text-muted-color">—</span>
                     } @else {
                         <p-button
                             label="Adicionar"
@@ -113,7 +129,7 @@
                 <td class="font-semibold">Total de {{ year() }}</td>
                 <td class="text-right font-semibold whitespace-nowrap tabular-nums">{{ incomeTotal() | brl }}</td>
                 <td class="text-right font-semibold whitespace-nowrap tabular-nums">
-                    {{ reservesUnavailable() ? '—' : (reserveTotal() | brl) }}
+                    {{ reserveTotal() | brl }}
                 </td>
             </tr>
         </ng-template>

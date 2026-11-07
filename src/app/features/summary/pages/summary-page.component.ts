@@ -11,6 +11,8 @@ import { amountRatio, amountToCents, formatBrl } from '../../../shared/money/mon
 import { BrlPipe } from '../../../shared/money/brl.pipe';
 import { addMonths, formatMonth, formatMonthShort } from '../../../shared/month/month';
 import { PageHeaderComponent } from '../../../shared/ui/page-header.component';
+import type { ReserveTotals } from '../../reserves/data-access/reserve.models';
+import { ReserveService } from '../../reserves/data-access/reserve.service';
 import { SparklineComponent } from '../components/sparkline.component';
 import { SummaryBarListComponent } from '../components/summary-bar-list.component';
 import { SummaryNetCardsComponent } from '../components/summary-net-cards.component';
@@ -38,6 +40,8 @@ const MODE_STORAGE_KEY = 'financas.summaryMode';
 /** Os números do topo: do mês escolhido ou do ano inteiro. */
 interface Headline {
     readonly income: string | null;
+    /** null = nada guardado no período. */
+    readonly reserve: string | null;
     readonly expensesTotal: string;
     readonly expensesCount: number;
     readonly balance: string;
@@ -71,6 +75,7 @@ interface Headline {
 export class SummaryPageComponent {
     private readonly summaryService = inject(SummaryService);
     private readonly selectedMonth = inject(SelectedMonthService);
+    private readonly reserveService = inject(ReserveService);
 
     protected readonly month = this.selectedMonth.month;
     protected readonly year = this.selectedMonth.year;
@@ -86,6 +91,13 @@ export class SummaryPageComponent {
         params: () => this.month(),
         load: (month) => this.summaryService.findByMonth(month),
         initialValue: null as Summary | null,
+    });
+
+    /** Quanto já foi guardado no total (todos os anos), para o cartão da reserva. */
+    protected readonly reserveTotals = remoteData({
+        params: () => null,
+        load: () => this.reserveService.totals(),
+        initialValue: null as ReserveTotals | null,
     });
 
     /** Resumo anual do ano selecionado (null enquanto um ano novo carrega). */
@@ -112,7 +124,9 @@ export class SummaryPageComponent {
     protected readonly isEmpty = computed(() => {
         const headline = this.headline();
 
-        return headline !== null && headline.income === null && headline.expensesCount === 0;
+        return (
+            headline !== null && headline.income === null && headline.expensesCount === 0 && headline.reserve === null
+        );
     });
 
     /** Comparação com o mês anterior (só no modo Mês e a partir de fevereiro). */
@@ -134,6 +148,10 @@ export class SummaryPageComponent {
                     ? null
                     : deltaView(amountDelta(headline.income, before.income), label),
             expenses: deltaView(amountDelta(headline.expensesTotal, before.expensesTotal), label),
+            reserve:
+                before.reserve === null || headline.reserve === null
+                    ? null
+                    : deltaView(amountDelta(headline.reserve, before.reserve), label),
         };
     });
 
@@ -149,6 +167,14 @@ export class SummaryPageComponent {
 
         return { width: Math.min(100, ratio * 100), label: formatPercent(ratio), over: ratio > 1 };
     });
+    /** Quanto da entrada foi guardado. */
+    protected readonly savedShare = computed(() => {
+        const headline = this.headline();
+
+        return headline?.income && headline.reserve
+            ? formatPercent(amountRatio(headline.reserve, headline.income))
+            : null;
+    });
     protected readonly balanceSign = computed(() => Math.sign(amountToCents(this.headline()?.balance ?? '0')));
 
     /** Linhas dos minigráficos (centavos de janeiro a dezembro). */
@@ -158,6 +184,7 @@ export class SummaryPageComponent {
         return {
             income: months.map((month) => (month.income === null ? 0 : amountToCents(month.income))),
             expenses: months.map((month) => amountToCents(month.expensesTotal)),
+            reserve: months.map((month) => (month.reserve === null ? 0 : amountToCents(month.reserve))),
             balance: months.map((month) => amountToCents(month.balance)),
         };
     });
@@ -194,7 +221,7 @@ export class SummaryPageComponent {
     /** Celular: fileira com rolagem lateral (um cartão por vez, o próximo aparecendo na borda). */
     protected readonly tilesRowClass =
         '-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 ' +
-        'md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:pb-0';
+        'md:mx-0 md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:px-0 md:pb-0 2xl:grid-cols-4';
     protected readonly tileClass =
         'surface-card flex w-[86%] shrink-0 snap-center flex-col gap-2 p-5 sm:w-[60%] md:w-auto';
     protected readonly tileLabelClass =

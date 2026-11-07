@@ -137,12 +137,15 @@ export interface ChartPoint {
     readonly longLabel: string;
     readonly income: string | null;
     readonly expenses: string;
+    /** null = sem reserva no mês. */
+    readonly reserve: string | null;
     readonly balance: string;
-    /** Alturas das barras, em % da área do gráfico. */
+    /** Alturas das barras, em % da área do gráfico. A reserva vai empilhada sobre as despesas. */
     readonly incomeHeight: number;
     readonly expenseHeight: number;
+    readonly reserveHeight: number;
     readonly negative: boolean;
-    /** Sem entrada e sem despesas. */
+    /** Sem entrada, sem despesas e sem reserva. */
     readonly empty: boolean;
     /** Descrição completa para leitores de tela. */
     readonly ariaLabel: string;
@@ -180,9 +183,10 @@ export function niceScale(maxCents: number): { readonly max: number; readonly st
 }
 
 export function yearChart(months: readonly SummaryMonth[]): YearChart {
+    const cents = (amount: string | null): number => (amount === null ? 0 : amountToCents(amount));
+    // A entrada e a pilha (despesas + reserva) usam a mesma escala.
     const largest = months.reduce(
-        (max, month) =>
-            Math.max(max, month.income === null ? 0 : amountToCents(month.income), amountToCents(month.expensesTotal)),
+        (max, month) => Math.max(max, cents(month.income), cents(month.expensesTotal) + cents(month.reserve)),
         0,
     );
     const scale = niceScale(largest);
@@ -198,6 +202,7 @@ export function yearChart(months: readonly SummaryMonth[]): YearChart {
         const longLabel = formatMonth(month.month);
         const shortLabel = formatMonthShort(month.month).split('/')[0];
         const income = month.income === null ? 'entrada não cadastrada' : `entrada ${formatBrl(month.income)}`;
+        const reserve = month.reserve === null ? '' : `, reserva ${formatBrl(month.reserve)}`;
 
         return {
             month: month.month,
@@ -206,13 +211,15 @@ export function yearChart(months: readonly SummaryMonth[]): YearChart {
             longLabel,
             income: month.income,
             expenses: month.expensesTotal,
+            reserve: month.reserve,
             balance: month.balance,
             incomeHeight: height(month.income),
             expenseHeight: height(month.expensesTotal),
+            reserveHeight: height(month.reserve),
             negative: amountToCents(month.balance) < 0,
-            empty: month.income === null && month.expensesCount === 0,
+            empty: month.income === null && month.expensesCount === 0 && month.reserve === null,
             ariaLabel:
-                `${longLabel}: ${income}, despesas ${formatBrl(month.expensesTotal)}, ` +
+                `${longLabel}: ${income}, despesas ${formatBrl(month.expensesTotal)}${reserve}, ` +
                 `saldo ${formatBrl(month.balance)}`,
         };
     });

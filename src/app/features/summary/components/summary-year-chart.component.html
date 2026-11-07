@@ -41,10 +41,20 @@
                         class="h-(--bar) w-1.5 rounded-t-[3px] bg-income transition-[height] duration-700 ease-out starting:h-0 sm:w-3.5 sm:rounded-t-[4px]"
                         [style.--bar]="point.incomeHeight + '%'"
                     ></span>
-                    <span
-                        class="h-(--bar) w-1.5 rounded-t-[3px] bg-expense transition-[height] duration-700 ease-out starting:h-0 sm:w-3.5 sm:rounded-t-[4px]"
-                        [style.--bar]="point.expenseHeight + '%'"
-                    ></span>
+                    <!-- Pilha: despesas embaixo e, se houver, a reserva em cima (2px de folga entre elas). -->
+                    <span class="flex h-full w-1.5 flex-col justify-end gap-0.5 sm:w-3.5">
+                        @if (point.reserveHeight > 0) {
+                            <span
+                                class="h-(--bar) w-full rounded-t-[3px] bg-reserve transition-[height] duration-700 ease-out starting:h-0 sm:rounded-t-[4px]"
+                                [style.--bar]="point.reserveHeight + '%'"
+                            ></span>
+                        }
+                        <span
+                            class="h-(--bar) w-full bg-expense transition-[height] duration-700 ease-out starting:h-0"
+                            [class]="point.reserveHeight > 0 ? '' : 'rounded-t-[3px] sm:rounded-t-[4px]'"
+                            [style.--bar]="point.expenseHeight + '%'"
+                        ></span>
+                    </span>
                 </span>
                 <span
                     class="text-[11px] sm:text-xs"
@@ -95,6 +105,12 @@
                     <span class="h-2.5 w-2.5 rounded-sm bg-expense"></span>Despesas
                 </dt>
                 <dd class="m-0 text-right tabular-nums">{{ tip.point.expenses | brl }}</dd>
+                <dt class="flex items-center gap-1.5 text-muted-color">
+                    <span class="h-2.5 w-2.5 rounded-sm bg-reserve"></span>Reserva
+                </dt>
+                <dd class="m-0 text-right tabular-nums">
+                    {{ tip.point.reserve === null ? '—' : (tip.point.reserve | brl) }}
+                </dd>
                 <dt class="mt-1 border-t border-line pt-1 text-muted-color">Saldo</dt>
                 <dd
                     class="m-0 mt-1 border-t border-line pt-1 text-right font-semibold tabular-nums"

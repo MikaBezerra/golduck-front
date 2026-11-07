@@ -32,8 +32,6 @@ export interface StatementSource {
     readonly income: string | null;
     /** null = sem reserva no mês. */
     readonly reserve: string | null;
-    /** O back já tem o cadastro de reservas. */
-    readonly reserveAvailable: boolean;
     /** Todas as pessoas (ativas e inativas). */
     readonly people: readonly StatementPerson[];
     readonly manualExpenses: readonly StatementManualExpense[];
@@ -78,7 +76,6 @@ export interface Statement {
     /** Há pessoas ativas para dividir o compartilhado. */
     readonly hasPeople: boolean;
     readonly incomeMissing: boolean;
-    readonly reserveAvailable: boolean;
 }
 
 type Cells = (number | null)[];
@@ -188,15 +185,10 @@ export function buildStatement(source: StatementSource): Statement {
                     detail(`shared-card-${cardId}`, cardName.get(cardId) ?? 'Cartão', sum(items), width),
                 ),
             }),
-            row(
-                'reserve',
-                'Reserva',
-                !source.reserveAvailable ? 'em breve' : source.reserve === null ? 'não cadastrada' : 'guardado no mês',
-                {
-                    total: source.reserveAvailable ? reserveCents : null,
-                    cells: source.reserveAvailable ? reserveCells : people.map(() => null),
-                },
-            ),
+            row('reserve', 'Reserva', source.reserve === null ? 'não cadastrada' : 'guardado no mês', {
+                total: reserveCents,
+                cells: reserveCells,
+            }),
             row('shared-total', 'Total compartilhado', null, {
                 total: sharedTotal,
                 cells: sharedCells,
@@ -295,7 +287,6 @@ export function buildStatement(source: StatementSource): Statement {
         ],
         hasPeople: participants.length > 0,
         incomeMissing: source.income === null,
-        reserveAvailable: source.reserveAvailable,
     };
 }
 

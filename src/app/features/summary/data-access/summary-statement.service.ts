@@ -48,8 +48,7 @@ export class SummaryStatementService {
                     map((extra): StatementSource => ({
                         month,
                         income: data.incomes.find((income) => income.month === month)?.amount ?? null,
-                        reserve: data.reserves.items.find((reserve) => reserve.month === month)?.amount ?? null,
-                        reserveAvailable: data.reserves.available,
+                        reserve: data.reserves.find((reserve) => reserve.month === month)?.amount ?? null,
                         people: data.people,
                         manualExpenses: data.manualExpenses,
                         cardExpenses: data.cardExpenses,

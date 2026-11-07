@@ -75,7 +75,7 @@ src/app/
     │   ├── pages/         # telas ligadas a uma rota (≈ controllers)
     │   ├── components/    # pedaços de tela usados só nesta feature (diálogos…)
     │   └── people.routes.ts
-    ├── reserves/          # reserva do mês (só data-access; a tela é a de Entradas)
+    ├── reserves/          # reserva do mês e total guardado (só data-access; a tela é a de Entradas)
     └── summary/           # / visão geral com gráficos (abre pelo logo) e /resumo: tabela do mês por pessoa
 ```
 
@@ -154,13 +154,6 @@ Em desenvolvimento o proxy evita CORS. Em produção há dois caminhos:
   (ex.: `API_CORS_ORIGINS=https://financas.exemplo.com`). Se o front e a API ficarem em domínios
   diferentes, troque o prefixo `/api` pelo endereço completo da API em `API_BASE_URL`
   (`core/api/api.service.ts`).
-
-## Pendências que dependem do back
-
-- **Reserva:** o módulo `reserves` ainda não existe no back. O front já tem o cadastro (coluna em
-  Entradas) e a linha no Resumo; enquanto o endpoint não existe, a tela avisa "em breve". Os tipos estão
-  escritos à mão em `features/reserves/data-access/reserve.models.ts`: quando o back tiver o módulo,
-  rode `npm run api:types` e troque pelos aliases de `ApiSchemas`.
 
 ## Problemas conhecidos do ambiente
 

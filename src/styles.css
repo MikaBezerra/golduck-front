@@ -23,6 +23,8 @@
     /* Séries dos gráficos (validadas para o fundo escuro: contraste e daltonismo). */
     --color-income: #0297de;
     --color-expense: #ee6238;
+    /* Reserva (o que foi guardado): validada junto da entrada e das despesas, inclusive empilhada sobre elas. */
+    --color-reserve: #14a37f;
     /* Cartões translúcidos sobre o fundo e linhas azuladas. */
     --color-card: rgb(10 24 34 / 0.64);
     --color-card-strong: rgb(10 24 34 / 0.86);

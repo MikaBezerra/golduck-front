@@ -412,6 +412,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reserves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista as reservas, opcionalmente de um ano */
+        get: operations["ReserveController_findAll"];
+        put?: never;
+        /** Cadastra o mesmo valor de reserva em um ou mais meses do ano */
+        post: operations["ReserveController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reserves/totals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Soma histórica das reservas e a soma de cada ano */
+        get: operations["ReserveController_totals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reserves/{month}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta a reserva de um mês */
+        get: operations["ReserveController_findByMonth"];
+        put?: never;
+        post?: never;
+        /** Remove a reserva de um mês */
+        delete: operations["ReserveController_delete"];
+        options?: never;
+        head?: never;
+        /** Altera o valor da reserva de um mês */
+        patch: operations["ReserveController_update"];
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -421,7 +475,7 @@ export interface paths {
         };
         /**
          * Resumo do mês: entrada, despesas, saldo, totais por categoria e por pessoa e líquido individual
-         * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. Líquido individual = (entrada − compartilhadas) / pessoas ativas − despesas individuais.
+         * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. A reserva do mês fica fora de expensesTotal, mas entra no saldo e na divisão como gasto compartilhado. Líquido individual = (entrada − compartilhadas − reserva) / pessoas ativas − despesas individuais.
          */
         get: operations["SummaryController_findByMonth"];
         put?: never;
@@ -441,7 +495,7 @@ export interface paths {
         };
         /**
          * Resumo do ano: os totais do mensal somados nos 12 meses, mais a lista dos meses
-         * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. Líquido individual = (entrada − compartilhadas) / pessoas ativas − despesas individuais. No anual, o líquido de cada pessoa é a soma dos líquidos mensais.
+         * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. A reserva do mês fica fora de expensesTotal, mas entra no saldo e na divisão como gasto compartilhado. Líquido individual = (entrada − compartilhadas − reserva) / pessoas ativas − despesas individuais. No anual, o líquido de cada pessoa é a soma dos líquidos mensais.
          */
         get: operations["SummaryController_findByYear"];
         put?: never;
@@ -1044,6 +1098,71 @@ export interface components {
         DeleteManualExpensesDto: {
             ids: string[];
         };
+        ReserveResponse: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            amount: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateReserveDto: {
+            /** @example 2026 */
+            year: number;
+            /**
+             * @description Meses (1 a 12) do mesmo ano, não precisam ser consecutivos
+             * @example [
+             *       2,
+             *       8,
+             *       12
+             *     ]
+             */
+            months: number[];
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            amount: string;
+        };
+        ReserveYearTotalDto: {
+            /** @example 2026 */
+            year: number;
+            /**
+             * @description Soma das reservas do ano
+             * @example 1234.56
+             */
+            amount: string;
+            /** @description Meses com reserva no ano */
+            count: number;
+        };
+        ReserveTotalsResponse: {
+            /**
+             * @description Soma de todas as reservas já cadastradas ("0.00" se nenhuma)
+             * @example 1234.56
+             */
+            total: string;
+            /** @description Meses com reserva, no total */
+            count: number;
+            /** @description Soma por ano, só dos anos com reserva, em ordem crescente */
+            byYear: components["schemas"]["ReserveYearTotalDto"][];
+        };
+        UpdateReserveDto: {
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            amount: string;
+        };
         SummarySourceDto: {
             /**
              * @description Valor em reais, como texto com ponto decimal
@@ -1090,7 +1209,7 @@ export interface components {
             personId: string;
             name: string;
             /**
-             * @description (entrada − compartilhadas) dividido entre as pessoas ativas
+             * @description (entrada − compartilhadas − reserva) dividido entre as pessoas ativas
              * @example 1234.56
              */
             share: string;
@@ -1112,13 +1231,18 @@ export interface components {
              */
             income: string | null;
             /**
-             * @description Despesas fora do cartão + do cartão (sem as excluídas)
+             * @description Quanto foi guardado; null quando não há reserva no período. Fora de expensesTotal, mas entra no saldo e na divisão
+             * @example 1234.56
+             */
+            reserve: string | null;
+            /**
+             * @description Despesas fora do cartão + do cartão (sem as excluídas e sem a reserva)
              * @example 1234.56
              */
             expensesTotal: string;
             expensesCount: number;
             /**
-             * @description entrada (ou 0) − despesas; pode ser negativo
+             * @description entrada (ou 0) − despesas − reserva; pode ser negativo
              * @example 1234.56
              */
             balance: string;
@@ -1147,13 +1271,18 @@ export interface components {
              */
             income: string | null;
             /**
+             * @description null quando não há reserva cadastrada no mês
+             * @example 1234.56
+             */
+            reserve: string | null;
+            /**
              * @description Valor em reais, como texto com ponto decimal
              * @example 1234.56
              */
             expensesTotal: string;
             expensesCount: number;
             /**
-             * @description entrada (ou 0) − despesas; pode ser negativo
+             * @description entrada (ou 0) − despesas − reserva; pode ser negativo
              * @example 1234.56
              */
             balance: string;
@@ -1165,13 +1294,18 @@ export interface components {
              */
             income: string | null;
             /**
-             * @description Despesas fora do cartão + do cartão (sem as excluídas)
+             * @description Quanto foi guardado; null quando não há reserva no período. Fora de expensesTotal, mas entra no saldo e na divisão
+             * @example 1234.56
+             */
+            reserve: string | null;
+            /**
+             * @description Despesas fora do cartão + do cartão (sem as excluídas e sem a reserva)
              * @example 1234.56
              */
             expensesTotal: string;
             expensesCount: number;
             /**
-             * @description entrada (ou 0) − despesas; pode ser negativo
+             * @description entrada (ou 0) − despesas − reserva; pode ser negativo
              * @example 1234.56
              */
             balance: string;
@@ -2463,6 +2597,204 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["ManualExpenseResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    ReserveController_findAll: {
+        parameters: {
+            query?: {
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReserveResponse"][];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    ReserveController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReserveDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReserveResponse"][];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    ReserveController_totals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReserveTotalsResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    ReserveController_findByMonth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReserveResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    ReserveController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reserva removida */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    ReserveController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateReserveDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReserveResponse"];
                     };
                 };
             };

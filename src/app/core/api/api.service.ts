@@ -2,13 +2,17 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable, InjectionToken } from '@angular/core';
 import { catchError, map, type Observable, throwError } from 'rxjs';
 
+import { environment } from '../../../environments/environment';
 import { ApiError } from './api-error';
 import type { ApiSuccessResponse, QueryParams } from './api.types';
 
-/** Prefixo de todas as rotas da API. Em dev, o `proxy.conf.json` leva `/api` até o back. */
+/**
+ * Prefixo de todas as rotas da API, vindo do arquivo de ambiente do build
+ * (`src/environments`). Em dev é `/api`, e o `proxy.conf.json` leva até o back.
+ */
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
     providedIn: 'root',
-    factory: () => '/api',
+    factory: () => environment.apiBaseUrl,
 });
 
 /**

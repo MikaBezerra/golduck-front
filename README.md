@@ -19,7 +19,8 @@ Interface web do **Golduck** (projeto Finanças) — *Make your money count.* Co
 
 ## Como rodar
 
-Pré-requisitos: Node `^20.19`, `^22.12` ou `>=24` e o back-end rodando em `http://localhost:3000`.
+Pré-requisitos: Node 22 (`^22.12`, versão no [`.nvmrc`](.nvmrc): `nvm use`) e o back-end rodando em
+`http://localhost:3000`.
 
 ```sh
 npm install
@@ -38,6 +39,8 @@ Para entrar, use um usuário criado no back com `npm run admin:create`.
 | ---------------------- | -------------------------------------------- |
 | `npm start`            | Sobe o front em modo desenvolvimento (4200)  |
 | `npm run build`        | Gera a versão de produção em `dist/`         |
+| `npm run build:develop` | Build do ambiente develop (API de develop)  |
+| `npm run build:production` | Build de produção (igual ao `build`)     |
 | `npm test`             | Roda os testes unitários uma vez             |
 | `npm run test:watch`   | Roda os testes a cada alteração              |
 | `npm run lint`         | Verifica o código com ESLint                 |
@@ -144,16 +147,22 @@ npm run api:types
 Se algum campo mudou, o `npm run build` aponta exatamente onde o front precisa ser ajustado.
 Commite o `api-schema.d.ts` junto com o ajuste.
 
-## Produção
+## Ambientes e endereço da API
 
-Em desenvolvimento o proxy evita CORS. Em produção há dois caminhos:
+O endereço da API vem do arquivo de ambiente escolhido na hora do build
+([`src/environments`](src/environments)), lido pelo `API_BASE_URL` em `core/api/api.service.ts`:
 
-- servir front e back no mesmo domínio (ex.: `/` para o front e `/api` para o back, atrás de um
-  proxy reverso); ou
-- liberar a origem do front no back com a variável `API_CORS_ORIGINS`
-  (ex.: `API_CORS_ORIGINS=https://financas.exemplo.com`). Se o front e a API ficarem em domínios
-  diferentes, troque o prefixo `/api` pelo endereço completo da API em `API_BASE_URL`
-  (`core/api/api.service.ts`).
+| Onde                                   | Configuração do build | Arquivo                     | API                                         |
+| -------------------------------------- | --------------------- | --------------------------- | ------------------------------------------- |
+| `npm start` e testes                   | `development`         | `environment.ts`            | `/api` (o `proxy.conf.json` leva ao back)   |
+| Vercel develop (`npm run build:develop`) | `develop`           | `environment.develop.ts`    | `https://CHANGE_ME-develop.vercel.app/api`  |
+| Vercel produção (`npm run build`)      | `production`          | `environment.production.ts` | `https://CHANGE_ME.vercel.app/api`          |
+
+Os endereços `CHANGE_ME` são provisórios: troque pelos domínios reais do back. Como front e back
+ficam em domínios diferentes, libere o domínio do front no back com a variável `API_CORS_ORIGINS`
+(ex.: `API_CORS_ORIGINS=https://golduck.vercel.app`).
+
+Não há `.env` no front: tudo o que vai para o bundle é público, então não existem segredos aqui.
 
 ## Problemas conhecidos do ambiente
 

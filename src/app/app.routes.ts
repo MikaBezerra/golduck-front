@@ -1,5 +1,6 @@
 import type { Routes } from '@angular/router';
 
+import { authGuard, guestGuard } from './core/auth/auth.guard';
 import { HomePageComponent } from './core/layout/home-page.component';
 import { ShellComponent } from './core/layout/shell.component';
 
@@ -10,8 +11,15 @@ import { ShellComponent } from './core/layout/shell.component';
  */
 export const routes: Routes = [
     {
+        path: 'login',
+        canActivate: [guestGuard],
+        loadChildren: async () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
+    },
+    {
         path: '',
         component: ShellComponent,
+        canActivate: [authGuard],
+        canActivateChild: [authGuard],
         children: [{ path: '', component: HomePageComponent, title: 'Início' }],
     },
     { path: '**', redirectTo: '' },

@@ -6,11 +6,33 @@
             Finanças
         </a>
         <app-sidebar-nav class="flex-1 overflow-y-auto px-3 py-2" />
+        <div class="border-t border-surface p-3">
+            <p-button
+                label="Sair"
+                icon="pi pi-sign-out"
+                [text]="true"
+                severity="secondary"
+                [fluid]="true"
+                styleClass="justify-start"
+                (onClick)="logout()"
+            />
+        </div>
     </aside>
 
     <!-- Menu em gaveta (celular e tablet) -->
     <p-drawer [(visible)]="menuOpen" header="Finanças" styleClass="!w-72">
         <app-sidebar-nav (navigate)="menuOpen.set(false)" />
+        <ng-template #footer>
+            <p-button
+                label="Sair"
+                icon="pi pi-sign-out"
+                [text]="true"
+                severity="secondary"
+                [fluid]="true"
+                styleClass="justify-start"
+                (onClick)="logout()"
+            />
+        </ng-template>
     </p-drawer>
 
     <div class="flex min-w-0 flex-1 flex-col">

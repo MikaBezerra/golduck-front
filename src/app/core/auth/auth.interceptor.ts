@@ -16,7 +16,7 @@ import { TokenStorageService } from './token-storage.service';
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
     const baseUrl = inject(API_BASE_URL);
 
-    if (!request.url.startsWith(`${baseUrl}/`) || isPublicAuthRoute(request.url, baseUrl)) {
+    if (!request.url.startsWith(`${baseUrl}/`) || isPublicRoute(request.url, baseUrl)) {
         return next(request);
     }
 
@@ -48,8 +48,11 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     );
 };
 
-function isPublicAuthRoute(url: string, baseUrl: string): boolean {
-    return url === `${baseUrl}/auth/login` || url === `${baseUrl}/auth/refresh`;
+/** Rotas que não precisam (nem devem esperar) um access token. */
+const PUBLIC_ROUTES = ['auth/login', 'auth/refresh', 'version', 'health/live'];
+
+function isPublicRoute(url: string, baseUrl: string): boolean {
+    return PUBLIC_ROUTES.some((route) => url === `${baseUrl}/${route}`);
 }
 
 function withBearer<T>(request: HttpRequest<T>, token: string | null): HttpRequest<T> {

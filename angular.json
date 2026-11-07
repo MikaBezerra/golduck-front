@@ -133,10 +133,10 @@
             "coverageExclude": ["src/app/**/*.spec.ts", "src/app/core/api/api-schema.d.ts"],
             "coverageReporters": ["text-summary", "html", "lcov", "json-summary"],
             "coverageThresholds": {
-              "statements": 18,
-              "branches": 23,
-              "functions": 20,
-              "lines": 17
+              "statements": 70,
+              "branches": 72,
+              "functions": 66,
+              "lines": 70
             }
           }
         },

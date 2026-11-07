@@ -37,7 +37,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Metas de cobertura: globais no angular.json (coverageThresholds) e por pasta no vitest.config.ts.
+      # O build confere os tipos do app; este passo confere os dos testes e dos auxiliares em src/testing.
+      - name: Tipos dos testes
+        run: npm run typecheck:spec
+
+      # Metas de cobertura: piso global no angular.json (coverageThresholds) e por área no vitest.config.ts.
       - name: Testes com cobertura mínima
         run: npm run test:cov
 

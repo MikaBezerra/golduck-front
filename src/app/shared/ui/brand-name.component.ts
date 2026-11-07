@@ -28,11 +28,14 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 
         .face {
             display: inline-block;
+            -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
         }
 
         .front {
             color: var(--p-surface-50);
+            transform: rotateY(0deg);
+            animation: show-front 4.8s linear infinite;
         }
 
         .back {
@@ -40,6 +43,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
             inset: 0;
             color: var(--color-cantaloupe);
             transform: rotateY(180deg);
+            animation: show-back 4.8s linear infinite;
         }
 
         /* Uma volta a cada 4,8 s, sempre no mesmo sentido, parando em cada lado. */
@@ -57,9 +61,49 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
             }
         }
 
+        /*
+         * Troca do lado visível no instante em que o "d" fica de perfil (90° em 37,5% e 270° em 87,5%
+         * da volta: o meio de cada giro, que é simétrico). Assim o lado de trás nunca aparece por
+         * baixo, mesmo nos navegadores em que esconder o verso (backface-visibility) falha.
+         */
+        @keyframes show-front {
+            0%,
+            37.5% {
+                opacity: 1;
+            }
+            37.51%,
+            87.5% {
+                opacity: 0;
+            }
+            87.51%,
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes show-back {
+            0%,
+            37.5% {
+                opacity: 0;
+            }
+            37.51%,
+            87.5% {
+                opacity: 1;
+            }
+            87.51%,
+            100% {
+                opacity: 0;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            .coin {
+            .coin,
+            .face {
                 animation: none;
+            }
+
+            .back {
+                display: none;
             }
 
             .front {

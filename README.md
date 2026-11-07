@@ -125,6 +125,17 @@ uma rota em `app.routes.ts` e um item em `core/layout/navigation.ts`.
 - Se o back recusar a renovação, aparece "Sua sessão expirou" e o usuário volta ao login;
   depois de entrar, retorna à página onde estava.
 
+## Produção
+
+Em desenvolvimento o proxy evita CORS. Em produção há dois caminhos:
+
+- servir front e back no mesmo domínio (ex.: `/` para o front e `/api` para o back, atrás de um
+  proxy reverso); ou
+- liberar a origem do front no back com a variável `API_CORS_ORIGINS`
+  (ex.: `API_CORS_ORIGINS=https://financas.exemplo.com`). Se o front e a API ficarem em domínios
+  diferentes, troque o prefixo `/api` pelo endereço completo da API em `API_BASE_URL`
+  (`core/api/api.service.ts`).
+
 ## Pendências que dependem do back
 
 - **Reativar categoria/pessoa:** `GET /categories` e `GET /people` só devolvem ativas, então uma
@@ -134,7 +145,6 @@ uma rota em `app.routes.ts` e um item em `core/layout/navigation.ts`.
   totais por categoria e por pessoa). Até lá, a página inicial mostra atalhos.
 - **Usuário logado:** o token só tem `sub` e `sid`; um `GET /auth/me` permitiria mostrar o e-mail
   e esconder telas de administrador.
-- **Produção:** servir front e back no mesmo domínio ou habilitar CORS no back.
 - **Tipos automáticos:** com o Swagger ligado no back, os `*.models.ts` podem ser gerados
   (`openapi-typescript`) em vez de copiados à mão.
 

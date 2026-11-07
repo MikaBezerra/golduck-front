@@ -17,6 +17,9 @@ const DEFAULT_REFRESH_COOLDOWN_S = 30;
 /**
  * Sessão do usuário: entrar, sair e renovar o access token.
  *
+ * O refresh token vive num cookie httpOnly do back: login, refresh e logout vão com
+ * `withCredentials` para o navegador mandar e receber esse cookie.
+ *
  * Ponto delicado: o back troca o refresh token a cada renovação e, se o mesmo
  * refresh token for usado duas vezes, entende como roubo e derruba a sessão.
  * Por isso `refreshAccessToken()` garante UMA renovação por vez:
@@ -44,7 +47,7 @@ export class AuthService {
     public readonly user = this.currentUser.asReadonly();
 
     public login(credentials: LoginRequest): Observable<void> {
-        return this.api.post<AuthTokens>('auth/login', credentials).pipe(
+        return this.api.post<AuthTokens>('auth/login', credentials, { withCredentials: true }).pipe(
             tap((tokens) => this.tokens.save(tokens)),
             tap(() => this.loadUser()),
             map(() => undefined),
@@ -96,7 +99,10 @@ export class AuthService {
             return;
         }
 
-        this.api.post<void>('auth/logout').subscribe({ complete: finish, error: finish });
+        this.api.post<void>('auth/logout', undefined, { withCredentials: true }).subscribe({
+            complete: finish,
+            error: finish,
+        });
     }
 
     /** Sessão recusada pelo back (vencida, revogada ou usuário desativado). */
@@ -122,14 +128,18 @@ export class AuthService {
 
     private async runRefresh(): Promise<string> {
         return withCrossTabLock(async () => {
-            const refreshToken = this.tokens.getRefreshToken();
-
-            if (!refreshToken) {
+            if (!this.tokens.hasSession()) {
                 throw new ApiError(401, 'AUTH_NO_SESSION', 'Autenticação necessária');
             }
 
+            // O cookie vai sozinho. Só o back antigo precisa do token no corpo (legado).
+            const legacyToken = this.tokens.getLegacyRefreshToken();
+            const body = legacyToken ? { refreshToken: legacyToken } : undefined;
+
             try {
-                const tokens = await firstValueFrom(this.api.post<AuthTokens>('auth/refresh', { refreshToken }));
+                const tokens = await firstValueFrom(
+                    this.api.post<AuthTokens>('auth/refresh', body, { withCredentials: true }),
+                );
                 this.tokens.save(tokens);
 
                 return tokens.accessToken;

@@ -3,55 +3,68 @@ import { Injectable, signal } from '@angular/core';
 import { storageKey } from '../storage/storage-key';
 import type { AuthTokens } from './auth.models';
 
-const REFRESH_TOKEN_KEY = storageKey('refreshToken');
+/** Marca (não secreta) de que existe uma sessão. O refresh token em si fica no cookie httpOnly. */
+const SESSION_KEY = storageKey('session');
+
+/**
+ * TODO(transição): só para o back antigo, que devolvia o refresh token no corpo. Quando o back
+ * estiver usando o cookie, apague esta chave e tudo o que diz "legado" neste arquivo.
+ */
+const LEGACY_REFRESH_TOKEN_KEY = storageKey('refreshToken');
 
 /** Renova o access token um pouco antes de ele vencer, para não perder uma requisição no meio do caminho. */
 const EXPIRY_MARGIN_MS = 30_000;
 
 /**
- * Onde os tokens ficam guardados.
+ * Onde a sessão fica guardada.
  *
- * - Access token: só em memória. Some ao recarregar a página (aí é renovado com o refresh token).
- * - Refresh token: no `localStorage`, para a sessão sobreviver ao fechar a aba.
- *   Qualquer script rodando na página consegue ler o `localStorage`; o ideal futuro é o back
- *   devolver o refresh token num cookie `httpOnly`, que o JavaScript não enxerga.
+ * - Access token: só em memória. Some ao recarregar a página (aí é renovado pelo refresh).
+ * - Refresh token: num cookie `httpOnly` que o back grava. O JavaScript não consegue ler o cookie,
+ *   então um script malicioso na página não consegue roubá-lo.
+ * - No `localStorage` fica só uma marca de que há sessão (para o guard e para as outras abas).
  */
 @Injectable({ providedIn: 'root' })
 export class TokenStorageService {
     private accessToken: string | null = null;
-    private readonly sessionActive = signal(readRefreshToken() !== null);
+    private readonly sessionActive = signal(readSessionFlag());
 
-    /** Existe uma sessão (refresh token guardado)? Não garante que ela ainda seja válida no back. */
+    /** Existe uma sessão? Não garante que ela ainda seja válida no back. */
     public readonly hasSession = this.sessionActive.asReadonly();
 
     public constructor() {
         // Login ou logout feito em outra aba: mantém esta aba em sincronia.
         window.addEventListener('storage', (event) => {
-            if (event.key === REFRESH_TOKEN_KEY || event.key === null) {
+            if (event.key === SESSION_KEY || event.key === null) {
                 if (!event.newValue) {
                     this.accessToken = null;
                 }
 
-                this.sessionActive.set(readRefreshToken() !== null);
+                this.sessionActive.set(readSessionFlag());
             }
         });
     }
 
     public save(tokens: AuthTokens): void {
         this.accessToken = tokens.accessToken;
-        writeRefreshToken(tokens.refreshToken);
+        // Back antigo: o refresh token veio no corpo e precisa ser guardado (legado).
+        write(LEGACY_REFRESH_TOKEN_KEY, tokens.refreshToken ?? null);
+        write(SESSION_KEY, '1');
         this.sessionActive.set(true);
     }
 
     public clear(): void {
         this.accessToken = null;
-        writeRefreshToken(null);
+        write(LEGACY_REFRESH_TOKEN_KEY, null);
+        write(SESSION_KEY, null);
         this.sessionActive.set(false);
     }
 
-    /** Lido sempre do storage: outra aba pode ter renovado a sessão e trocado o token. */
-    public getRefreshToken(): string | null {
-        return readRefreshToken();
+    /**
+     * Refresh token guardado pelo back antigo (legado). Com o cookie, é sempre `null`.
+     * Lido sempre do storage: outra aba pode ter renovado a sessão e trocado o token.
+     */
+    public getLegacyRefreshToken(): string | null {
+        return read(LEGACY_REFRESH_TOKEN_KEY);
     }
 
     /** Access token atual, ou `null` se não houver ou se estiver para vencer. */
@@ -83,22 +96,26 @@ function readJwtExpiration(token: string): number | null {
     }
 }
 
-function readRefreshToken(): string | null {
+function readSessionFlag(): boolean {
+    return read(SESSION_KEY) !== null || read(LEGACY_REFRESH_TOKEN_KEY) !== null;
+}
+
+function read(key: string): string | null {
     try {
-        return localStorage.getItem(REFRESH_TOKEN_KEY);
+        return localStorage.getItem(key);
     } catch {
         return null;
     }
 }
 
-function writeRefreshToken(token: string | null): void {
+function write(key: string, value: string | null): void {
     try {
-        if (token === null) {
-            localStorage.removeItem(REFRESH_TOKEN_KEY);
+        if (value === null) {
+            localStorage.removeItem(key);
         } else {
-            localStorage.setItem(REFRESH_TOKEN_KEY, token);
+            localStorage.setItem(key, value);
         }
     } catch {
-        // Sem acesso ao storage: a sessão dura só enquanto a página estiver aberta.
+        // Sem acesso ao storage (aba anônima restrita): a sessão dura só enquanto a página estiver aberta.
     }
 }

@@ -25,7 +25,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
     const currentToken = tokens.getValidAccessToken();
     const token$: Observable<string | null> =
-        currentToken !== null ? of(currentToken) : tokens.getRefreshToken() ? auth.refreshAccessToken() : of(null);
+        currentToken !== null ? of(currentToken) : tokens.hasSession() ? auth.refreshAccessToken() : of(null);
 
     return token$.pipe(
         switchMap((token) =>
@@ -33,7 +33,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
                 catchError((error: unknown) => {
                     const unauthorized = error instanceof HttpErrorResponse && error.status === 401;
 
-                    if (!unauthorized || !tokens.getRefreshToken()) {
+                    if (!unauthorized || !tokens.hasSession()) {
                         return throwError(() => error);
                     }
 

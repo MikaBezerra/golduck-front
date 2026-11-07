@@ -71,7 +71,7 @@ describe('authInterceptor', () => {
         request.flush({ data: { accessToken: fakeJwt(600), refreshToken: 'refresh-2' } });
     });
 
-    it('faz UMA renovação para várias requisições com token vencido', async () => {
+    it('back antigo: faz UMA renovação (token no corpo) para várias requisições com token vencido', async () => {
         tokens.save({ accessToken: fakeJwt(5), refreshToken: 'refresh-1' });
 
         const results = Promise.all([
@@ -95,7 +95,7 @@ describe('authInterceptor', () => {
         }
 
         await results;
-        expect(tokens.getRefreshToken()).toBe('refresh-2');
+        expect(tokens.getLegacyRefreshToken()).toBe('refresh-2');
     });
 
     it('renova e repete a requisição quando o back responde 401', async () => {
@@ -134,6 +134,30 @@ describe('authInterceptor', () => {
         await expect(result).rejects.toMatchObject({ code: 'AUTH_INVALID_SESSION' });
         expect(tokens.hasSession()).toBe(false);
         expect(navigate).toHaveBeenCalledWith(['/login'], expect.anything());
+    });
+
+    it('cookie httpOnly: renova sem mandar token no corpo, com credenciais, e nada fica no storage', async () => {
+        tokens.save({ accessToken: fakeJwt(5) });
+
+        const result = firstValueFrom(api.get('people'));
+        await settle();
+
+        const refresh = http.expectOne('/api/auth/refresh');
+        expect(refresh.request.body).toBeNull();
+        expect(refresh.request.withCredentials).toBe(true);
+
+        const newAccess = fakeJwt(900);
+        refresh.flush({ data: { accessToken: newAccess } });
+        await settle();
+
+        const request = http.expectOne('/api/people');
+        expect(request.request.headers.get('Authorization')).toBe(`Bearer ${newAccess}`);
+        request.flush({ data: ['Ana'] });
+
+        await expect(result).resolves.toEqual(['Ana']);
+        expect(tokens.getLegacyRefreshToken()).toBeNull();
+        expect(Object.values(localStorage).some((value) => String(value).includes('.'))).toBe(false);
+        expect(tokens.hasSession()).toBe(true);
     });
 
     it('refresh limitado (429) mantém a sessão e não tenta de novo antes do Retry-After', async () => {

@@ -15,6 +15,15 @@ export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
     factory: () => environment.apiBaseUrl,
 });
 
+/** Opções extras de uma chamada. */
+export interface RequestOptions {
+    /**
+     * Envia e aceita cookies mesmo com a API em outro domínio. Só as rotas que usam o cookie da
+     * sessão (login, refresh e logout) precisam disso.
+     */
+    readonly withCredentials?: boolean;
+}
+
 /**
  * Único ponto de saída HTTP da aplicação.
  *
@@ -29,12 +38,14 @@ export class ApiService {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = inject(API_BASE_URL);
 
-    public get<T>(path: string, query?: QueryParams): Observable<T> {
-        return this.unwrap(this.http.get<ApiSuccessResponse<T>>(this.url(path), { params: toHttpParams(query) }));
+    public get<T>(path: string, query?: QueryParams, options?: RequestOptions): Observable<T> {
+        return this.unwrap(
+            this.http.get<ApiSuccessResponse<T>>(this.url(path), { ...options, params: toHttpParams(query) }),
+        );
     }
 
-    public post<T>(path: string, body?: unknown): Observable<T> {
-        return this.unwrap(this.http.post<ApiSuccessResponse<T>>(this.url(path), body ?? null));
+    public post<T>(path: string, body?: unknown, options?: RequestOptions): Observable<T> {
+        return this.unwrap(this.http.post<ApiSuccessResponse<T>>(this.url(path), body ?? null, options));
     }
 
     public patch<T>(path: string, body: unknown): Observable<T> {

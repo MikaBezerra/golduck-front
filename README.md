@@ -124,7 +124,19 @@ uma rota em `app.routes.ts` e um item em `core/layout/navigation.ts`.
 
 ## Autenticação, em resumo
 
-- Access token (15 min) fica só em memória; refresh token (7 dias) fica no `localStorage`.
+- Access token (15 min) fica só em memória. O refresh token (7 dias) fica num **cookie httpOnly**
+  gravado pelo back: o JavaScript não lê o cookie, então um script malicioso na página não consegue
+  roubá-lo. Login, refresh e logout vão com `withCredentials`; no `localStorage` fica só a marca
+  `golduck.session` (não secreta), usada pelo guard e para sincronizar as abas.
+- Transição: enquanto o back ainda devolver o refresh token no corpo, o front guarda e envia como
+  antes (código marcado com `TODO(transição)` em `core/auth`). Quando o back usar o cookie, apague
+  esse trecho e gere os tipos de novo.
+- Para o cookie funcionar em todos os navegadores (o Safari bloqueia cookies de outro site), front e
+  API precisam ficar no mesmo site: domínio próprio com a API num subdomínio (ex.: `app.exemplo.com`
+  e `api.exemplo.com`) ou a API servida pelo próprio domínio do front (rewrite de `/api` na Vercel).
+  Dois endereços `*.vercel.app` diferentes contam como sites diferentes.
+- Se a renovação for limitada pelo back (429), a sessão continua e o front espera o `Retry-After`
+  antes de tentar de novo.
 - O back troca o refresh token a cada uso e derruba a sessão se um token velho for reutilizado.
   Por isso `AuthService.refreshAccessToken()` faz **uma** renovação por vez — dentro da aba
   (as requisições esperam a mesma chamada) e entre abas (Web Locks API). Há teste para isso em

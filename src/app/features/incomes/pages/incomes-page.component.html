@@ -1,4 +1,4 @@
-<app-page-header title="Entradas" subtitle="Quanto entra em cada mês do ano.">
+<app-page-header title="Entradas" subtitle="Quanto entra e quanto fica guardado em cada mês do ano.">
     <div class="flex items-center gap-1">
         <p-button
             icon="pi pi-chevron-left"
@@ -8,7 +8,7 @@
             ariaLabel="Ano anterior"
             (onClick)="previousYear()"
         />
-        <span class="w-14 text-center text-lg font-semibold" aria-live="polite">{{ year() }}</span>
+        <span class="w-14 text-center font-display text-lg font-semibold" aria-live="polite">{{ year() }}</span>
         <p-button
             icon="pi pi-chevron-right"
             [text]="true"
@@ -18,16 +18,38 @@
             (onClick)="nextYear()"
         />
     </div>
-    <p-button label="Nova entrada" icon="pi pi-plus" (onClick)="openCreate()" />
+    <p-button label="Nova entrada" icon="pi pi-plus" (onClick)="openCreate('income')" />
+    <p-button
+        label="Nova reserva"
+        icon="pi pi-shield"
+        [outlined]="true"
+        [disabled]="reservesUnavailable()"
+        (onClick)="openCreate('reserve')"
+    />
 </app-page-header>
 
+@if (reservesUnavailable()) {
+    <p-message severity="info" styleClass="mb-4">
+        A reserva ainda não está disponível no servidor. A coluna já está pronta e passa a funcionar assim que o back
+        tiver o cadastro de reservas.
+    </p-message>
+}
+
 <div class="overflow-hidden surface-card">
-    <p-table [value]="rows()" [loading]="incomes.loading()" dataKey="month">
+    <p-table [value]="rows()" [loading]="incomes.loading() || reserves.loading()" dataKey="month">
         <ng-template #header>
             <tr>
                 <th>Mês</th>
-                <th class="text-right">Valor</th>
-                <th class="text-right sm:w-32"><span class="sr-only sm:not-sr-only">Ações</span></th>
+                <th class="text-right">
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="h-2 w-2 rounded-full bg-income" aria-hidden="true"></span>Entrada
+                    </span>
+                </th>
+                <th class="text-right">
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="h-2 w-2 rounded-full bg-cantaloupe" aria-hidden="true"></span>Reserva
+                    </span>
+                </th>
             </tr>
         </ng-template>
 
@@ -36,35 +58,17 @@
                 <td>
                     <span [class.font-semibold]="row.selected">{{ row.month | month }}</span>
                 </td>
-                <td class="text-right tabular-nums">
+                <td class="text-right">
                     @if (row.income) {
-                        <span class="font-medium">{{ row.income.amount | brl }}</span>
-                    } @else {
-                        <span class="text-muted-color">—</span>
-                    }
-                </td>
-                <td class="text-right whitespace-nowrap">
-                    @if (row.income) {
-                        <p-button
-                            icon="pi pi-pencil"
-                            [text]="true"
-                            [rounded]="true"
-                            severity="secondary"
-                            [ariaLabel]="'Editar entrada de ' + (row.month | month)"
-                            pTooltip="Editar"
-                            tooltipPosition="top"
-                            (onClick)="openEdit(row.income)"
-                        />
-                        <p-button
-                            icon="pi pi-trash"
-                            [text]="true"
-                            [rounded]="true"
-                            severity="danger"
-                            [ariaLabel]="'Excluir entrada de ' + (row.month | month)"
-                            pTooltip="Excluir"
-                            tooltipPosition="top"
-                            (onClick)="remove(row.income)"
-                        />
+                        <button
+                            type="button"
+                            [class]="valueButtonClass"
+                            [attr.aria-label]="'Editar entrada de ' + (row.month | month)"
+                            (click)="openEdit('income', row.income)"
+                        >
+                            {{ row.income.amount | brl }}
+                            <i class="pi pi-pencil text-[10px] text-muted-color" aria-hidden="true"></i>
+                        </button>
                     } @else {
                         <p-button
                             label="Adicionar"
@@ -72,7 +76,32 @@
                             size="small"
                             [text]="true"
                             [ariaLabel]="'Adicionar entrada em ' + (row.month | month)"
-                            (onClick)="openCreate([row.monthNumber])"
+                            (onClick)="openCreate('income', [row.monthNumber])"
+                        />
+                    }
+                </td>
+                <td class="text-right">
+                    @if (row.reserve) {
+                        <button
+                            type="button"
+                            [class]="valueButtonClass"
+                            [attr.aria-label]="'Editar reserva de ' + (row.month | month)"
+                            (click)="openEdit('reserve', row.reserve)"
+                        >
+                            {{ row.reserve.amount | brl }}
+                            <i class="pi pi-pencil text-[10px] text-muted-color" aria-hidden="true"></i>
+                        </button>
+                    } @else if (reservesUnavailable()) {
+                        <span class="text-muted-color">—</span>
+                    } @else {
+                        <p-button
+                            label="Adicionar"
+                            icon="pi pi-plus"
+                            size="small"
+                            [text]="true"
+                            severity="secondary"
+                            [ariaLabel]="'Adicionar reserva em ' + (row.month | month)"
+                            (onClick)="openCreate('reserve', [row.monthNumber])"
                         />
                     }
                 </td>
@@ -82,20 +111,21 @@
         <ng-template #footer>
             <tr>
                 <td class="font-semibold">Total de {{ year() }}</td>
-                <td class="text-right font-semibold tabular-nums">{{ total() | brl }}</td>
-                <td class="text-right text-sm text-muted-color">
-                    <span class="hidden sm:inline">{{ takenMonths().length }} de 12 meses</span>
+                <td class="text-right font-semibold whitespace-nowrap tabular-nums">{{ incomeTotal() | brl }}</td>
+                <td class="text-right font-semibold whitespace-nowrap tabular-nums">
+                    {{ reservesUnavailable() ? '—' : (reserveTotal() | brl) }}
                 </td>
             </tr>
         </ng-template>
     </p-table>
 </div>
 
-<app-income-form-dialog
+<app-monthly-amount-form-dialog
     [(visible)]="dialogVisible"
+    [kind]="dialogKind()"
     [year]="year()"
-    [income]="editing()"
+    [entry]="editing()"
     [takenMonths]="takenMonths()"
     [presetMonths]="presetMonths()"
-    (saved)="incomes.reload()"
+    (saved)="afterSave()"
 />

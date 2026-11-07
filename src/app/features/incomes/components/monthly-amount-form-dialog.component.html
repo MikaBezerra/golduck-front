@@ -1,5 +1,5 @@
 <p-dialog
-    [header]="income() ? 'Editar entrada' : 'Nova entrada'"
+    [header]="header()"
     [visible]="visible()"
     (visibleChange)="visible.set($event)"
     [modal]="true"
@@ -8,15 +8,22 @@
     [breakpoints]="{ '640px': '95vw' }"
 >
     <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4" novalidate>
-        @if (income(); as current) {
+        @if (kind() === 'reserve') {
+            <p class="m-0 text-sm text-muted-color">
+                A reserva é o que foi guardado no mês. Nas contas ela sai da entrada como um gasto compartilhado,
+                dividido igualmente entre as pessoas.
+            </p>
+        }
+
+        @if (entry(); as current) {
             <p class="m-0">
                 Mês: <strong>{{ current.month | month }}</strong>
             </p>
         } @else {
             <div class="flex flex-col gap-2">
-                <label for="income-months" class="font-medium">Meses de {{ year() }}</label>
+                <label [for]="kind() + '-months'" class="font-medium">Meses de {{ year() }}</label>
                 <p-multiselect
-                    inputId="income-months"
+                    [inputId]="kind() + '-months'"
                     formControlName="months"
                     [options]="monthOptions()"
                     optionLabel="label"
@@ -30,7 +37,7 @@
                     appendTo="body"
                     [fluid]="true"
                 />
-                <small class="text-muted-color">Meses que já têm entrada aparecem bloqueados.</small>
+                <small class="text-muted-color">Meses que já têm {{ noun() }} aparecem bloqueados.</small>
                 <app-field-error
                     [control]="form.controls.months"
                     [messages]="{ required: 'Escolha pelo menos um mês' }"
@@ -39,9 +46,9 @@
         }
 
         <div class="flex flex-col gap-2">
-            <label for="income-amount" class="font-medium">Valor</label>
+            <label [for]="kind() + '-amount'" class="font-medium">Valor</label>
             <p-inputnumber
-                inputId="income-amount"
+                [inputId]="kind() + '-amount'"
                 formControlName="amount"
                 mode="currency"
                 currency="BRL"
@@ -54,7 +61,18 @@
             <app-field-error [control]="form.controls.amount" [messages]="moneyMessages" />
         </div>
 
-        <div class="flex justify-end gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            @if (entry()) {
+                <p-button
+                    label="Excluir"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    [text]="true"
+                    [ariaLabel]="'Excluir ' + noun()"
+                    (onClick)="remove()"
+                />
+            }
+            <div class="flex-1"></div>
             <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
             <p-button type="submit" label="Salvar" icon="pi pi-check" [loading]="saving()" />
         </div>

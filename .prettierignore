@@ -3,6 +3,5 @@ node_modules
 dist
 coverage
 .angular
-.claude
 *.md
 src/app/core/api/api-schema.d.ts

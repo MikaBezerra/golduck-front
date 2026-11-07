@@ -1,11 +1,11 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { defer, finalize, firstValueFrom, map, type Observable, shareReplay, tap } from 'rxjs';
 
 import { ApiError } from '../api/api-error';
 import { ApiService } from '../api/api.service';
 import { NotificationService } from '../notification/notification.service';
-import type { AuthTokens, LoginRequest } from './auth.models';
+import type { AuthTokens, AuthUser, LoginRequest } from './auth.models';
 import { TokenStorageService } from './token-storage.service';
 
 const REFRESH_LOCK_NAME = 'financas.auth.refresh';
@@ -27,14 +27,35 @@ export class AuthService {
     private readonly notifications = inject(NotificationService);
 
     private refreshInFlight: Observable<string> | null = null;
+    private readonly currentUser = signal<AuthUser | null>(null);
+    private loadingUser = false;
 
     public readonly isAuthenticated = this.tokens.hasSession;
+    /** Quem está logado (`GET /auth/me`). Fica `null` até a primeira resposta. */
+    public readonly user = this.currentUser.asReadonly();
 
     public login(credentials: LoginRequest): Observable<void> {
         return this.api.post<AuthTokens>('auth/login', credentials).pipe(
             tap((tokens) => this.tokens.save(tokens)),
+            tap(() => this.loadUser()),
             map(() => undefined),
         );
+    }
+
+    /** Busca os dados do usuário logado. Falhas são ignoradas: é só informação de tela. */
+    public loadUser(): void {
+        if (this.loadingUser) {
+            return;
+        }
+
+        this.loadingUser = true;
+        this.api
+            .get<AuthUser>('auth/me')
+            .pipe(finalize(() => (this.loadingUser = false)))
+            .subscribe({
+                next: (user) => this.currentUser.set(user),
+                error: () => undefined,
+            });
     }
 
     /** Novo access token. Chamadas simultâneas compartilham a mesma renovação. */
@@ -50,6 +71,7 @@ export class AuthService {
     /** Encerra a sessão no back (melhor esforço) e volta para o login. */
     public logout(): void {
         const finish = (): void => {
+            this.currentUser.set(null);
             this.tokens.clear();
             void this.router.navigate(['/login']);
         };
@@ -68,6 +90,7 @@ export class AuthService {
             return;
         }
 
+        this.currentUser.set(null);
         this.tokens.clear();
         this.notifications.info('Sua sessão expirou. Entre novamente.');
         this.redirectToLogin();

@@ -7,6 +7,7 @@
         </a>
         <app-sidebar-nav class="flex-1 overflow-y-auto px-3 py-2" />
         <div class="border-t border-surface p-3">
+            <app-user-badge />
             <p-button
                 label="Sair"
                 icon="pi pi-sign-out"
@@ -23,6 +24,7 @@
     <p-drawer [(visible)]="menuOpen" header="Finanças" styleClass="!w-72">
         <app-sidebar-nav (navigate)="menuOpen.set(false)" />
         <ng-template #footer>
+            <app-user-badge />
             <p-button
                 label="Sair"
                 icon="pi pi-sign-out"

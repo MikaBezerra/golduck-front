@@ -143,8 +143,6 @@ Em desenvolvimento o proxy evita CORS. Em produção há dois caminhos:
   (ex.: `?includeInactive=true`).
 - **Dashboard:** depende de um `GET /summary?month=AAAA-MM` (entrada, total de despesas, saldo,
   totais por categoria e por pessoa). Até lá, a página inicial mostra atalhos.
-- **Usuário logado:** o token só tem `sub` e `sid`; um `GET /auth/me` permitiria mostrar o e-mail
-  e esconder telas de administrador.
 - **Tipos automáticos:** com o Swagger ligado no back, os `*.models.ts` podem ser gerados
   (`openapi-typescript`) em vez de copiados à mão.
 

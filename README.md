@@ -48,28 +48,43 @@ Para entrar, use um usuário criado no back com `npm run admin:create`.
 ```
 src/app/
 ├── core/                  # carregado uma vez só (singletons)
-│   ├── api/               # cliente HTTP: desembrulha { data } e padroniza erros
-│   ├── auth/              # sessão, tokens, guards e interceptor de autenticação
+│   ├── api/               # ApiService: desembrulha { data } e transforma { error } em ApiError
+│   ├── auth/              # sessão, tokens, guards e interceptor (renovação única do token)
 │   ├── config/            # tema e tradução do PrimeNG
-│   └── layout/            # menu lateral, topo e seletor de mês
+│   ├── layout/            # menu lateral, topo, página inicial e itens do menu (navigation.ts)
+│   ├── month/             # mês selecionado no topo (compartilhado entre as telas)
+│   └── notification/      # avisos (toasts) e confirmações
 ├── shared/                # reaproveitado por todas as features
-│   ├── forms/             # mensagens de erro de formulário
-│   ├── money/             # formatação e conversão de valores em reais
+│   ├── data/              # remoteData(): busca dados e recarrega quando o parâmetro muda
+│   ├── forms/             # mensagens de erro e erros do back nos campos
+│   ├── money/             # reais: formatação, centavos, limites do campo de valor
 │   ├── month/             # utilitários de mês (AAAA-MM)
+│   ├── phone/             # celular: (11) 99999-9999 ⇄ +5511999999999
 │   └── ui/                # componentes genéricos (cabeçalho de página…)
 └── features/              # uma pasta por módulo do back, com o mesmo nome
-    ├── auth/
-    ├── categories/
-    ├── incomes/
-    ├── manual-expenses/
-    └── people/
-        ├── data-access/   # people.service.ts (chamadas HTTP) + people.models.ts (≈ DTOs)
+    ├── auth/              # tela de login
+    ├── categories/        # /categorias
+    ├── incomes/           # /entradas
+    ├── manual-expenses/   # /despesas
+    └── people/            # /pessoas
+        ├── data-access/   # person.service.ts (chamadas HTTP) + person.models.ts (≈ DTOs)
         ├── pages/         # telas ligadas a uma rota (≈ controllers)
-        ├── components/    # pedaços de tela usados só nesta feature
+        ├── components/    # pedaços de tela usados só nesta feature (diálogos…)
         └── people.routes.ts
 ```
 
-Regra prática: **cada módulo novo no back ganha uma pasta com o mesmo nome em `features/`.**
+Regra prática: **cada módulo novo no back ganha uma pasta com o mesmo nome em `features/`**,
+uma rota em `app.routes.ts` e um item em `core/layout/navigation.ts`.
+
+### Receita de uma feature nova
+
+1. `data-access/x.models.ts`: copie os DTOs do back como `interface`.
+2. `data-access/x.service.ts`: um método por rota do controller, usando `ApiService`.
+3. `pages/x-page.component.ts`: a tela, com estado em `signal()`; use `remoteData()` se a busca
+   depender do mês/ano selecionado.
+4. `components/x-form-dialog.component.ts`: formulário reativo com as mesmas regras do Joi.
+   Os botões ficam **dentro** do `<form>` (assim Enter e "Salvar" enviam).
+5. `x.routes.ts` + rota em `app.routes.ts` + item em `navigation.ts`.
 
 ## Do NestJS para o Angular
 
@@ -94,3 +109,34 @@ Regra prática: **cada módulo novo no back ganha uma pasta com o mesmo nome em 
   somas são feitas em centavos inteiros (`shared/money`).
 - Mês trafega como `"AAAA-MM"` (`shared/month`).
 - Mensagens de erro vêm prontas do back, em português, e são exibidas como estão.
+- Commits no mesmo padrão do back: um commit por feature (`feat: add categorias`).
+
+## Autenticação, em resumo
+
+- Access token (15 min) fica só em memória; refresh token (7 dias) fica no `localStorage`.
+- O back troca o refresh token a cada uso e derruba a sessão se um token velho for reutilizado.
+  Por isso `AuthService.refreshAccessToken()` faz **uma** renovação por vez — dentro da aba
+  (as requisições esperam a mesma chamada) e entre abas (Web Locks API). Há teste para isso em
+  `core/auth/auth.interceptor.spec.ts`.
+- Se o back recusar a renovação, aparece "Sua sessão expirou" e o usuário volta ao login;
+  depois de entrar, retorna à página onde estava.
+
+## Pendências que dependem do back
+
+- **Reativar categoria/pessoa:** `GET /categories` e `GET /people` só devolvem ativas, então uma
+  desativada some da tela e não há como reativá-la por aqui. Falta uma forma de listar as inativas
+  (ex.: `?includeInactive=true`).
+- **Dashboard:** depende de um `GET /summary?month=AAAA-MM` (entrada, total de despesas, saldo,
+  totais por categoria e por pessoa). Até lá, a página inicial mostra atalhos.
+- **Usuário logado:** o token só tem `sub` e `sid`; um `GET /auth/me` permitiria mostrar o e-mail
+  e esconder telas de administrador.
+- **Produção:** servir front e back no mesmo domínio ou habilitar CORS no back.
+- **Tipos automáticos:** com o Swagger ligado no back, os `*.models.ts` podem ser gerados
+  (`openapi-typescript`) em vez de copiados à mão.
+
+## Problemas conhecidos do ambiente
+
+- O npm 10.9.2 (que vem com o Node 22.16) tem um bug ao **adicionar** pacotes novos
+  (`Cannot read properties of null (reading 'edgesOut')`). Instalar a partir do lockfile
+  (`npm install`/`npm ci`) funciona. Para adicionar um pacote, use `npx npm@11 install <pacote>`
+  ou atualize o Node.

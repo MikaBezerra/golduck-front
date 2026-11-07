@@ -1,0 +1,115 @@
+<app-page-header title="Despesas" [subtitle]="month() | month">
+    <p-button label="Nova despesa" icon="pi pi-plus" (onClick)="openCreate()" />
+</app-page-header>
+
+@if (selected().length > 0) {
+    <div
+        class="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2"
+        role="region"
+        aria-label="Ações para as despesas selecionadas"
+    >
+        <span class="font-medium text-primary-800">
+            {{ selected().length }} {{ selected().length === 1 ? 'selecionada' : 'selecionadas' }} ·
+            {{ selectedTotal() | brl }}
+        </span>
+        <div class="flex-1"></div>
+        <p-button label="Editar" icon="pi pi-pencil" size="small" [outlined]="true" (onClick)="openBulkEdit()" />
+        <p-button
+            label="Excluir"
+            icon="pi pi-trash"
+            size="small"
+            severity="danger"
+            [outlined]="true"
+            (onClick)="removeSelected()"
+        />
+        <p-button label="Limpar seleção" size="small" [text]="true" severity="secondary" (onClick)="selected.set([])" />
+    </div>
+}
+
+<div class="overflow-hidden rounded-xl border border-surface bg-surface-0">
+    <p-table [value]="rows()" [loading]="expenses.loading()" dataKey="id" [(selection)]="selected" [rowHover]="true">
+        <ng-template #header>
+            <tr>
+                <th class="w-12">
+                    <p-tableHeaderCheckbox ariaLabel="Selecionar todas" />
+                </th>
+                <th>Descrição</th>
+                <th class="hidden md:table-cell">Categoria</th>
+                <th class="hidden md:table-cell">Pessoa</th>
+                <th class="text-right">Valor</th>
+                <th class="w-28 text-right">Ações</th>
+            </tr>
+        </ng-template>
+
+        <ng-template #body let-expense>
+            <tr>
+                <td>
+                    <p-tableCheckbox [value]="expense" [ariaLabel]="'Selecionar ' + expense.title" />
+                </td>
+                <td>
+                    <span class="font-medium">{{ expense.title }}</span>
+                    <span class="block text-sm text-muted-color md:hidden">
+                        {{ expense.categoryName }}{{ expense.personName ? ' · ' + expense.personName : '' }}
+                    </span>
+                </td>
+                <td class="hidden md:table-cell">{{ expense.categoryName }}</td>
+                <td class="hidden text-muted-color md:table-cell">{{ expense.personName ?? '—' }}</td>
+                <td class="text-right font-medium whitespace-nowrap tabular-nums">{{ expense.amount | brl }}</td>
+                <td class="text-right whitespace-nowrap">
+                    <p-button
+                        icon="pi pi-pencil"
+                        [text]="true"
+                        [rounded]="true"
+                        severity="secondary"
+                        [ariaLabel]="'Editar ' + expense.title"
+                        pTooltip="Editar"
+                        tooltipPosition="top"
+                        (onClick)="openEdit(expense)"
+                    />
+                    <p-button
+                        icon="pi pi-trash"
+                        [text]="true"
+                        [rounded]="true"
+                        severity="danger"
+                        [ariaLabel]="'Excluir ' + expense.title"
+                        pTooltip="Excluir"
+                        tooltipPosition="top"
+                        (onClick)="remove(expense)"
+                    />
+                </td>
+            </tr>
+        </ng-template>
+
+        <ng-template #footer>
+            @if (rows().length > 0) {
+                <tr>
+                    <td></td>
+                    <td class="font-semibold">Total do mês</td>
+                    <td class="hidden md:table-cell"></td>
+                    <td class="hidden md:table-cell"></td>
+                    <td class="text-right font-semibold whitespace-nowrap tabular-nums">{{ total() | brl }}</td>
+                    <td class="text-right text-sm text-muted-color">
+                        {{ rows().length }} {{ rows().length === 1 ? 'item' : 'itens' }}
+                    </td>
+                </tr>
+            }
+        </ng-template>
+
+        <ng-template #emptymessage>
+            <tr>
+                <td colspan="6" class="py-10 text-center">
+                    <p class="m-0 mb-3 text-muted-color">Nenhuma despesa em {{ month() | month }}.</p>
+                    <p-button label="Lançar despesa" icon="pi pi-plus" [outlined]="true" (onClick)="openCreate()" />
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<app-expense-form-dialog
+    [(visible)]="formVisible"
+    [expense]="editing()"
+    [defaultMonth]="month()"
+    (saved)="afterSave()"
+/>
+<app-expense-bulk-edit-dialog [(visible)]="bulkVisible" [expenses]="selected()" (saved)="afterSave()" />

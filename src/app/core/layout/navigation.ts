@@ -13,6 +13,12 @@ export interface NavItem {
  */
 export const NAV_ITEMS: readonly NavItem[] = [
     {
+        label: 'Despesas',
+        icon: 'pi pi-receipt',
+        route: '/despesas',
+        description: 'Lance e acompanhe os gastos do mês.',
+    },
+    {
         label: 'Entradas',
         icon: 'pi pi-arrow-circle-down',
         route: '/entradas',

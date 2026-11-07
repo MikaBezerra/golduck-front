@@ -23,6 +23,11 @@ export const routes: Routes = [
         children: [
             { path: '', component: HomePageComponent, title: 'Início' },
             {
+                path: 'despesas',
+                loadChildren: async () =>
+                    import('./features/manual-expenses/manual-expenses.routes').then((m) => m.MANUAL_EXPENSES_ROUTES),
+            },
+            {
                 path: 'entradas',
                 loadChildren: async () => import('./features/incomes/incomes.routes').then((m) => m.INCOMES_ROUTES),
             },

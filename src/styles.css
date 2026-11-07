@@ -29,6 +29,8 @@
     --color-card: rgb(10 24 34 / 0.64);
     --color-card-strong: rgb(10 24 34 / 0.86);
     --color-line: rgb(141 211 245 / 0.12);
+    /* Campo preenchido pelo navegador (e-mail e senha salvos): azul-escuro do tema. */
+    --color-autofill: color-mix(in srgb, #0297de 16%, #02070a);
     /* Estados (sempre acompanhados de ícone e texto). */
     --color-negative: #ff8a80;
 }
@@ -101,6 +103,28 @@
     :focus-visible {
         outline: 2px solid var(--color-electric);
         outline-offset: 2px;
+    }
+}
+
+/*
+ * Campos preenchidos automaticamente pelo navegador (e-mail e senha salvos). O Chrome pinta o
+ * fundo de amarelo-oliva, fora da paleta, e não deixa trocar essa cor; uma sombra interna cobre o
+ * fundo com o azul-escuro do tema e o texto continua claro. Fica numa camada depois da do PrimeNG,
+ * que zera a sombra dos campos. As regras são separadas: um seletor desconhecido invalidaria a lista.
+ */
+@layer components {
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+        -webkit-text-fill-color: var(--p-text-color);
+        caret-color: var(--p-text-color);
+        box-shadow: 0 0 0 1000px var(--color-autofill) inset;
+    }
+
+    input:autofill {
+        box-shadow: 0 0 0 1000px var(--color-autofill) inset;
+        /* O Firefox amarela o campo com um filtro. */
+        filter: none;
     }
 }
 

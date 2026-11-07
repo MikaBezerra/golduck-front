@@ -116,9 +116,9 @@
                         </span>
                         @if (expense.holderName || expense.cardLastDigits) {
                             <span class="block text-xs text-muted-color">
-                                {{ expense.holderName }}
+                                {{ expense.holderName }}{{ expense.holderName && expense.cardLastDigits ? ' · ' : '' }}
                                 @if (expense.cardLastDigits) {
-                                    · final {{ expense.cardLastDigits }}
+                                    final {{ expense.cardLastDigits }}
                                 }
                             </span>
                         }

@@ -1,7 +1,7 @@
 # Golduck — front-end
 
 Interface web do **Golduck** (projeto Finanças) — *Make your money count.* Consome a API do back-end
-([`financas`](../financas), NestJS) e segue a mesma organização por módulos.
+([golduck-back](https://github.com/MikaBezerra/golduck-back), NestJS) e segue a mesma organização por módulos.
 
 ## Stack
 
@@ -189,12 +189,16 @@ metas conforme os testes crescerem.
 
 ### O que configurar no GitHub (Settings)
 
-- **Environments** `develop` e `production` (sem secrets próprios por enquanto: o front não tem segredos).
+- **Environments** `develop` e `production` (sem secrets próprios por enquanto: o front não tem segredos),
+  cada um aceitando deploy só da sua branch (`develop` e `main`).
 - **Secrets** do repositório: `VERCEL_TOKEN` (token da conta na Vercel).
 - **Variables** do repositório: `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (do `.vercel/project.json` gerado por
   `npx vercel link`) e `DEPLOY_ENABLED=true` quando o deploy estiver pronto.
-- **Branch protection** em `develop` e `main`: PR obrigatório, checks `CI` e `PR title` verdes e só
-  squash merge.
+- **Ruleset** na `develop`: PR obrigatório, só squash e os checks `Formatação, lint, testes e build` e
+  `Título no padrão Conventional Commits`. O administrador do repositório pode passar por cima (por exemplo,
+  para um force push).
+- **Pull Requests**: só squash merge, com o título do PR como mensagem, e branch apagada depois do merge.
+  Em Actions, as workflows podem abrir PRs (necessário para o release-please).
 
 ### O que configurar na Vercel
 

@@ -4,6 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type {
     CardImport,
+    CardImportExclusion,
     CardImportOverride,
     CardImportPreview,
     CardImportResult,
@@ -21,6 +22,8 @@ export interface UploadStatementRequest {
 export interface SaveStatementRequest extends UploadStatementRequest {
     /** Escolhas feitas na pré-visualização. Compras sem escolha ficam com a sugestão do back. */
     readonly overrides?: readonly CardImportOverride[];
+    /** Excluir, manter excluída ou restaurar compras do arquivo. */
+    readonly exclusions?: readonly CardImportExclusion[];
 }
 
 /** Chamadas HTTP de `/card-imports` (ver financas/src/modules/card-imports/controller). */
@@ -42,6 +45,10 @@ export class CardImportService {
 
         if (request.overrides && request.overrides.length > 0) {
             form.append('overrides', JSON.stringify(request.overrides));
+        }
+
+        if (request.exclusions && request.exclusions.length > 0) {
+            form.append('exclusions', JSON.stringify(request.exclusions));
         }
 
         return this.api.post<CardImportResult>('card-imports', form);

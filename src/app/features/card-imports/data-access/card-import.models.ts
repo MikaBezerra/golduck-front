@@ -23,6 +23,12 @@ export type CardImportPreview = ApiSchemas['CardImportPreviewResponse'];
 /** Uma compra da pré-visualização. `status`: `"new"` (ainda não existe no mês) ou `"update"`. */
 export type CardImportPreviewTransaction = ApiSchemas['CardImportPreviewTransactionDto'];
 
+/**
+ * Decisão sobre uma compra do arquivo, enviada ao salvar: `exclude` (excluir ou manter
+ * excluída; `remember` = não perguntar de novo) ou `restore`.
+ */
+export type CardImportExclusion = ApiSchemas['CardImportExclusionDto'];
+
 /** Escolha do usuário para uma compra (`key` da pré-visualização), enviada ao salvar. */
 export type CardImportOverride = ApiSchemas['CardImportOverrideDto'];
 

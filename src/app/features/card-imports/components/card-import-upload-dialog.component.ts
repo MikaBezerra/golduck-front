@@ -22,10 +22,12 @@ import { NotificationService } from '../../../core/notification/notification.ser
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
 import { revealFormErrors, setServerError } from '../../../shared/forms/form-errors';
 import { dateToMonthKey, formatMonth, monthKeyToDate } from '../../../shared/month/month';
+import type { CardExpenseScope } from '../../card-expenses/data-access/card-expense.models';
 import { CardBankPipe } from '../../credit-cards/components/card-bank.pipe';
 import type { CreditCard } from '../../credit-cards/data-access/credit-card.models';
 import {
     BANKS_WITH_PDF_PASSWORD,
+    type CardImportExclusion,
     type CardImportOverride,
     type CardImportPreview,
     type CardImportResult,
@@ -203,11 +205,12 @@ export class CardImportUploadDialogComponent {
         }
 
         const overrides = this.collectOverrides(preview);
+        const exclusions = this.collectExclusions(preview);
 
         this.loading.set(true);
         this.reviewError.set(null);
 
-        this.cardImports.save({ ...request, overrides }).subscribe({
+        this.cardImports.save({ ...request, overrides, exclusions }).subscribe({
             next: (result) => {
                 this.loading.set(false);
                 this.result.set(result);
@@ -252,6 +255,29 @@ export class CardImportUploadDialogComponent {
         });
     }
 
+    /**
+     * Decisões de exclusão, só para o que muda em relação ao estado atual:
+     * - excluir uma compra que não estava excluída;
+     * - restaurar uma que estava excluída;
+     * - manter excluída marcando "não perguntar de novo".
+     * Uma compra excluída salva sem decisão continua excluída (é o padrão do back).
+     */
+    private collectExclusions(preview: CardImportPreview): CardImportExclusion[] {
+        return preview.transactions.flatMap((tx, index): CardImportExclusion[] => {
+            const { exclude, remember, scope } = this.rows.at(index).getRawValue();
+
+            if (exclude && (!tx.excluded || remember)) {
+                return [{ key: tx.key, action: 'exclude', scope, remember }];
+            }
+
+            if (!exclude && tx.excluded) {
+                return [{ key: tx.key, action: 'restore', scope, remember: false }];
+            }
+
+            return [];
+        });
+    }
+
     /** Erros de validação em `overrides[i].campo`: leva a mensagem para a compra certa. */
     private applyOverrideErrors(
         error: ApiError,
@@ -286,6 +312,9 @@ export class CardImportUploadDialogComponent {
                         validators: [Validators.required],
                     }),
                     personId: new FormControl<string | null>(tx.personId),
+                    exclude: new FormControl(tx.excluded, { nonNullable: true }),
+                    remember: new FormControl(false, { nonNullable: true }),
+                    scope: new FormControl<CardExpenseScope>('all', { nonNullable: true }),
                 }),
             );
         }

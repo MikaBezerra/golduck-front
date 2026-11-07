@@ -1,16 +1,24 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
 import { type FormArray, FormControl, type FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Checkbox } from 'primeng/checkbox';
 import { InputText } from 'primeng/inputtext';
 import { Message } from 'primeng/message';
+import { RadioButton } from 'primeng/radiobutton';
 import { Select } from 'primeng/select';
 import { Tag } from 'primeng/tag';
+import { map, startWith, switchMap } from 'rxjs';
 
 import { IsoDatePipe } from '../../../shared/date/iso-date.pipe';
 import { sumAmounts } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
-import { CARD_EXPENSE_NICKNAME_MAX_LENGTH } from '../../card-expenses/data-access/card-expense.models';
+import {
+    CARD_EXPENSE_NICKNAME_MAX_LENGTH,
+    CARD_EXPENSE_SCOPE_OPTIONS,
+    type CardExpenseScope,
+} from '../../card-expenses/data-access/card-expense.models';
 import { ExpenseLookupsService } from '../../manual-expenses/data-access/expense-lookups.service';
 import { type CardImportPreview, describeImportSummary } from '../data-access/card-import.models';
 
@@ -19,6 +27,12 @@ export type ReviewRowForm = FormGroup<{
     nickname: FormControl<string>;
     categoryId: FormControl<string>;
     personId: FormControl<string | null>;
+    /** Como a compra deve ficar depois de salvar: excluída (fora das listas e dos totais) ou não. */
+    exclude: FormControl<boolean>;
+    /** Ao excluir: não perguntar de novo quando a compra reaparecer numa fatura. */
+    remember: FormControl<boolean>;
+    /** Parcelas alcançadas ao excluir/restaurar uma compra parcelada. */
+    scope: FormControl<CardExpenseScope>;
 }>;
 
 /** No seletor em lote, `null` significa "não mexer"; este valor remove a pessoa. */
@@ -37,12 +51,14 @@ interface SelectOption {
 @Component({
     selector: 'app-card-import-review',
     imports: [
+        NgTemplateOutlet,
         FormsModule,
         ReactiveFormsModule,
         Button,
         Checkbox,
         InputText,
         Message,
+        RadioButton,
         Select,
         Tag,
         BrlPipe,
@@ -58,8 +74,31 @@ export class CardImportReviewComponent {
     private readonly lookups = inject(ExpenseLookupsService);
 
     protected readonly nicknameMaxLength = CARD_EXPENSE_NICKNAME_MAX_LENGTH;
+    protected readonly scopeOptions = [...CARD_EXPENSE_SCOPE_OPTIONS];
     protected readonly summaryLines = computed(() => describeImportSummary(this.preview().summary, 'preview'));
     protected readonly total = computed(() => sumAmounts(this.preview().transactions.map((tx) => tx.amount)));
+
+    /** Estado de exclusão de cada linha, acompanhando o formulário. */
+    private readonly excludedFlags = toSignal(
+        toObservable(this.rows).pipe(
+            switchMap((rows) =>
+                rows.valueChanges.pipe(
+                    startWith(null),
+                    map(() => rows.controls.map((row) => row.controls.exclude.value)),
+                ),
+            ),
+        ),
+        { initialValue: [] as boolean[] },
+    );
+    protected readonly excludedCount = computed(() => this.excludedFlags().filter(Boolean).length);
+    /** Total da fatura sem as compras que ficarão excluídas. */
+    protected readonly totalConsidered = computed(() =>
+        sumAmounts(
+            this.preview()
+                .transactions.filter((_, index) => !this.excludedFlags()[index])
+                .map((tx) => tx.amount),
+        ),
+    );
     protected readonly selected = signal<ReadonlySet<string>>(new Set());
     protected readonly allSelected = computed(
         () => this.preview().transactions.length > 0 && this.selected().size === this.preview().transactions.length,

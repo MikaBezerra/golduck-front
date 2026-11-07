@@ -14,6 +14,7 @@ import { Button } from 'primeng/button';
 import { Select } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { Tag } from 'primeng/tag';
+import { ToggleSwitch } from 'primeng/toggleswitch';
 import { Tooltip } from 'primeng/tooltip';
 import { of } from 'rxjs';
 
@@ -34,6 +35,7 @@ import type { CreditCard } from '../../credit-cards/data-access/credit-card.mode
 import { CreditCardService } from '../../credit-cards/data-access/credit-card.service';
 import { ExpenseLookupsService } from '../../manual-expenses/data-access/expense-lookups.service';
 import { CardExpenseEditDialogComponent } from '../components/card-expense-edit-dialog.component';
+import { CardExpenseExclusionDialogComponent } from '../components/card-expense-exclusion-dialog.component';
 import type { CardExpense } from '../data-access/card-expense.models';
 import { CardExpenseService } from '../data-access/card-expense.service';
 
@@ -58,6 +60,7 @@ interface CardExpenseRow extends CardExpense {
         Select,
         TableModule,
         Tag,
+        ToggleSwitch,
         Tooltip,
         BrlPipe,
         CardBankPipe,
@@ -65,6 +68,7 @@ interface CardExpenseRow extends CardExpense {
         MonthPipe,
         PageHeaderComponent,
         CardExpenseEditDialogComponent,
+        CardExpenseExclusionDialogComponent,
         CardImportUploadDialogComponent,
         CardImportManualDialogComponent,
         CardImportHistoryDialogComponent,
@@ -88,9 +92,17 @@ export class CardExpensesPageComponent implements OnInit {
         () => this.cards().find((card) => card.id === this.selectedCardId()) ?? null,
     );
 
+    /** Excluídas ficam escondidas; com isto ligado, aparecem para poder restaurar. */
+    protected readonly showExcluded = signal(false);
+
     protected readonly expenses = remoteData({
-        params: () => ({ month: this.month(), cardId: this.selectedCard()?.id ?? null }),
-        load: ({ month, cardId }) => (cardId ? this.cardExpenseService.findByMonth(month, cardId) : of([])),
+        params: () => ({
+            month: this.month(),
+            cardId: this.selectedCard()?.id ?? null,
+            includeExcluded: this.showExcluded(),
+        }),
+        load: ({ month, cardId, includeExcluded }) =>
+            cardId ? this.cardExpenseService.findByMonth(month, cardId, includeExcluded) : of([]),
         initialValue: [] as CardExpense[],
     });
 
@@ -104,7 +116,15 @@ export class CardExpensesPageComponent implements OnInit {
             personName: expense.personId ? (people.get(expense.personId)?.name ?? '…') : null,
         }));
     });
-    protected readonly total = computed(() => sumAmounts(this.expenses.value().map((expense) => expense.amount)));
+    /** Excluídas não entram no total (como no back). */
+    protected readonly total = computed(() =>
+        sumAmounts(
+            this.expenses
+                .value()
+                .filter((expense) => !expense.excluded)
+                .map((expense) => expense.amount),
+        ),
+    );
 
     protected readonly selected = signal<CardExpenseRow[]>([]);
     protected readonly selectedTotal = computed(() => sumAmounts(this.selected().map((expense) => expense.amount)));
@@ -114,12 +134,16 @@ export class CardExpensesPageComponent implements OnInit {
     protected readonly uploadVisible = signal(false);
     protected readonly manualVisible = signal(false);
     protected readonly historyVisible = signal(false);
+    protected readonly exclusionVisible = signal(false);
+    protected readonly exclusionMode = signal<'exclude' | 'restore'>('exclude');
+    protected readonly exclusionTargets = signal<CardExpense[]>([]);
 
     public constructor() {
         // Trocou de mês ou de cartão: a seleção anterior não vale mais.
         effect(() => {
             this.month();
             this.selectedCardId();
+            this.showExcluded();
             untracked(() => this.selected.set([]));
         });
     }
@@ -151,6 +175,12 @@ export class CardExpensesPageComponent implements OnInit {
     protected openEdit(expenses: CardExpense[]): void {
         this.editing.set(expenses);
         this.editVisible.set(true);
+    }
+
+    protected openExclusion(mode: 'exclude' | 'restore', expenses: CardExpense[]): void {
+        this.exclusionMode.set(mode);
+        this.exclusionTargets.set(expenses);
+        this.exclusionVisible.set(true);
     }
 
     protected afterChange(): void {

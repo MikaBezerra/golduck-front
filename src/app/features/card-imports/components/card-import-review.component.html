@@ -11,6 +11,12 @@
         <div class="sm:text-right">
             <span class="block text-sm text-muted-color">Total da fatura</span>
             <span class="text-xl font-semibold tabular-nums">{{ total() | brl }}</span>
+            @if (excludedCount() > 0) {
+                <span class="block text-sm text-muted-color">
+                    {{ totalConsidered() | brl }} sem
+                    {{ excludedCount() === 1 ? 'a excluída' : 'as ' + excludedCount() + ' excluídas' }}
+                </span>
+            }
         </div>
     </div>
 
@@ -86,11 +92,12 @@
 
     <ul class="m-0 flex list-none flex-col gap-3 p-0">
         @for (tx of preview().transactions; track tx.key; let i = $index) {
+            @let row = rows().at(i);
             <li
                 class="flex flex-col gap-3 rounded-lg border p-3"
                 [class.border-surface]="!isSelected(tx.key)"
                 [class.border-primary-300]="isSelected(tx.key)"
-                [formGroup]="rows().at(i)"
+                [formGroup]="row"
             >
                 <div class="flex items-start gap-3">
                     <p-checkbox
@@ -102,7 +109,9 @@
                     />
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-medium">{{ tx.description }}</span>
+                            <span class="font-medium" [class.line-through]="row.controls.exclude.value">
+                                {{ tx.description }}
+                            </span>
                             @if (tx.installment; as installment) {
                                 <p-tag [value]="installment.number + '/' + installment.total" severity="secondary" />
                             }
@@ -128,6 +137,111 @@
                     </div>
                     <span class="font-semibold whitespace-nowrap tabular-nums">{{ tx.amount | brl }}</span>
                 </div>
+
+                @if (tx.askExclusion) {
+                    <!-- Excluída antes e sem "não perguntar de novo": o usuário decide. -->
+                    <div
+                        class="flex flex-col gap-2 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-900"
+                        role="group"
+                        [attr.aria-label]="'Compra excluída antes: ' + tx.description"
+                    >
+                        <span class="font-medium">Você excluiu esta compra antes. O que fazer?</span>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex cursor-pointer items-center gap-2" [for]="'keep-' + i">
+                                <p-radiobutton
+                                    [inputId]="'keep-' + i"
+                                    [name]="'exclusion-' + i"
+                                    [value]="true"
+                                    formControlName="exclude"
+                                />
+                                Manter excluída
+                            </label>
+                            <label class="flex cursor-pointer items-center gap-2" [for]="'restore-' + i">
+                                <p-radiobutton
+                                    [inputId]="'restore-' + i"
+                                    [name]="'exclusion-' + i"
+                                    [value]="false"
+                                    formControlName="exclude"
+                                />
+                                Restaurar
+                            </label>
+                        </div>
+                        @if (row.controls.exclude.value) {
+                            <label class="flex cursor-pointer items-center gap-2" [for]="'remember-' + i">
+                                <p-checkbox [inputId]="'remember-' + i" [binary]="true" formControlName="remember" />
+                                Não perguntar de novo
+                            </label>
+                        } @else if (tx.installment) {
+                            <ng-container
+                                [ngTemplateOutlet]="scopeSelect"
+                                [ngTemplateOutletContext]="{ $implicit: row, i: i, label: 'Restaurar' }"
+                            />
+                        }
+                    </div>
+                } @else if (tx.excluded) {
+                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                        @if (row.controls.exclude.value) {
+                            <p-tag value="Excluída" severity="warn" />
+                            <span class="text-muted-color">Fica fora das listas e dos totais.</span>
+                            <p-button
+                                label="Restaurar"
+                                icon="pi pi-replay"
+                                size="small"
+                                [text]="true"
+                                [ariaLabel]="'Restaurar ' + tx.description"
+                                (onClick)="row.controls.exclude.setValue(false)"
+                            />
+                        } @else {
+                            <p-tag value="Será restaurada" severity="info" />
+                            @if (tx.installment) {
+                                <ng-container
+                                    [ngTemplateOutlet]="scopeSelect"
+                                    [ngTemplateOutletContext]="{ $implicit: row, i: i, label: 'Restaurar' }"
+                                />
+                            }
+                            <p-button
+                                label="Desfazer"
+                                size="small"
+                                [text]="true"
+                                severity="secondary"
+                                (onClick)="row.controls.exclude.setValue(true)"
+                            />
+                        }
+                    </div>
+                } @else {
+                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                        @if (row.controls.exclude.value) {
+                            <p-tag value="Será excluída" severity="warn" />
+                            @if (tx.installment) {
+                                <ng-container
+                                    [ngTemplateOutlet]="scopeSelect"
+                                    [ngTemplateOutletContext]="{ $implicit: row, i: i, label: 'Excluir' }"
+                                />
+                            }
+                            <label class="flex cursor-pointer items-center gap-2" [for]="'remember-' + i">
+                                <p-checkbox [inputId]="'remember-' + i" [binary]="true" formControlName="remember" />
+                                Não perguntar de novo se reaparecer
+                            </label>
+                            <p-button
+                                label="Desfazer"
+                                size="small"
+                                [text]="true"
+                                severity="secondary"
+                                (onClick)="row.controls.exclude.setValue(false)"
+                            />
+                        } @else {
+                            <p-button
+                                label="Excluir esta compra"
+                                icon="pi pi-trash"
+                                size="small"
+                                [text]="true"
+                                severity="danger"
+                                [ariaLabel]="'Excluir ' + tx.description"
+                                (onClick)="row.controls.exclude.setValue(true)"
+                            />
+                        }
+                    </div>
+                }
 
                 <div class="grid gap-2 sm:grid-cols-3">
                     <input
@@ -164,3 +278,20 @@
         }
     </ul>
 </div>
+
+<!-- Seletor de parcelas, usado ao excluir ou restaurar uma compra parcelada. -->
+<ng-template #scopeSelect let-row let-i="i" let-label="label">
+    <span class="flex items-center gap-2" [formGroup]="row">
+        <label [for]="'scope-' + i" class="text-muted-color">{{ label }}:</label>
+        <p-select
+            [inputId]="'scope-' + i"
+            formControlName="scope"
+            [options]="scopeOptions"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            size="small"
+            styleClass="w-60"
+        />
+    </span>
+</ng-template>

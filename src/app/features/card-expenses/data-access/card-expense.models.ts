@@ -17,5 +17,22 @@ export type CardExpenseChanges = ApiSchemas['CardExpenseChangesDto'];
 
 export type UpdateCardExpensesRequest = ApiSchemas['UpdateCardExpensesDto'];
 
+/**
+ * Parcelas afetadas ao excluir ou restaurar, a partir do mês da linha:
+ * `month` (só ela), `forward` (ela e as seguintes), `backward` (ela e as anteriores), `all` (todas).
+ * Em compras à vista, o back considera só a própria linha.
+ */
+export type CardExpenseScope = ApiSchemas['CardExpenseScopeDto']['scope'];
+
+/** Corpo de `DELETE /card-expenses` e `POST /card-expenses/restore`. */
+export type CardExpenseScopeRequest = ApiSchemas['CardExpenseScopeDto'];
+
+export const CARD_EXPENSE_SCOPE_OPTIONS: readonly { readonly label: string; readonly value: CardExpenseScope }[] = [
+    { label: 'Todas as parcelas da compra', value: 'all' },
+    { label: 'Esta parcela e as próximas', value: 'forward' },
+    { label: 'Esta parcela e as anteriores', value: 'backward' },
+    { label: 'Só esta parcela', value: 'month' },
+];
+
 /** Limite do back para o apelido. */
 export const CARD_EXPENSE_NICKNAME_MAX_LENGTH = 160;

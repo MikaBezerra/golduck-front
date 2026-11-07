@@ -96,11 +96,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Lista as despesas do cartão em um mês de fatura */
+        /** Lista as despesas do cartão em um mês de fatura (sem as excluídas, salvo includeExcluded=true) */
         get: operations["CardExpenseController_findAll"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Exclui despesas do cartão (exclusão suave)
+         * @description As linhas saem das listas e dos totais, e os próximos uploads as mantêm excluídas. Em compras parceladas, scope define quais parcelas.
+         */
+        delete: operations["CardExpenseController_exclude"];
         options?: never;
         head?: never;
         /**
@@ -121,6 +125,26 @@ export interface paths {
         get: operations["CardExpenseController_findById"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-expenses/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restaura despesas excluídas
+         * @description Devolve as linhas restauradas.
+         */
+        post: operations["CardExpenseController_restore"];
         delete?: never;
         options?: never;
         head?: never;
@@ -211,7 +235,7 @@ export interface paths {
         put?: never;
         /**
          * Importa a fatura enviada pelo banco do cartão
-         * @description O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês. O campo opcional overrides (JSON) aplica as escolhas feitas na pré-visualização.
+         * @description O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês. Os campos opcionais overrides e exclusions (JSON) aplicam as escolhas feitas na pré-visualização.
          */
         post: operations["CardImportController_create"];
         delete?: never;
@@ -534,6 +558,8 @@ export interface components {
              * @description null = compartilhada
              */
             personId: string | null;
+            /** @description Excluída: fora das listas (salvo includeExcluded) e dos totais */
+            excluded: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -554,6 +580,14 @@ export interface components {
             ids: string[];
             /** @description Pelo menos um campo */
             changes: components["schemas"]["CardExpenseChangesDto"];
+        };
+        CardExpenseScopeDto: {
+            ids: string[];
+            /**
+             * @description Parcelas afetadas a partir do mês da linha: month (só ele), forward (ele e os seguintes), backward (ele e os anteriores), all (todas). Em compra à vista, só a própria linha.
+             * @enum {string}
+             */
+            scope: "month" | "forward" | "backward" | "all";
         };
         CategoryResponse: {
             /** Format: uuid */
@@ -668,6 +702,25 @@ export interface components {
              */
             personId: string | null;
         };
+        CardImportExclusionDto: {
+            /** @description key devolvida pela pré-visualização */
+            key: string;
+            /**
+             * @description exclude também serve para manter excluída
+             * @enum {string}
+             */
+            action: "exclude" | "restore";
+            /**
+             * @description Parcelas afetadas a partir do mês da linha: month (só ele), forward (ele e os seguintes), backward (ele e os anteriores), all (todas). Em compra à vista, só a própria linha.
+             * @enum {string}
+             */
+            scope: "month" | "forward" | "backward" | "all";
+            /**
+             * @description Com exclude: não perguntar de novo quando a compra reaparecer
+             * @default false
+             */
+            remember: boolean;
+        };
         CardImportSaveUploadDto: {
             /**
              * Format: binary
@@ -691,6 +744,11 @@ export interface components {
              * @example [{"key":"P|2026-09|8|FERREIRA COSTA","nickname":"Geladeira","categoryId":"<uuid>","personId":null}]
              */
             overrides?: string;
+            /**
+             * @description JSON com até 500 itens no formato CardImportExclusionDto: excluir, manter excluída ou restaurar compras do arquivo.
+             * @example [{"key":"P|2026-09|8|FERREIRA COSTA","action":"exclude","scope":"all","remember":true}]
+             */
+            exclusions?: string;
         };
         CardImportPreviewTransactionDto: {
             /**
@@ -732,6 +790,10 @@ export interface components {
             personId: string | null;
             /** @description Parcelas futuras que esta linha vai lançar */
             projectedCount: number;
+            /** @description A compra fica excluída se for salva sem decisão */
+            excluded: boolean;
+            /** @description Excluída e sem "não perguntar de novo": perguntar ao usuário se restaura ou mantém */
+            askExclusion: boolean;
         };
         CardImportPreviewResponse: {
             /** Format: uuid */
@@ -1116,6 +1178,8 @@ export interface operations {
                 /** @description Mês no formato AAAA-MM */
                 month: string;
                 cardId?: string;
+                /** @description Inclui as despesas excluídas */
+                includeExcluded?: boolean;
             };
             header?: never;
             path?: never;
@@ -1133,6 +1197,37 @@ export interface operations {
                         data: components["schemas"]["CardExpenseResponse"][];
                     };
                 };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardExpenseController_exclude: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardExpenseScopeDto"];
+            };
+        };
+        responses: {
+            /** @description Despesas excluídas */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Erro: { error: { code, message, requestId, details? } } */
             default: {
@@ -1199,6 +1294,41 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["CardExpenseResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardExpenseController_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardExpenseScopeDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardExpenseResponse"][];
                     };
                 };
             };

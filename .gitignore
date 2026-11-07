@@ -43,7 +43,5 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
-# ferramentas de agentes de IA (ficam só na máquina local)
+# configurações locais de ferramentas (ficam só na máquina)
 .claude/
-.agents
-skills-lock.json

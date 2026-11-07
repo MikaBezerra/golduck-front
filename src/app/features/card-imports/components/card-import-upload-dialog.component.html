@@ -59,6 +59,25 @@
                 }
             </div>
 
+            @if (asksPassword()) {
+                <div class="flex flex-col gap-2">
+                    <label for="import-password" class="font-medium">
+                        Senha do PDF <span class="font-normal text-muted-color">(se o arquivo tiver)</span>
+                    </label>
+                    <p-password
+                        inputId="import-password"
+                        formControlName="password"
+                        autocomplete="off"
+                        [feedback]="false"
+                        [toggleMask]="true"
+                        [fluid]="true"
+                        ariaLabel="Senha do PDF"
+                    />
+                    <small class="text-muted-color">Usada só para abrir o arquivo; não fica gravada.</small>
+                    <app-field-error [control]="form.controls.password" />
+                </div>
+            }
+
             <p-message severity="warn">
                 A fatura substitui o que este cartão tem no mês escolhido: compras que não estiverem no arquivo são
                 removidas. Parcelas futuras são lançadas nos meses seguintes, até o próximo mês que já tiver fatura

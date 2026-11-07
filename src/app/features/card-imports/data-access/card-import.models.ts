@@ -56,7 +56,14 @@ export interface CreateManualCardImportRequest {
 export const STATEMENT_FILE_EXTENSION: Readonly<Record<CardBank, string>> = {
     NUBANK: '.csv',
     C6: '.csv',
+    NEON: '.pdf',
 };
+
+/** Bancos cuja fatura costuma vir em PDF protegido por senha. */
+export const BANKS_WITH_PDF_PASSWORD: ReadonlySet<CardBank> = new Set<CardBank>(['NEON']);
+
+/** Limite do back para a senha do PDF. */
+export const STATEMENT_PASSWORD_MAX_LENGTH = 100;
 
 /** Limite do back para o arquivo da fatura. */
 export const MAX_STATEMENT_FILE_BYTES = 2 * 1024 * 1024;

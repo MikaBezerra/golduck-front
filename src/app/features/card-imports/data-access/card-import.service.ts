@@ -8,6 +8,8 @@ export interface UploadStatementRequest {
     readonly cardId: string;
     readonly month: string;
     readonly file: File;
+    /** Senha do PDF protegido (Neon). Usada só para abrir o arquivo; o back não grava. */
+    readonly password?: string;
 }
 
 /** Chamadas HTTP de `/card-imports` (ver financas/src/modules/card-imports/controller). */
@@ -25,6 +27,10 @@ export class CardImportService {
         form.append('cardId', request.cardId);
         form.append('month', request.month);
         form.append('file', request.file, request.file.name);
+
+        if (request.password) {
+            form.append('password', request.password);
+        }
 
         return this.api.post<CardImportResult>('card-imports', form);
     }

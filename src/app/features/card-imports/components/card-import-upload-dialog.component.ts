@@ -15,19 +15,22 @@ import { Button } from 'primeng/button';
 import { DatePicker } from 'primeng/datepicker';
 import { Dialog } from 'primeng/dialog';
 import { Message } from 'primeng/message';
+import { Password } from 'primeng/password';
 
 import { ApiError } from '../../../core/api/api-error';
 import { NotificationService } from '../../../core/notification/notification.service';
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
-import { revealFormErrors } from '../../../shared/forms/form-errors';
+import { revealFormErrors, setServerError } from '../../../shared/forms/form-errors';
 import { dateToMonthKey, formatMonth, monthKeyToDate } from '../../../shared/month/month';
 import { CardBankPipe } from '../../credit-cards/components/card-bank.pipe';
 import type { CreditCard } from '../../credit-cards/data-access/credit-card.models';
 import {
+    BANKS_WITH_PDF_PASSWORD,
     type CardImportResult,
     describeImportSummary,
     MAX_STATEMENT_FILE_BYTES,
     STATEMENT_FILE_EXTENSION,
+    STATEMENT_PASSWORD_MAX_LENGTH,
 } from '../data-access/card-import.models';
 import { CardImportService } from '../data-access/card-import.service';
 
@@ -45,7 +48,7 @@ const FILE_ERROR_CODES = new Set([
  */
 @Component({
     selector: 'app-card-import-upload-dialog',
-    imports: [ReactiveFormsModule, Button, DatePicker, Dialog, Message, FieldErrorComponent, CardBankPipe],
+    imports: [ReactiveFormsModule, Button, DatePicker, Dialog, Message, Password, FieldErrorComponent, CardBankPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './card-import-upload-dialog.component.html',
 })
@@ -61,6 +64,10 @@ export class CardImportUploadDialogComponent {
 
     protected readonly form = new FormGroup({
         month: new FormControl<Date | null>(null, Validators.required),
+        password: new FormControl('', {
+            nonNullable: true,
+            validators: [Validators.maxLength(STATEMENT_PASSWORD_MAX_LENGTH)],
+        }),
     });
     protected readonly file = signal<File | null>(null);
     protected readonly fileError = signal<string | null>(null);
@@ -68,6 +75,8 @@ export class CardImportUploadDialogComponent {
     protected readonly result = signal<CardImportResult | null>(null);
 
     protected readonly extension = computed(() => STATEMENT_FILE_EXTENSION[this.card().bank]);
+    /** Faturas em PDF protegido (Neon) pedem a senha para o back conseguir abrir o arquivo. */
+    protected readonly asksPassword = computed(() => BANKS_WITH_PDF_PASSWORD.has(this.card().bank));
     protected readonly resultLines = computed(() => {
         const result = this.result();
 
@@ -87,7 +96,7 @@ export class CardImportUploadDialogComponent {
             }
 
             untracked(() => {
-                this.form.reset({ month: monthKeyToDate(this.defaultMonth()) });
+                this.form.reset({ month: monthKeyToDate(this.defaultMonth()), password: '' });
                 this.file.set(null);
                 this.fileError.set(null);
                 this.result.set(null);
@@ -127,6 +136,7 @@ export class CardImportUploadDialogComponent {
                 cardId: this.card().id,
                 month: dateToMonthKey(this.form.controls.month.value ?? new Date()),
                 file,
+                password: this.asksPassword() ? this.form.controls.password.value : undefined,
             })
             .subscribe({
                 next: (result) => {
@@ -139,7 +149,9 @@ export class CardImportUploadDialogComponent {
 
                     const apiError = ApiError.from(error);
 
-                    if (FILE_ERROR_CODES.has(apiError.code)) {
+                    if (apiError.code === 'IMPORT_FILE_PASSWORD_INVALID') {
+                        setServerError(this.form.controls.password, 'Senha incorreta ou não informada.');
+                    } else if (FILE_ERROR_CODES.has(apiError.code)) {
                         this.fileError.set(apiError.message);
                     } else {
                         this.notifications.error(apiError);

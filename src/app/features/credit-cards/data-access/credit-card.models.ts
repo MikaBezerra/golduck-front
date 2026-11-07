@@ -1,6 +1,6 @@
 /** Espelha financas/src/modules/credit-cards/dto/credit-card.dto.ts e o enum CardBank do Prisma. */
 
-export type CardBank = 'NUBANK' | 'C6';
+export type CardBank = 'NUBANK' | 'C6' | 'NEON';
 
 export interface CreditCard {
     readonly id: string;
@@ -26,6 +26,7 @@ export interface UpdateCreditCardRequest {
 export const CARD_BANK_LABELS: Readonly<Record<CardBank, string>> = {
     NUBANK: 'Nubank',
     C6: 'C6 Bank',
+    NEON: 'Neon',
 };
 
 export const CARD_BANK_OPTIONS = (Object.keys(CARD_BANK_LABELS) as CardBank[]).map((bank) => ({

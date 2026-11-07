@@ -12,6 +12,9 @@ import { TokenStorageService } from './token-storage.service';
  * 1. Coloca `Authorization: Bearer <token>` em toda chamada à API.
  * 2. Se o token estiver vencendo, renova antes de enviar.
  * 3. Se o back responder 401 mesmo assim, renova e tenta de novo (uma vez só).
+ *
+ * O logout é a exceção: o back encerra a sessão pelo cookie e aceita o access token mesmo vencido,
+ * então ele vai com o token que estiver em memória, sem renovar antes nem tentar de novo.
  */
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
     const baseUrl = inject(API_BASE_URL);
@@ -20,8 +23,13 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         return next(request);
     }
 
-    const auth = inject(AuthService);
     const tokens = inject(TokenStorageService);
+
+    if (request.url === `${baseUrl}/${LOGOUT_ROUTE}`) {
+        return next(withBearer(request, tokens.getAccessToken()));
+    }
+
+    const auth = inject(AuthService);
 
     const currentToken = tokens.getValidAccessToken();
     const token$: Observable<string | null> =
@@ -50,6 +58,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
 /** Rotas que não precisam (nem devem esperar) um access token. */
 const PUBLIC_ROUTES = ['auth/login', 'auth/refresh', 'version', 'health/live'];
+
+const LOGOUT_ROUTE = 'auth/logout';
 
 function isPublicRoute(url: string, baseUrl: string): boolean {
     return PUBLIC_ROUTES.some((route) => url === `${baseUrl}/${route}`);

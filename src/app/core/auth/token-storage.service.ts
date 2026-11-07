@@ -50,6 +50,11 @@ export class TokenStorageService {
         this.sessionActive.set(false);
     }
 
+    /** Access token em memória, mesmo vencido (o logout aceita assim). */
+    public getAccessToken(): string | null {
+        return this.accessToken;
+    }
+
     /** Access token atual, ou `null` se não houver ou se estiver para vencer. */
     public getValidAccessToken(): string | null {
         if (!this.accessToken) {

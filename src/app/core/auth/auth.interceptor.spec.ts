@@ -183,4 +183,34 @@ describe('authInterceptor', () => {
         await expect(second).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
         expect(tokens.hasSession()).toBe(true);
     });
+
+    it('logout vai com o token em memória, mesmo vencido, sem renovar antes', async () => {
+        const expired = fakeJwt(-60);
+        tokens.save({ accessToken: expired });
+
+        api.post('auth/logout', undefined, { withCredentials: true }).subscribe({ error: () => undefined });
+        await settle();
+
+        const request = http.expectOne('/api/auth/logout');
+        expect(request.request.headers.get('Authorization')).toBe(`Bearer ${expired}`);
+        expect(request.request.withCredentials).toBe(true);
+        http.expectNone('/api/auth/refresh');
+        request.flush(null, { status: 204, statusText: 'No Content' });
+    });
+
+    it('logout recusado (401) não tenta renovar nem repetir', async () => {
+        tokens.save({ accessToken: fakeJwt(600) });
+        let failed = false;
+
+        api.post('auth/logout').subscribe({ error: () => (failed = true) });
+        http.expectOne('/api/auth/logout').flush(
+            { error: { code: 'UNAUTHENTICATED', message: 'Autenticação necessária', requestId: 'r' } },
+            { status: 401, statusText: 'Unauthorized' },
+        );
+        await settle();
+
+        http.expectNone('/api/auth/refresh');
+        http.expectNone('/api/auth/logout');
+        expect(failed).toBe(true);
+    });
 });

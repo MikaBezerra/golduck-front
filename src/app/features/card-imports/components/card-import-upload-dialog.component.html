@@ -1,0 +1,74 @@
+<p-dialog
+    header="Enviar fatura"
+    [visible]="visible()"
+    (visibleChange)="visible.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: '32rem' }"
+    [breakpoints]="{ '640px': '95vw' }"
+>
+    @if (result()) {
+        <div class="flex flex-col gap-4">
+            <p-message severity="success" [text]="'Fatura de ' + resultMonth() + ' importada.'" />
+            <ul class="m-0 flex list-disc flex-col gap-1 pl-5">
+                @for (line of resultLines(); track line) {
+                    <li>{{ line }}</li>
+                }
+            </ul>
+            <div class="flex justify-end">
+                <p-button label="Fechar" (onClick)="visible.set(false)" />
+            </div>
+        </div>
+    } @else if (visible()) {
+        <!-- Recriado a cada abertura: o campo de arquivo começa sempre vazio. -->
+        <form [formGroup]="form" (ngSubmit)="send()" class="flex flex-col gap-4" novalidate>
+            <p class="m-0">
+                Cartão: <strong>{{ card().name }}</strong>
+                <span class="text-muted-color">({{ card().bank | cardBank }})</span>
+            </p>
+
+            <div class="flex flex-col gap-2">
+                <label for="import-month" class="font-medium">Mês da fatura</label>
+                <p-datepicker
+                    inputId="import-month"
+                    formControlName="month"
+                    view="month"
+                    dateFormat="MM 'de' yy"
+                    [readonlyInput]="true"
+                    appendTo="body"
+                    [fluid]="true"
+                />
+                <app-field-error [control]="form.controls.month" />
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label for="import-file" class="font-medium">Arquivo {{ extension() }}</label>
+                <input
+                    id="import-file"
+                    type="file"
+                    [accept]="extension()"
+                    (change)="onFileChange($event)"
+                    class="block w-full rounded-border border border-surface p-2 text-sm file:mr-3 file:cursor-pointer file:rounded-border file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:font-medium file:text-primary-700"
+                    aria-describedby="import-file-help"
+                />
+                <small id="import-file-help" class="text-muted-color">
+                    Arquivo exportado pelo app do banco, com até 2 MB.
+                </small>
+                @if (fileError(); as error) {
+                    <small class="text-sm text-red-600" role="alert">{{ error }}</small>
+                }
+            </div>
+
+            <p-message severity="warn">
+                A fatura substitui o que este cartão tem no mês escolhido: compras que não estiverem no arquivo são
+                removidas. Parcelas futuras são lançadas nos meses seguintes, até o próximo mês que já tiver fatura
+                enviada.
+            </p-message>
+
+            <div class="flex justify-end gap-2">
+                <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
+                <p-button type="submit" label="Enviar" icon="pi pi-upload" [loading]="sending()" />
+            </div>
+        </form>
+    }
+</p-dialog>

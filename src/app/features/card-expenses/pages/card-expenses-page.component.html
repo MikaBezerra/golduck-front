@@ -1,0 +1,197 @@
+<app-page-header title="Faturas" [subtitle]="month() | month">
+    @if (selectedCard()) {
+        <p-button label="Enviar fatura" icon="pi pi-upload" (onClick)="uploadVisible.set(true)" />
+        <p-button label="Fatura manual" icon="pi pi-pencil" [outlined]="true" (onClick)="manualVisible.set(true)" />
+        <p-button
+            label="Envios"
+            icon="pi pi-history"
+            [text]="true"
+            severity="secondary"
+            (onClick)="historyVisible.set(true)"
+        />
+    }
+</app-page-header>
+
+@if (cardsLoaded() && cards().length === 0) {
+    <div class="rounded-xl border border-surface bg-surface-0 p-8 text-center">
+        <p class="mt-0 mb-3 text-muted-color">Cadastre um cartão de crédito para enviar as faturas.</p>
+        <a routerLink="/cartoes" class="font-medium text-primary">Ir para Cartões</a>
+    </div>
+} @else {
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+        <label for="card-select" class="font-medium">Cartão</label>
+        <p-select
+            inputId="card-select"
+            [options]="cards()"
+            optionLabel="name"
+            optionValue="id"
+            [ngModel]="selectedCardId()"
+            (ngModelChange)="selectCard($event)"
+            placeholder="Escolha o cartão"
+            [loading]="!cardsLoaded()"
+            styleClass="w-64 max-w-full"
+            appendTo="body"
+        >
+            <ng-template #item let-card>
+                <span>{{ card.name }}</span>
+                <span class="ml-2 text-sm text-muted-color">{{ card.bank | cardBank }}</span>
+            </ng-template>
+        </p-select>
+    </div>
+
+    @if (selected().length > 0) {
+        <div
+            class="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2"
+            role="region"
+            aria-label="Ações para as despesas selecionadas"
+        >
+            <span class="font-medium text-primary-800">
+                {{ selected().length }} {{ selected().length === 1 ? 'selecionada' : 'selecionadas' }} ·
+                {{ selectedTotal() | brl }}
+            </span>
+            <div class="flex-1"></div>
+            <p-button
+                label="Editar"
+                icon="pi pi-pencil"
+                size="small"
+                [outlined]="true"
+                (onClick)="openEdit(selected())"
+            />
+            <p-button
+                label="Limpar seleção"
+                size="small"
+                [text]="true"
+                severity="secondary"
+                (onClick)="selected.set([])"
+            />
+        </div>
+    }
+
+    <div class="overflow-hidden rounded-xl border border-surface bg-surface-0">
+        <p-table
+            [value]="rows()"
+            [loading]="expenses.loading() || !cardsLoaded()"
+            dataKey="id"
+            [(selection)]="selected"
+            [rowHover]="true"
+        >
+            <ng-template #header>
+                <tr>
+                    <th class="w-12">
+                        <p-tableHeaderCheckbox ariaLabel="Selecionar todas" />
+                    </th>
+                    <th class="hidden sm:table-cell">Data</th>
+                    <th>Descrição</th>
+                    <th class="hidden md:table-cell">Categoria</th>
+                    <th class="hidden lg:table-cell">Pessoa</th>
+                    <th class="text-right">Valor</th>
+                    <th class="text-right sm:w-16"><span class="sr-only">Ações</span></th>
+                </tr>
+            </ng-template>
+
+            <ng-template #body let-expense>
+                <tr>
+                    <td>
+                        <p-tableCheckbox [value]="expense" [ariaLabel]="'Selecionar ' + expense.description" />
+                    </td>
+                    <td class="hidden whitespace-nowrap text-muted-color tabular-nums sm:table-cell">
+                        {{ expense.transactionDate | isoDate: 'short' }}
+                    </td>
+                    <td>
+                        <span class="font-medium">{{ expense.description }}</span>
+                        @if (expense.installment; as installment) {
+                            <p-tag
+                                [value]="installment.number + '/' + installment.total"
+                                severity="secondary"
+                                styleClass="ml-2"
+                                [pTooltip]="'Parcela ' + installment.number + ' de ' + installment.total"
+                                tooltipPosition="top"
+                            />
+                        }
+                        @if (expense.nickname) {
+                            <span class="block text-sm text-muted-color">{{ expense.originalDescription }}</span>
+                        }
+                        <span class="block text-sm text-muted-color md:hidden">
+                            {{ expense.categoryName }}{{ expense.personName ? ' · ' + expense.personName : '' }}
+                        </span>
+                        @if (expense.holderName || expense.cardLastDigits) {
+                            <span class="block text-xs text-muted-color">
+                                {{ expense.holderName }}
+                                @if (expense.cardLastDigits) {
+                                    · final {{ expense.cardLastDigits }}
+                                }
+                            </span>
+                        }
+                    </td>
+                    <td class="hidden md:table-cell">{{ expense.categoryName }}</td>
+                    <td class="hidden text-muted-color lg:table-cell">{{ expense.personName ?? '—' }}</td>
+                    <td class="text-right font-medium whitespace-nowrap tabular-nums">{{ expense.amount | brl }}</td>
+                    <td class="text-right">
+                        <p-button
+                            icon="pi pi-pencil"
+                            [text]="true"
+                            [rounded]="true"
+                            severity="secondary"
+                            [ariaLabel]="'Editar ' + expense.description"
+                            pTooltip="Apelido, categoria e pessoa"
+                            tooltipPosition="left"
+                            (onClick)="openEdit([expense])"
+                        />
+                    </td>
+                </tr>
+            </ng-template>
+
+            <ng-template #footer>
+                @if (rows().length > 0) {
+                    <tr>
+                        <td></td>
+                        <td class="hidden sm:table-cell"></td>
+                        <td class="font-semibold">Total da fatura</td>
+                        <td class="hidden md:table-cell"></td>
+                        <td class="hidden lg:table-cell"></td>
+                        <td class="text-right font-semibold whitespace-nowrap tabular-nums">{{ total() | brl }}</td>
+                        <td></td>
+                    </tr>
+                }
+            </ng-template>
+
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="7" class="py-10 text-center">
+                        @if (selectedCard(); as card) {
+                            <p class="m-0 mb-3 text-muted-color">
+                                Nenhuma despesa de {{ card.name }} em {{ month() | month }}.
+                            </p>
+                            <p-button
+                                label="Enviar fatura"
+                                icon="pi pi-upload"
+                                [outlined]="true"
+                                (onClick)="uploadVisible.set(true)"
+                            />
+                        } @else {
+                            <p class="m-0 text-muted-color">Escolha um cartão.</p>
+                        }
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+}
+
+@if (selectedCard(); as card) {
+    <app-card-import-upload-dialog
+        [(visible)]="uploadVisible"
+        [card]="card"
+        [defaultMonth]="month()"
+        (imported)="afterImport($event)"
+    />
+    <app-card-import-manual-dialog
+        [(visible)]="manualVisible"
+        [card]="card"
+        [month]="month()"
+        [existing]="expenses.value()"
+        (imported)="afterImport($event)"
+    />
+    <app-card-import-history-dialog [(visible)]="historyVisible" [card]="card" (changed)="afterChange()" />
+}
+<app-card-expense-edit-dialog [(visible)]="editVisible" [expenses]="editing()" (saved)="afterChange()" />

@@ -19,6 +19,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
         description: 'Lance e acompanhe os gastos do mês.',
     },
     {
+        label: 'Faturas',
+        icon: 'pi pi-file-import',
+        route: '/faturas',
+        description: 'Envie a fatura do cartão e organize as compras.',
+    },
+    {
         label: 'Entradas',
         icon: 'pi pi-arrow-circle-down',
         route: '/entradas',

@@ -1,4 +1,4 @@
-import { FormControl, FormGroup } from '@angular/forms';
+import { FormArray, FormControl, FormGroup } from '@angular/forms';
 
 import { ApiError } from '../../core/api/api-error';
 import { applyServerErrors } from './form-errors';
@@ -24,6 +24,22 @@ describe('applyServerErrors', () => {
         expect(form.controls.months.errors).toEqual({ server: 'Mês inválido' });
         expect(form.controls.amount.errors).toEqual({ server: 'Valor inválido' });
         expect(form.controls.name.touched).toBe(true);
+    });
+
+    it('encaixa erros de listas na linha certa do FormArray', () => {
+        const form = new FormGroup({
+            transactions: new FormArray([
+                new FormGroup({ amount: new FormControl('') }),
+                new FormGroup({ amount: new FormControl('') }),
+            ]),
+        });
+        const error = new ApiError(400, 'VALIDATION_ERROR', 'Os dados enviados são inválidos', 'req', [
+            { field: 'transactions[1].amount', code: 'string.pattern.base', message: 'Valor inválido' },
+        ]);
+
+        expect(applyServerErrors(form, error)).toBe(true);
+        expect(form.controls.transactions.at(0).controls.amount.errors).toBeNull();
+        expect(form.controls.transactions.at(1).controls.amount.errors).toEqual({ server: 'Valor inválido' });
     });
 
     it('avisa quando nenhum campo foi encontrado', () => {

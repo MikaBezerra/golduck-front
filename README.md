@@ -59,10 +59,13 @@ src/app/
 │   ├── forms/             # mensagens de erro e erros do back nos campos
 │   ├── money/             # reais: formatação, centavos, limites do campo de valor
 │   ├── month/             # utilitários de mês (AAAA-MM)
+│   ├── date/              # datas AAAA-MM-DD sem erro de fuso (pipe isoDate)
 │   ├── phone/             # celular: (11) 99999-9999 ⇄ +5511999999999
 │   └── ui/                # componentes genéricos (cabeçalho de página…)
 └── features/              # uma pasta por módulo do back, com o mesmo nome
     ├── auth/              # tela de login
+    ├── card-expenses/     # /faturas — despesas do cartão (usa os diálogos de card-imports)
+    ├── card-imports/      # envio de fatura (arquivo ou manual) e histórico de envios
     ├── categories/        # /categorias
     ├── credit-cards/      # /cartoes
     ├── incomes/           # /entradas

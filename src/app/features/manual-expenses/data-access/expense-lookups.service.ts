@@ -6,7 +6,12 @@ import type { Category } from '../../categories/data-access/category.models';
 import { CategoryService } from '../../categories/data-access/category.service';
 import type { Person } from '../../people/data-access/person.models';
 import { PersonService } from '../../people/data-access/person.service';
-import type { ManualExpense } from './manual-expense.models';
+
+/** O que é preciso de uma despesa (manual ou do cartão) para achar os nomes. */
+export interface ExpenseReferences {
+    readonly categoryId: string;
+    readonly personId: string | null;
+}
 
 /**
  * Categorias e pessoas que a tela de despesas precisa para mostrar nomes e preencher os seletores.
@@ -57,7 +62,7 @@ export class ExpenseLookupsService {
     }
 
     /** Busca as categorias/pessoas inativas usadas por estas despesas, se ainda não conhecidas. */
-    public ensureNames(expenses: readonly ManualExpense[]): void {
+    public ensureNames(expenses: readonly ExpenseReferences[]): void {
         if (!this.loaded()) {
             return;
         }

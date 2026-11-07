@@ -1,0 +1,62 @@
+<p-dialog
+    [header]="'Envios de fatura · ' + card().name"
+    [visible]="visible()"
+    (visibleChange)="visible.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: '52rem' }"
+    [breakpoints]="{ '900px': '95vw' }"
+>
+    <p class="mt-0 mb-4 text-muted-color">
+        Cada envio grava as despesas de um mês. Excluir um envio apaga as despesas que ele gravou.
+    </p>
+
+    <p-table [value]="imports()" [loading]="loading()" dataKey="id">
+        <ng-template #header>
+            <tr>
+                <th>Mês</th>
+                <th>Origem</th>
+                <th class="hidden md:table-cell">Enviado em</th>
+                <th class="text-right">Despesas</th>
+                <th class="w-12"><span class="sr-only">Ações</span></th>
+            </tr>
+        </ng-template>
+
+        <ng-template #body let-item>
+            <tr>
+                <td class="whitespace-nowrap">{{ item.month | month: 'short' }}</td>
+                <td>
+                    <span class="block max-w-[16rem] truncate" [title]="item.fileName">{{ item.fileName }}</span>
+                    <span class="block text-sm text-muted-color">
+                        {{ item.rowCount }} {{ item.rowCount === 1 ? 'lançamento' : 'lançamentos' }}
+                        @if (item.ignoredCount > 0) {
+                            · {{ item.ignoredCount }} {{ item.ignoredCount === 1 ? 'ignorado' : 'ignorados' }}
+                        }
+                    </span>
+                </td>
+                <td class="hidden whitespace-nowrap text-muted-color md:table-cell">
+                    {{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                </td>
+                <td class="text-right tabular-nums">{{ item.expenseCount }}</td>
+                <td class="text-right">
+                    <p-button
+                        icon="pi pi-trash"
+                        [text]="true"
+                        [rounded]="true"
+                        severity="danger"
+                        [ariaLabel]="'Excluir envio de ' + (item.month | month)"
+                        pTooltip="Excluir envio"
+                        tooltipPosition="left"
+                        (onClick)="remove(item)"
+                    />
+                </td>
+            </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+            <tr>
+                <td colspan="5" class="py-8 text-center text-muted-color">Nenhuma fatura enviada para este cartão.</td>
+            </tr>
+        </ng-template>
+    </p-table>
+</p-dialog>

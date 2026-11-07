@@ -28,6 +28,11 @@ export const routes: Routes = [
                     import('./features/manual-expenses/manual-expenses.routes').then((m) => m.MANUAL_EXPENSES_ROUTES),
             },
             {
+                path: 'faturas',
+                loadChildren: async () =>
+                    import('./features/card-expenses/card-expenses.routes').then((m) => m.CARD_EXPENSES_ROUTES),
+            },
+            {
                 path: 'entradas',
                 loadChildren: async () => import('./features/incomes/incomes.routes').then((m) => m.INCOMES_ROUTES),
             },

@@ -87,15 +87,6 @@ export class ManualExpensesPageComponent implements OnInit {
             this.month();
             untracked(() => this.selected.set([]));
         });
-
-        // Despesas antigas podem usar categorias/pessoas desativadas: busca os nomes que faltam.
-        effect(() => {
-            const expenses = this.expenses.value();
-
-            if (this.lookups.loaded()) {
-                untracked(() => this.lookups.ensureNames(expenses));
-            }
-        });
     }
 
     public ngOnInit(): void {

@@ -138,9 +138,6 @@ Em desenvolvimento o proxy evita CORS. Em produção há dois caminhos:
 
 ## Pendências que dependem do back
 
-- **Reativar categoria/pessoa:** `GET /categories` e `GET /people` só devolvem ativas, então uma
-  desativada some da tela e não há como reativá-la por aqui. Falta uma forma de listar as inativas
-  (ex.: `?includeInactive=true`).
 - **Dashboard:** depende de um `GET /summary?month=AAAA-MM` (entrada, total de despesas, saldo,
   totais por categoria e por pessoa). Até lá, a página inicial mostra atalhos.
 - **Tipos automáticos:** com o Swagger ligado no back, os `*.models.ts` podem ser gerados

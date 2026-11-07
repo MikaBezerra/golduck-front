@@ -1,4 +1,12 @@
 <app-page-header title="Categorias" subtitle="Agrupe as despesas por tipo de gasto.">
+    <label for="categories-show-inactive" class="flex cursor-pointer items-center gap-2 text-sm text-muted-color">
+        <p-toggleswitch
+            inputId="categories-show-inactive"
+            [ngModel]="showInactive()"
+            (ngModelChange)="toggleInactive($event)"
+        />
+        Mostrar inativas
+    </label>
     <p-button label="Nova categoria" icon="pi pi-plus" (onClick)="openCreate()" />
 </app-page-header>
 
@@ -14,7 +22,10 @@
         <ng-template #body let-category>
             <tr>
                 <td>
-                    <span class="font-medium">{{ category.name }}</span>
+                    <span class="font-medium" [class.text-muted-color]="!category.active">{{ category.name }}</span>
+                    @if (!category.active) {
+                        <p-tag value="Inativa" severity="warn" styleClass="ml-2" />
+                    }
                     @if (category.isDefault) {
                         <p-tag
                             value="Padrão"
@@ -28,6 +39,15 @@
                 <td class="text-right whitespace-nowrap">
                     @if (category.isDefault) {
                         <span class="text-sm text-muted-color">Não editável</span>
+                    } @else if (!category.active) {
+                        <p-button
+                            icon="pi pi-replay"
+                            label="Reativar"
+                            size="small"
+                            [text]="true"
+                            [ariaLabel]="'Reativar ' + category.name"
+                            (onClick)="reactivate(category)"
+                        />
                     } @else {
                         <p-button
                             icon="pi pi-pencil"
@@ -56,7 +76,7 @@
 
         <ng-template #emptymessage>
             <tr>
-                <td colspan="2" class="py-8 text-center text-muted-color">Nenhuma categoria cadastrada.</td>
+                <td colspan="2" class="py-8 text-center text-muted-color">Nenhuma categoria encontrada.</td>
             </tr>
         </ng-template>
     </p-table>

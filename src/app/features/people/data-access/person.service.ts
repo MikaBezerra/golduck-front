@@ -9,9 +9,9 @@ import type { CreatePersonRequest, Person, UpdatePersonRequest } from './person.
 export class PersonService {
     private readonly api = inject(ApiService);
 
-    /** Somente pessoas ativas, em ordem alfabética. */
-    public findAll(): Observable<Person[]> {
-        return this.api.get<Person[]>('people');
+    /** Pessoas em ordem alfabética. Com `includeInactive`, traz também as desativadas (ativas primeiro). */
+    public findAll(includeInactive = false): Observable<Person[]> {
+        return this.api.get<Person[]>('people', includeInactive ? { includeInactive } : undefined);
     }
 
     /** Busca qualquer pessoa, inclusive inativa. */

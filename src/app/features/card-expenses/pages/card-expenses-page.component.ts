@@ -122,14 +122,6 @@ export class CardExpensesPageComponent implements OnInit {
             this.selectedCardId();
             untracked(() => this.selected.set([]));
         });
-
-        effect(() => {
-            const expenses = this.expenses.value();
-
-            if (this.lookups.loaded()) {
-                untracked(() => this.lookups.ensureNames(expenses));
-            }
-        });
     }
 
     public ngOnInit(): void {

@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { TableModule } from 'primeng/table';
+import { Tag } from 'primeng/tag';
+import { ToggleSwitch } from 'primeng/toggleswitch';
 import { Tooltip } from 'primeng/tooltip';
 
 import { ConfirmService } from '../../../core/notification/confirm.service';
@@ -13,7 +16,17 @@ import { PersonService } from '../data-access/person.service';
 
 @Component({
     selector: 'app-people-page',
-    imports: [Button, TableModule, Tooltip, PhonePipe, PageHeaderComponent, PersonFormDialogComponent],
+    imports: [
+        FormsModule,
+        Button,
+        ToggleSwitch,
+        TableModule,
+        Tag,
+        Tooltip,
+        PhonePipe,
+        PageHeaderComponent,
+        PersonFormDialogComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './people-page.component.html',
 })
@@ -24,6 +37,8 @@ export class PeoplePageComponent implements OnInit {
 
     protected readonly people = signal<Person[]>([]);
     protected readonly loading = signal(true);
+    /** Desativadas ficam escondidas; com isto ligado, aparecem para poder reativar. */
+    protected readonly showInactive = signal(false);
     protected readonly dialogVisible = signal(false);
     protected readonly editing = signal<Person | null>(null);
 
@@ -34,7 +49,7 @@ export class PeoplePageComponent implements OnInit {
     protected load(): void {
         this.loading.set(true);
 
-        this.personService.findAll().subscribe({
+        this.personService.findAll(this.showInactive()).subscribe({
             next: (people) => {
                 this.people.set(people);
                 this.loading.set(false);
@@ -44,6 +59,11 @@ export class PeoplePageComponent implements OnInit {
                 this.notifications.error(error);
             },
         });
+    }
+
+    protected toggleInactive(show: boolean): void {
+        this.showInactive.set(show);
+        this.load();
     }
 
     protected openCreate(): void {
@@ -60,8 +80,8 @@ export class PeoplePageComponent implements OnInit {
         const confirmed = await this.confirm.danger({
             header: 'Desativar pessoa',
             message:
-                `Desativar "${person.name}"? Ela sai da lista e não poderá ser escolhida em novas despesas. ` +
-                'As despesas já lançadas continuam ligadas a ela.',
+                `Desativar "${person.name}"? Ela não poderá ser escolhida em novas despesas; ` +
+                'as despesas já lançadas continuam ligadas a ela. Dá para reativar depois em "Mostrar inativas".',
             acceptLabel: 'Desativar',
         });
 
@@ -72,6 +92,16 @@ export class PeoplePageComponent implements OnInit {
         this.personService.update(person.id, { active: false }).subscribe({
             next: () => {
                 this.notifications.success(`"${person.name}" foi desativada.`);
+                this.load();
+            },
+            error: (error: unknown) => this.notifications.error(error),
+        });
+    }
+
+    protected reactivate(person: Person): void {
+        this.personService.update(person.id, { active: true }).subscribe({
+            next: () => {
+                this.notifications.success(`"${person.name}" foi reativada.`);
                 this.load();
             },
             error: (error: unknown) => this.notifications.error(error),

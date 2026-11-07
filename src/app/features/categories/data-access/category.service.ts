@@ -9,9 +9,9 @@ import type { Category, CreateCategoryRequest, UpdateCategoryRequest } from './c
 export class CategoryService {
     private readonly api = inject(ApiService);
 
-    /** Somente categorias ativas, em ordem alfabética. */
-    public findAll(): Observable<Category[]> {
-        return this.api.get<Category[]>('categories');
+    /** Categorias em ordem alfabética. Com `includeInactive`, traz também as desativadas (ativas primeiro). */
+    public findAll(includeInactive = false): Observable<Category[]> {
+        return this.api.get<Category[]>('categories', includeInactive ? { includeInactive } : undefined);
     }
 
     /** Busca qualquer categoria, inclusive inativa. */

@@ -1,4 +1,12 @@
 <app-page-header title="Pessoas" subtitle="Quem participa das despesas da casa.">
+    <label for="people-show-inactive" class="flex cursor-pointer items-center gap-2 text-sm text-muted-color">
+        <p-toggleswitch
+            inputId="people-show-inactive"
+            [ngModel]="showInactive()"
+            (ngModelChange)="toggleInactive($event)"
+        />
+        Mostrar inativas
+    </label>
     <p-button label="Nova pessoa" icon="pi pi-plus" (onClick)="openCreate()" />
 </app-page-header>
 
@@ -16,31 +24,45 @@
         <ng-template #body let-person>
             <tr>
                 <td>
-                    <span class="font-medium">{{ person.name }}</span>
+                    <span class="font-medium" [class.text-muted-color]="!person.active">{{ person.name }}</span>
+                    @if (!person.active) {
+                        <p-tag value="Inativa" severity="warn" styleClass="ml-2" />
+                    }
                 </td>
                 <td class="hidden text-muted-color md:table-cell">{{ person.email ?? '—' }}</td>
                 <td class="hidden whitespace-nowrap text-muted-color sm:table-cell">{{ person.phone | phone }}</td>
                 <td class="text-right whitespace-nowrap">
-                    <p-button
-                        icon="pi pi-pencil"
-                        [text]="true"
-                        [rounded]="true"
-                        severity="secondary"
-                        [ariaLabel]="'Editar ' + person.name"
-                        pTooltip="Editar"
-                        tooltipPosition="top"
-                        (onClick)="openEdit(person)"
-                    />
-                    <p-button
-                        icon="pi pi-ban"
-                        [text]="true"
-                        [rounded]="true"
-                        severity="danger"
-                        [ariaLabel]="'Desativar ' + person.name"
-                        pTooltip="Desativar"
-                        tooltipPosition="top"
-                        (onClick)="deactivate(person)"
-                    />
+                    @if (!person.active) {
+                        <p-button
+                            icon="pi pi-replay"
+                            label="Reativar"
+                            size="small"
+                            [text]="true"
+                            [ariaLabel]="'Reativar ' + person.name"
+                            (onClick)="reactivate(person)"
+                        />
+                    } @else {
+                        <p-button
+                            icon="pi pi-pencil"
+                            [text]="true"
+                            [rounded]="true"
+                            severity="secondary"
+                            [ariaLabel]="'Editar ' + person.name"
+                            pTooltip="Editar"
+                            tooltipPosition="top"
+                            (onClick)="openEdit(person)"
+                        />
+                        <p-button
+                            icon="pi pi-ban"
+                            [text]="true"
+                            [rounded]="true"
+                            severity="danger"
+                            [ariaLabel]="'Desativar ' + person.name"
+                            pTooltip="Desativar"
+                            tooltipPosition="top"
+                            (onClick)="deactivate(person)"
+                        />
+                    }
                 </td>
             </tr>
         </ng-template>

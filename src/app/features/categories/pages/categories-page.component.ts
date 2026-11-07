@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, type OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { TableModule } from 'primeng/table';
+import { ToggleSwitch } from 'primeng/toggleswitch';
 import { Tag } from 'primeng/tag';
 import { Tooltip } from 'primeng/tooltip';
 
@@ -13,7 +15,16 @@ import { CategoryService } from '../data-access/category.service';
 
 @Component({
     selector: 'app-categories-page',
-    imports: [Button, TableModule, Tag, Tooltip, PageHeaderComponent, CategoryFormDialogComponent],
+    imports: [
+        FormsModule,
+        Button,
+        ToggleSwitch,
+        TableModule,
+        Tag,
+        Tooltip,
+        PageHeaderComponent,
+        CategoryFormDialogComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './categories-page.component.html',
 })
@@ -24,6 +35,8 @@ export class CategoriesPageComponent implements OnInit {
 
     protected readonly categories = signal<Category[]>([]);
     protected readonly loading = signal(true);
+    /** Desativadas ficam escondidas; com isto ligado, aparecem para poder reativar. */
+    protected readonly showInactive = signal(false);
     protected readonly dialogVisible = signal(false);
     protected readonly editing = signal<Category | null>(null);
 
@@ -34,7 +47,7 @@ export class CategoriesPageComponent implements OnInit {
     protected load(): void {
         this.loading.set(true);
 
-        this.categoryService.findAll().subscribe({
+        this.categoryService.findAll(this.showInactive()).subscribe({
             next: (categories) => {
                 this.categories.set(categories);
                 this.loading.set(false);
@@ -44,6 +57,11 @@ export class CategoriesPageComponent implements OnInit {
                 this.notifications.error(error);
             },
         });
+    }
+
+    protected toggleInactive(show: boolean): void {
+        this.showInactive.set(show);
+        this.load();
     }
 
     protected openCreate(): void {
@@ -60,8 +78,8 @@ export class CategoriesPageComponent implements OnInit {
         const confirmed = await this.confirm.danger({
             header: 'Desativar categoria',
             message:
-                `Desativar "${category.name}"? Ela sai da lista e não poderá ser escolhida em novas despesas. ` +
-                'As despesas já lançadas continuam com ela.',
+                `Desativar "${category.name}"? Ela não poderá ser escolhida em novas despesas; ` +
+                'as despesas já lançadas continuam com ela. Dá para reativar depois em "Mostrar inativas".',
             acceptLabel: 'Desativar',
         });
 
@@ -72,6 +90,16 @@ export class CategoriesPageComponent implements OnInit {
         this.categoryService.update(category.id, { active: false }).subscribe({
             next: () => {
                 this.notifications.success(`Categoria "${category.name}" desativada.`);
+                this.load();
+            },
+            error: (error: unknown) => this.notifications.error(error),
+        });
+    }
+
+    protected reactivate(category: Category): void {
+        this.categoryService.update(category.id, { active: true }).subscribe({
+            next: () => {
+                this.notifications.success(`Categoria "${category.name}" reativada.`);
                 this.load();
             },
             error: (error: unknown) => this.notifications.error(error),

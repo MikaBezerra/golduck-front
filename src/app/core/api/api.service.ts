@@ -38,7 +38,8 @@ export class ApiService {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = inject(API_BASE_URL);
 
-    public get<T>(path: string, query?: QueryParams, options?: RequestOptions): Observable<T> {
+    /** `query` aceita um objeto simples ou `HttpParams` prontos (ex.: `pageParams()` da paginação). */
+    public get<T>(path: string, query?: QueryParams | HttpParams, options?: RequestOptions): Observable<T> {
         return this.unwrap(
             this.http.get<ApiSuccessResponse<T>>(this.url(path), { ...options, params: toHttpParams(query) }),
         );
@@ -69,9 +70,9 @@ export class ApiService {
     }
 }
 
-function toHttpParams(query?: QueryParams): HttpParams | undefined {
-    if (!query) {
-        return undefined;
+function toHttpParams(query?: QueryParams | HttpParams): HttpParams | undefined {
+    if (!query || query instanceof HttpParams) {
+        return query;
     }
 
     let params = new HttpParams();

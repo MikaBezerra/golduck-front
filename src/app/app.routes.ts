@@ -20,7 +20,14 @@ export const routes: Routes = [
         component: ShellComponent,
         canActivate: [authGuard],
         canActivateChild: [authGuard],
-        children: [{ path: '', component: HomePageComponent, title: 'Início' }],
+        children: [
+            { path: '', component: HomePageComponent, title: 'Início' },
+            {
+                path: 'categorias',
+                loadChildren: async () =>
+                    import('./features/categories/categories.routes').then((m) => m.CATEGORIES_ROUTES),
+            },
+        ],
     },
     { path: '**', redirectTo: '' },
 ];

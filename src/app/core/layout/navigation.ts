@@ -11,4 +11,11 @@ export interface NavItem {
  * Itens do menu lateral e dos atalhos da página inicial.
  * Cada feature nova adiciona o seu item aqui.
  */
-export const NAV_ITEMS: readonly NavItem[] = [];
+export const NAV_ITEMS: readonly NavItem[] = [
+    {
+        label: 'Categorias',
+        icon: 'pi pi-tags',
+        route: '/categorias',
+        description: 'Organize as despesas por tipo de gasto.',
+    },
+];

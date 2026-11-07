@@ -1,0 +1,65 @@
+<app-page-header title="Categorias" subtitle="Agrupe as despesas por tipo de gasto.">
+    <p-button label="Nova categoria" icon="pi pi-plus" (onClick)="openCreate()" />
+</app-page-header>
+
+<div class="overflow-hidden rounded-xl border border-surface bg-surface-0">
+    <p-table [value]="categories()" [loading]="loading()" dataKey="id" [rowHover]="true">
+        <ng-template #header>
+            <tr>
+                <th>Nome</th>
+                <th class="w-32 text-right">Ações</th>
+            </tr>
+        </ng-template>
+
+        <ng-template #body let-category>
+            <tr>
+                <td>
+                    <span class="font-medium">{{ category.name }}</span>
+                    @if (category.isDefault) {
+                        <p-tag
+                            value="Padrão"
+                            severity="secondary"
+                            styleClass="ml-2"
+                            pTooltip="Recebe as despesas lançadas sem categoria"
+                            tooltipPosition="top"
+                        />
+                    }
+                </td>
+                <td class="text-right whitespace-nowrap">
+                    @if (category.isDefault) {
+                        <span class="text-sm text-muted-color">Não editável</span>
+                    } @else {
+                        <p-button
+                            icon="pi pi-pencil"
+                            [text]="true"
+                            [rounded]="true"
+                            severity="secondary"
+                            [ariaLabel]="'Renomear ' + category.name"
+                            pTooltip="Renomear"
+                            tooltipPosition="top"
+                            (onClick)="openRename(category)"
+                        />
+                        <p-button
+                            icon="pi pi-ban"
+                            [text]="true"
+                            [rounded]="true"
+                            severity="danger"
+                            [ariaLabel]="'Desativar ' + category.name"
+                            pTooltip="Desativar"
+                            tooltipPosition="top"
+                            (onClick)="deactivate(category)"
+                        />
+                    }
+                </td>
+            </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+            <tr>
+                <td colspan="2" class="py-8 text-center text-muted-color">Nenhuma categoria cadastrada.</td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<app-category-form-dialog [(visible)]="dialogVisible" [category]="editing()" (saved)="load()" />

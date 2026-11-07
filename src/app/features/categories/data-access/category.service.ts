@@ -1,0 +1,29 @@
+import { inject, Injectable } from '@angular/core';
+import type { Observable } from 'rxjs';
+
+import { ApiService } from '../../../core/api/api.service';
+import type { Category, CreateCategoryRequest, UpdateCategoryRequest } from './category.models';
+
+/** Chamadas HTTP de `/categories` (ver financas/src/modules/categories/controller). */
+@Injectable({ providedIn: 'root' })
+export class CategoryService {
+    private readonly api = inject(ApiService);
+
+    /** Somente categorias ativas, em ordem alfabética. */
+    public findAll(): Observable<Category[]> {
+        return this.api.get<Category[]>('categories');
+    }
+
+    /** Busca qualquer categoria, inclusive inativa. */
+    public findById(id: string): Observable<Category> {
+        return this.api.get<Category>(`categories/${id}`);
+    }
+
+    public create(body: CreateCategoryRequest): Observable<Category> {
+        return this.api.post<Category>('categories', body);
+    }
+
+    public update(id: string, body: UpdateCategoryRequest): Observable<Category> {
+        return this.api.patch<Category>(`categories/${id}`, body);
+    }
+}

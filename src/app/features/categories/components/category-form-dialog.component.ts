@@ -8,6 +8,7 @@ import {
     model,
     output,
     signal,
+    untracked,
 } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -36,7 +37,7 @@ import { CategoryService } from '../data-access/category.service';
             [style]="{ width: '28rem' }"
             [breakpoints]="{ '640px': '95vw' }"
         >
-            <form [formGroup]="form" (ngSubmit)="save()" id="category-form" class="flex flex-col gap-2" novalidate>
+            <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-2" novalidate>
                 <label for="category-name" class="font-medium">Nome</label>
                 <input
                     pInputText
@@ -48,12 +49,13 @@ import { CategoryService } from '../data-access/category.service';
                     [fluid]="true"
                 />
                 <app-field-error [control]="form.controls.name" />
-            </form>
 
-            <ng-template #footer>
-                <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
-                <p-button type="submit" form="category-form" label="Salvar" icon="pi pi-check" [loading]="saving()" />
-            </ng-template>
+                <!-- Botões dentro do <form>: assim "Salvar" e a tecla Enter enviam o formulário. -->
+                <div class="mt-4 flex justify-end gap-2">
+                    <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
+                    <p-button type="submit" label="Salvar" icon="pi pi-check" [loading]="saving()" />
+                </div>
+            </form>
         </p-dialog>
     `,
 })
@@ -77,7 +79,10 @@ export class CategoryFormDialogComponent {
         // Toda vez que o diálogo abre, o formulário começa limpo (ou com o nome atual).
         effect(() => {
             if (this.visible()) {
-                this.form.reset({ name: this.category()?.name ?? '' });
+                const name = this.category()?.name ?? '';
+
+                // `untracked`: o effect depende só de `visible` e `category`, não do estado interno do formulário.
+                untracked(() => this.form.reset({ name }));
             }
         });
     }

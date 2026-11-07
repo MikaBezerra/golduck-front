@@ -35,16 +35,18 @@ Para entrar, use um usuário criado no back com `npm run admin:create`.
 
 ## Scripts
 
-| Comando                | O que faz                                    |
-| ---------------------- | -------------------------------------------- |
-| `npm start`            | Sobe o front em modo desenvolvimento (4200)  |
-| `npm run build`        | Gera a versão de produção em `dist/`         |
-| `npm run build:develop` | Build do ambiente develop (API de develop)  |
-| `npm run build:production` | Build de produção (igual ao `build`)     |
-| `npm test`             | Roda os testes unitários uma vez             |
-| `npm run test:watch`   | Roda os testes a cada alteração              |
-| `npm run lint`         | Verifica o código com ESLint                 |
-| `npm run format`       | Formata o código com Prettier                |
+| Comando                    | O que faz                                                          |
+| -------------------------- | ------------------------------------------------------------------ |
+| `npm start`                | Sobe o front em modo desenvolvimento (4200)                        |
+| `npm run build`            | Gera a versão de produção em `dist/`                               |
+| `npm run build:develop`    | Build do ambiente develop (API de develop)                         |
+| `npm run build:production` | Build de produção (igual ao `build`)                               |
+| `npm run build:vercel`     | Build usado pela Vercel (escolhe develop/production, ver CI/CD)    |
+| `npm test`                 | Roda os testes unitários uma vez                                   |
+| `npm run test:watch`       | Roda os testes a cada alteração                                    |
+| `npm run test:cov`         | Testes com cobertura e metas mínimas (relatório em `coverage/`)    |
+| `npm run lint`             | Verifica o código com ESLint                                       |
+| `npm run format`           | Formata o código com Prettier (`format:check` só confere)          |
 
 ## Estrutura
 
@@ -163,6 +165,49 @@ ficam em domínios diferentes, libere o domínio do front no back com a variáve
 (ex.: `API_CORS_ORIGINS=https://golduck.vercel.app`).
 
 Não há `.env` no front: tudo o que vai para o bundle é público, então não existem segredos aqui.
+
+## CI/CD e versões
+
+Workflows em `.github/workflows` (mesma estrutura do back, `golduck-back`):
+
+| Workflow       | Quando roda                                                  | O que faz                                                                                                   |
+| -------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `ci.yml`       | PR para `develop`/`main`, push nessas branches e manual      | `format:check`, lint, testes com cobertura mínima (relatório como artefato por 14 dias) e build             |
+| `pr-title.yml` | abertura/edição de PR                                        | exige título no padrão Conventional Commits (`feat: ...`, `fix: ...`), usado no squash merge                |
+| `release.yml`  | push na `main`                                               | [release-please](https://github.com/googleapis/release-please): mantém um PR de release com `CHANGELOG.md` e versão; ao fazer merge, cria a tag `vX.Y.Z` e a release |
+| `deploy.yml`   | push na `develop` (preview na Vercel) e na `main` (produção) | build com a configuração do Angular do ambiente e publicação na Vercel. **Desligado** até a variável `DEPLOY_ENABLED` ser `true` |
+
+Fluxo: `feature` → PR (squash) para `develop` → PR de `develop` para `main` → release-please.
+O título do PR segue o Conventional Commits, em português depois do prefixo (`feat: tabela do resumo`).
+`feat` sobe a versão minor; `fix` sobe a patch; `feat!`/`BREAKING CHANGE` sobe a major (antes da 1.0,
+`feat` sobe a minor). O `.github/dependabot.yml` abre PRs semanais (segundas) para a `develop`.
+
+**Cobertura:** a meta global fica no `angular.json` (`coverageThresholds`, hoje baixa: o relatório inclui
+todas as telas, e a maioria ainda não tem teste) e as metas mais altas por arquivo/pasta ficam no
+[`vitest.config.ts`](vitest.config.ts) (dinheiro, cliente HTTP, autenticação e contas do resumo). Suba as
+metas conforme os testes crescerem.
+
+### O que configurar no GitHub (Settings)
+
+- **Environments** `develop` e `production` (sem secrets próprios por enquanto: o front não tem segredos).
+- **Secrets** do repositório: `VERCEL_TOKEN` (token da conta na Vercel).
+- **Variables** do repositório: `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (do `.vercel/project.json` gerado por
+  `npx vercel link`) e `DEPLOY_ENABLED=true` quando o deploy estiver pronto.
+- **Branch protection** em `develop` e `main`: PR obrigatório, checks `CI` e `PR title` verdes e só
+  squash merge.
+
+### O que configurar na Vercel
+
+- Crie o projeto e ligue ao repositório (`npx vercel link`). O [`vercel.json`](vercel.json) já define:
+  instalação (`npm ci`), build (`npm run build:vercel`), saída (`dist/financas-front/browser`), o
+  redirecionamento das rotas do Angular para o `index.html` e o deploy automático por Git **desligado**
+  (quem publica é o `deploy.yml`).
+- O `build:vercel` escolhe a configuração do Angular pela variável `ANGULAR_CONFIGURATION` (o
+  `deploy.yml` define `develop` ou `production`); sem ela, usa `VERCEL_ENV` (`production` → production,
+  `preview` → develop). Não é preciso mudar o comando de build no painel; se mudar, use
+  `npm run build:vercel`.
+- Troque os endereços provisórios `CHANGE_ME` em `src/environments` pelos domínios reais do back e
+  libere os domínios do front na variável `API_CORS_ORIGINS` do back.
 
 ## Problemas conhecidos do ambiente
 

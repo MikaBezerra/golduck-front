@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "node",
+  "include-component-in-tag": false,
+  "bump-minor-pre-major": true,
+  "bootstrap-sha": "561320a1c54f0c355a3e88ff9a3345fcde43d3b3",
+  "changelog-sections": [
+    { "type": "feat", "section": "Funcionalidades" },
+    { "type": "fix", "section": "Correções" },
+    { "type": "perf", "section": "Desempenho" },
+    { "type": "refactor", "section": "Refatorações" },
+    { "type": "revert", "section": "Reversões" },
+    { "type": "docs", "section": "Documentação", "hidden": true },
+    { "type": "test", "section": "Testes", "hidden": true },
+    { "type": "build", "section": "Build", "hidden": true },
+    { "type": "ci", "section": "CI", "hidden": true },
+    { "type": "chore", "section": "Manutenção", "hidden": true },
+    { "type": "style", "section": "Estilo", "hidden": true }
+  ],
+  "packages": {
+    ".": {
+      "package-name": "golduck-front"
+    }
+  }
+}

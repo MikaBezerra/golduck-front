@@ -1,0 +1,59 @@
+# Entrega contínua: push na develop publica o ambiente develop (preview na Vercel);
+# push na main, a produção.
+#
+# Desligado até a variável DEPLOY_ENABLED ser "true" (Settings > Variables). Requer:
+# - environments "develop" e "production" no GitHub;
+# - secret VERCEL_TOKEN e variables VERCEL_ORG_ID e VERCEL_PROJECT_ID;
+# - deploy automático por Git desligado na Vercel (o vercel.json já desliga: quem publica é este workflow).
+#
+# O build roda pelo vercel.json (npm run build:vercel), que usa ANGULAR_CONFIGURATION para escolher
+# o arquivo de ambiente do Angular (endereço da API de develop ou de produção).
+name: Deploy
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_CLI: vercel@65.12.1
+
+jobs:
+  deploy:
+    name: Deploy na Vercel
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
+    env:
+      ANGULAR_CONFIGURATION: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
+      VERCEL_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+      VERCEL_PROD_FLAG: ${{ github.ref_name == 'main' && '--prod' || '' }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instala dependências
+        run: npm ci
+
+      - name: Baixa a configuração do projeto na Vercel
+        run: npx --yes ${{ env.VERCEL_CLI }} pull --yes --environment=${{ env.VERCEL_ENVIRONMENT }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build para a Vercel (${{ env.ANGULAR_CONFIGURATION }})
+        run: npx --yes ${{ env.VERCEL_CLI }} build ${{ env.VERCEL_PROD_FLAG }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Publica na Vercel
+        run: npx --yes ${{ env.VERCEL_CLI }} deploy --prebuilt ${{ env.VERCEL_PROD_FLAG }} --token=${{ secrets.VERCEL_TOKEN }}

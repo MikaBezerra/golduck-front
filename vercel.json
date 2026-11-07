@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "dist/financas-front/browser",
+  "git": {
+    "deploymentEnabled": false
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

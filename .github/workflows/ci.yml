@@ -1,0 +1,54 @@
+# Integração contínua: roda em todo PR para develop/main e nos pushes nessas branches.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Formatação, lint, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instala dependências
+        run: npm ci
+
+      - name: Formatação
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      # Metas de cobertura: globais no angular.json (coverageThresholds) e por pasta no vitest.config.ts.
+      - name: Testes com cobertura mínima
+        run: npm run test:cov
+
+      - name: Publica o relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Build
+        run: npm run build

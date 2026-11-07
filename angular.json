@@ -126,7 +126,19 @@
           }
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "runnerConfig": "vitest.config.ts",
+            "coverageInclude": ["src/app/**/*.ts"],
+            "coverageExclude": ["src/app/**/*.spec.ts", "src/app/core/api/api-schema.d.ts"],
+            "coverageReporters": ["text-summary", "html", "lcov", "json-summary"],
+            "coverageThresholds": {
+              "statements": 18,
+              "branches": 23,
+              "functions": 20,
+              "lines": 17
+            }
+          }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",

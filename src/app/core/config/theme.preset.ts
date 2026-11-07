@@ -41,7 +41,7 @@ const MIDNIGHT = {
     950: '#02070a',
 };
 
-export const FinancasPreset = definePreset(Aura, {
+export const AppPreset = definePreset(Aura, {
     primitive: {
         // Cantos mais arredondados que o padrão do Aura (visual mais moderno).
         borderRadius: { none: '0', xs: '4px', sm: '6px', md: '10px', lg: '14px', xl: '20px' },

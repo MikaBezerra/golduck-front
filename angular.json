@@ -8,7 +8,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "financas-front": {
+    "golduck-front": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -114,10 +114,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "financas-front:build:production"
+              "buildTarget": "golduck-front:build:production"
             },
             "development": {
-              "buildTarget": "financas-front:build:development"
+              "buildTarget": "golduck-front:build:development"
             }
           },
           "defaultConfiguration": "development",

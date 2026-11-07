@@ -1,8 +1,9 @@
 import { computed, Injectable, signal } from '@angular/core';
 
 import { addMonths, currentMonthKey, isMonthKey, parseMonthKey } from '../../shared/month/month';
+import { storageKey } from '../storage/storage-key';
 
-const STORAGE_KEY = 'financas.selectedMonth';
+const STORAGE_KEY = storageKey('selectedMonth');
 
 /**
  * Mês que o usuário está olhando (seletor no topo da tela).

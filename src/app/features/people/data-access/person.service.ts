@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type { CreatePersonRequest, Person, UpdatePersonRequest } from './person.models';
 
-/** Chamadas HTTP de `/people` (ver financas/src/modules/people/controller). */
+/** Chamadas HTTP de `/people` (ver `people/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class PersonService {
     private readonly api = inject(ApiService);

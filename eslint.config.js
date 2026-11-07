@@ -35,7 +35,7 @@ module.exports = defineConfig([
                     style: 'kebab-case',
                 },
             ],
-            // Mesmas convenções do back-end (financas/.eslintrc.js)
+            // Mesmas convenções do back-end (configuração do ESLint do back)
             '@typescript-eslint/explicit-member-accessibility': [
                 'error',
                 { accessibility: 'explicit', overrides: { constructors: 'off' } },

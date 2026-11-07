@@ -1,6 +1,8 @@
 {
   "name": "golduck-front",
   "version": "0.0.0",
+  "author": "Mikaell Silva",
+  "license": "MIT",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

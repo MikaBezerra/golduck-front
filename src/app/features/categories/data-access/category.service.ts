@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type { Category, CreateCategoryRequest, UpdateCategoryRequest } from './category.models';
 
-/** Chamadas HTTP de `/categories` (ver financas/src/modules/categories/controller). */
+/** Chamadas HTTP de `/categories` (ver `categories/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
     private readonly api = inject(ApiService);

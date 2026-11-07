@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type { CreateIncomeRequest, Income, UpdateIncomeRequest } from './income.models';
 
-/** Chamadas HTTP de `/incomes` (ver financas/src/modules/incomes/controller). */
+/** Chamadas HTTP de `/incomes` (ver `incomes/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class IncomeService {
     private readonly api = inject(ApiService);

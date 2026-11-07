@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type { CreateReserveRequest, Reserve, ReserveTotals, UpdateReserveRequest } from './reserve.models';
 
-/** Chamadas HTTP de `/reserves` (ver financas/src/modules/reserves/controller). */
+/** Chamadas HTTP de `/reserves` (ver `reserves/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class ReserveService {
     private readonly api = inject(ApiService);

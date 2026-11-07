@@ -9,7 +9,7 @@ import { providePrimeNG } from 'primeng/config';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { PRIMENG_PT_BR } from './core/config/primeng-pt-br';
-import { FinancasPreset } from './core/config/theme.preset';
+import { AppPreset } from './core/config/theme.preset';
 import { AppTitleStrategy } from './core/layout/app-title.strategy';
 
 registerLocaleData(localePt);
@@ -28,7 +28,7 @@ export const appConfig: ApplicationConfig = {
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'BRL' },
         providePrimeNG({
             theme: {
-                preset: FinancasPreset,
+                preset: AppPreset,
                 options: {
                     darkModeSelector: '.app-dark',
                     cssLayer: {

@@ -20,6 +20,7 @@ import { of } from 'rxjs';
 
 import { SelectedMonthService } from '../../../core/month/selected-month.service';
 import { NotificationService } from '../../../core/notification/notification.service';
+import { storageKey } from '../../../core/storage/storage-key';
 import { remoteData } from '../../../shared/data/remote-data';
 import { IsoDatePipe } from '../../../shared/date/iso-date.pipe';
 import { sumAmounts } from '../../../shared/money/money';
@@ -39,7 +40,7 @@ import { CardExpenseExclusionDialogComponent } from '../components/card-expense-
 import type { CardExpense } from '../data-access/card-expense.models';
 import { CardExpenseService } from '../data-access/card-expense.service';
 
-const SELECTED_CARD_KEY = 'financas.selectedCard';
+const SELECTED_CARD_KEY = storageKey('selectedCard');
 
 interface CardExpenseRow extends CardExpense {
     readonly categoryName: string;

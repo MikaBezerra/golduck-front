@@ -5,10 +5,11 @@ import { defer, finalize, firstValueFrom, map, type Observable, shareReplay, tap
 import { ApiError } from '../api/api-error';
 import { ApiService } from '../api/api.service';
 import { NotificationService } from '../notification/notification.service';
+import { storageKey } from '../storage/storage-key';
 import type { AuthTokens, AuthUser, LoginRequest } from './auth.models';
 import { TokenStorageService } from './token-storage.service';
 
-const REFRESH_LOCK_NAME = 'financas.auth.refresh';
+const REFRESH_LOCK_NAME = storageKey('auth.refresh');
 
 /**
  * Sessão do usuário: entrar, sair e renovar o access token.

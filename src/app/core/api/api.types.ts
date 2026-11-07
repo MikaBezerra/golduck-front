@@ -1,5 +1,5 @@
 /**
- * Formato das respostas do back-end (ver financas/src/modules/common/http/response.types.ts).
+ * Formato das respostas do back-end (ver `common/http/response.types.ts` no back).
  *
  * Sucesso: `{ data: ... }`
  * Erro:    `{ error: { code, message, requestId, details? } }`

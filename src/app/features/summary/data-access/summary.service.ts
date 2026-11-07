@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type { AnnualSummary, Summary } from './summary.models';
 
-/** Chamadas HTTP de `/summary` (ver financas/src/modules/summary/controller). */
+/** Chamadas HTTP de `/summary` (ver `summary/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class SummaryService {
     private readonly api = inject(ApiService);

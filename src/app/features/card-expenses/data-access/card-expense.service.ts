@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type { CardExpense, CardExpenseScopeRequest, UpdateCardExpensesRequest } from './card-expense.models';
 
-/** Chamadas HTTP de `/card-expenses` (ver financas/src/modules/card-expenses/controller). */
+/** Chamadas HTTP de `/card-expenses` (ver `card-expenses/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class CardExpenseService {
     private readonly api = inject(ApiService);

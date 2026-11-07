@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type { CreateCreditCardRequest, CreditCard, UpdateCreditCardRequest } from './credit-card.models';
 
-/** Chamadas HTTP de `/credit-cards` (ver financas/src/modules/credit-cards/controller). */
+/** Chamadas HTTP de `/credit-cards` (ver `credit-cards/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class CreditCardService {
     private readonly api = inject(ApiService);

@@ -26,7 +26,7 @@ export interface SaveStatementRequest extends UploadStatementRequest {
     readonly exclusions?: readonly CardImportExclusion[];
 }
 
-/** Chamadas HTTP de `/card-imports` (ver financas/src/modules/card-imports/controller). */
+/** Chamadas HTTP de `/card-imports` (ver `card-imports/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class CardImportService {
     private readonly api = inject(ApiService);

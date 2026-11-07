@@ -3,7 +3,7 @@
   "framework": null,
   "installCommand": "npm ci",
   "buildCommand": "npm run build:vercel",
-  "outputDirectory": "dist/financas-front/browser",
+  "outputDirectory": "dist/golduck-front/browser",
   "git": {
     "deploymentEnabled": false
   },

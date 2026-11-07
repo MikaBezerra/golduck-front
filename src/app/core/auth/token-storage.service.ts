@@ -1,8 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 
+import { storageKey } from '../storage/storage-key';
 import type { AuthTokens } from './auth.models';
 
-const REFRESH_TOKEN_KEY = 'financas.refreshToken';
+const REFRESH_TOKEN_KEY = storageKey('refreshToken');
 
 /** Renova o access token um pouco antes de ele vencer, para não perder uma requisição no meio do caminho. */
 const EXPIRY_MARGIN_MS = 30_000;

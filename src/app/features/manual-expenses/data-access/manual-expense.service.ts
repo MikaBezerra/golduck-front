@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 import { ApiService } from '../../../core/api/api.service';
 import type { CreateManualExpenseRequest, ManualExpense, UpdateManualExpensesRequest } from './manual-expense.models';
 
-/** Chamadas HTTP de `/manual-expenses` (ver financas/src/modules/manual-expenses/controller). */
+/** Chamadas HTTP de `/manual-expenses` (ver `manual-expenses/controller` no back). */
 @Injectable({ providedIn: 'root' })
 export class ManualExpenseService {
     private readonly api = inject(ApiService);

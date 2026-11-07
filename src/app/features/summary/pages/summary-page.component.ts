@@ -6,6 +6,7 @@ import { SelectButton } from 'primeng/selectbutton';
 import { Skeleton } from 'primeng/skeleton';
 
 import { SelectedMonthService } from '../../../core/month/selected-month.service';
+import { storageKey } from '../../../core/storage/storage-key';
 import { remoteData } from '../../../shared/data/remote-data';
 import { amountRatio, amountToCents, formatBrl } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
@@ -35,7 +36,7 @@ import {
 } from '../data-access/summary.models';
 import { SummaryService } from '../data-access/summary.service';
 
-const MODE_STORAGE_KEY = 'financas.summaryMode';
+const MODE_STORAGE_KEY = storageKey('summaryMode');
 
 /** Os números do topo: do mês escolhido ou do ano inteiro. */
 interface Headline {

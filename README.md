@@ -203,7 +203,7 @@ metas conforme os testes crescerem.
 ### O que configurar na Vercel
 
 - Crie o projeto e ligue ao repositório (`npx vercel link`). O [`vercel.json`](vercel.json) já define:
-  instalação (`npm ci`), build (`npm run build:vercel`), saída (`dist/financas-front/browser`), o
+  instalação (`npm ci`), build (`npm run build:vercel`), saída (`dist/golduck-front/browser`), o
   redirecionamento das rotas do Angular para o `index.html` e o deploy automático por Git **desligado**
   (quem publica é o `deploy.yml`).
 - O `build:vercel` escolhe a configuração do Angular pela variável `ANGULAR_CONFIGURATION` (o

@@ -432,6 +432,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/summary/annual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resumo do ano: os totais do mensal somados nos 12 meses, mais a lista dos meses
+         * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. Líquido individual = (entrada − compartilhadas) / pessoas ativas − despesas individuais. No anual, o líquido de cada pessoa é a soma dos líquidos mensais.
+         */
+        get: operations["SummaryController_findByYear"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1087,12 +1107,7 @@ export interface components {
         };
         SummaryResponse: {
             /**
-             * @description Mês no formato AAAA-MM
-             * @example 2026-11
-             */
-            month: string;
-            /**
-             * @description null quando não há entrada cadastrada no mês
+             * @description null quando não há entrada cadastrada no período
              * @example 1234.56
              */
             income: string | null;
@@ -1108,12 +1123,69 @@ export interface components {
              */
             balance: string;
             bySource: components["schemas"]["SummaryBySourceDto"];
-            /** @description Valor decrescente; inclui categorias inativas com despesas no mês */
+            /** @description Valor decrescente; inclui categorias inativas com despesas no período */
             byCategory: components["schemas"]["SummaryCategoryDto"][];
             /** @description Valor decrescente; o item com personId null são as despesas compartilhadas */
             byPerson: components["schemas"]["SummaryPersonDto"][];
-            /** @description Líquido de cada pessoa ativa, em ordem alfabética */
+            /** @description Líquido de cada pessoa ativa, em ordem alfabética (no anual, a soma dos líquidos mensais) */
             netByPerson: components["schemas"]["SummaryNetByPersonDto"][];
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+        };
+        SummaryMonthDto: {
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description null quando não há entrada cadastrada no mês
+             * @example 1234.56
+             */
+            income: string | null;
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            expensesTotal: string;
+            expensesCount: number;
+            /**
+             * @description entrada (ou 0) − despesas; pode ser negativo
+             * @example 1234.56
+             */
+            balance: string;
+        };
+        AnnualSummaryResponse: {
+            /**
+             * @description null quando não há entrada cadastrada no período
+             * @example 1234.56
+             */
+            income: string | null;
+            /**
+             * @description Despesas fora do cartão + do cartão (sem as excluídas)
+             * @example 1234.56
+             */
+            expensesTotal: string;
+            expensesCount: number;
+            /**
+             * @description entrada (ou 0) − despesas; pode ser negativo
+             * @example 1234.56
+             */
+            balance: string;
+            bySource: components["schemas"]["SummaryBySourceDto"];
+            /** @description Valor decrescente; inclui categorias inativas com despesas no período */
+            byCategory: components["schemas"]["SummaryCategoryDto"][];
+            /** @description Valor decrescente; o item com personId null são as despesas compartilhadas */
+            byPerson: components["schemas"]["SummaryPersonDto"][];
+            /** @description Líquido de cada pessoa ativa, em ordem alfabética (no anual, a soma dos líquidos mensais) */
+            netByPerson: components["schemas"]["SummaryNetByPersonDto"][];
+            /** @example 2026 */
+            year: number;
+            /** @description Sempre os 12 meses, de janeiro a dezembro, inclusive os vazios */
+            months: components["schemas"]["SummaryMonthDto"][];
         };
     };
     responses: never;
@@ -2425,6 +2497,39 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["SummaryResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryController_findByYear: {
+        parameters: {
+            query: {
+                year: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AnnualSummaryResponse"];
                     };
                 };
             };

@@ -1,0 +1,108 @@
+<div class="relative ml-9 sm:ml-12" (mouseleave)="hover(null)">
+    <!-- Linhas de grade com os valores do eixo (em reais, abreviados). -->
+    <div class="pointer-events-none absolute inset-x-0 top-0 h-48 sm:h-64" aria-hidden="true">
+        @for (tick of chart().ticks; track tick.position) {
+            <div class="absolute inset-x-0 border-t border-white/[0.07]" [style.bottom.%]="tick.position">
+                <span
+                    class="absolute right-full mr-2 -translate-y-1/2 text-[10px] whitespace-nowrap text-muted-color tabular-nums sm:text-[11px]"
+                >
+                    {{ tick.label }}
+                </span>
+            </div>
+        }
+    </div>
+
+    <div
+        class="relative grid grid-cols-12 gap-0.5 sm:gap-1"
+        role="radiogroup"
+        [attr.aria-label]="'Meses de ' + year() + ': escolha um para ver o resumo'"
+    >
+        @for (point of chart().points; track point.month; let i = $index) {
+            @let isSelected = i === selectedIndex();
+            <button
+                #column
+                type="button"
+                role="radio"
+                [attr.aria-checked]="isSelected"
+                [attr.aria-label]="point.ariaLabel"
+                [tabindex]="isSelected || (selectedIndex() < 0 && i === 0) ? 0 : -1"
+                [class]="isSelected ? selectedColumnClass : columnClass"
+                (click)="choose(i)"
+                (mouseenter)="hover(i)"
+                (focus)="onFocus($event, i)"
+                (blur)="onBlur()"
+                (keydown)="onKeydown($event, i)"
+            >
+                <span
+                    class="flex h-48 w-full items-end justify-center gap-0.5 transition-opacity duration-300 sm:h-64"
+                    [class.opacity-50]="!isSelected && hoveredIndex() !== i"
+                >
+                    <span
+                        class="h-(--bar) w-1.5 rounded-t-[3px] bg-income transition-[height] duration-700 ease-out starting:h-0 sm:w-3.5 sm:rounded-t-[4px]"
+                        [style.--bar]="point.incomeHeight + '%'"
+                    ></span>
+                    <span
+                        class="h-(--bar) w-1.5 rounded-t-[3px] bg-expense transition-[height] duration-700 ease-out starting:h-0 sm:w-3.5 sm:rounded-t-[4px]"
+                        [style.--bar]="point.expenseHeight + '%'"
+                    ></span>
+                </span>
+                <span
+                    class="text-[11px] sm:text-xs"
+                    [class.font-bold]="isSelected"
+                    [class.text-white]="isSelected"
+                    [class.text-muted-color]="!isSelected"
+                    aria-hidden="true"
+                >
+                    {{ wide() ? point.shortLabel : point.initial }}
+                </span>
+                <!-- Saldo negativo: ponto vermelho sob o mês (também dito no rótulo acessível). -->
+                <span
+                    class="h-1.5 w-1.5 rounded-full"
+                    [class.bg-negative]="point.negative"
+                    [class.bg-transparent]="!point.negative"
+                    aria-hidden="true"
+                ></span>
+            </button>
+        }
+    </div>
+
+    @if (chart().empty) {
+        <p
+            class="pointer-events-none absolute inset-x-0 top-20 m-0 text-center text-muted-color sm:top-24"
+            aria-live="polite"
+        >
+            Nenhum lançamento em {{ year() }}.
+        </p>
+    }
+
+    <!-- Balão com os valores do mês sob o mouse (ou focado pelo teclado). -->
+    @if (tooltip(); as tip) {
+        <div
+            class="pointer-events-none absolute top-1 z-10 w-52 rounded-xl border border-line bg-card-strong p-3 text-sm shadow-2xl backdrop-blur-xl"
+            [class]="tip.align"
+            [style.left.%]="tip.left"
+            aria-hidden="true"
+        >
+            <p class="m-0 mb-2 font-display font-semibold">{{ tip.point.longLabel }}</p>
+            <dl class="m-0 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1">
+                <dt class="flex items-center gap-1.5 text-muted-color">
+                    <span class="h-2.5 w-2.5 rounded-sm bg-income"></span>Entrada
+                </dt>
+                <dd class="m-0 text-right tabular-nums">
+                    {{ tip.point.income === null ? 'Não cadastrada' : (tip.point.income | brl) }}
+                </dd>
+                <dt class="flex items-center gap-1.5 text-muted-color">
+                    <span class="h-2.5 w-2.5 rounded-sm bg-expense"></span>Despesas
+                </dt>
+                <dd class="m-0 text-right tabular-nums">{{ tip.point.expenses | brl }}</dd>
+                <dt class="mt-1 border-t border-line pt-1 text-muted-color">Saldo</dt>
+                <dd
+                    class="m-0 mt-1 border-t border-line pt-1 text-right font-semibold tabular-nums"
+                    [class.text-negative]="tip.point.negative"
+                >
+                    {{ tip.point.balance | brl }}
+                </dd>
+            </dl>
+        </div>
+    }
+</div>

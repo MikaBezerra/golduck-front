@@ -1,59 +1,68 @@
-<app-page-header title="Resumo" [subtitle]="month() | month" />
+<app-page-header title="Resumo" [subtitle]="subtitle()">
+    <p-selectbutton
+        [options]="modeOptions"
+        [ngModel]="mode()"
+        (ngModelChange)="setMode($event)"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        ariaLabel="Ver o resumo do mês ou do ano"
+        class="w-full sm:w-auto [&_.p-togglebutton]:flex-1"
+    />
+</app-page-header>
 
-@if (current(); as s) {
-    @if (isEmpty()) {
-        <section
-            class="flex flex-col items-center gap-3 rounded-xl border border-surface bg-surface-0 px-5 py-10 text-center"
-            aria-labelledby="summary-empty-title"
-        >
-            <i class="pi pi-chart-bar text-4xl text-muted-color" aria-hidden="true"></i>
-            <h2 id="summary-empty-title" class="m-0 text-lg font-semibold">Nada lançado em {{ s.month | month }}</h2>
-            <p class="m-0 text-muted-color">Cadastre a entrada e as despesas do mês para ver o resumo.</p>
-            <nav class="mt-2 flex flex-wrap justify-center gap-2" aria-label="Por onde começar">
-                <a routerLink="/entradas" [class]="shortcutClass">
-                    <i class="pi pi-arrow-circle-down" aria-hidden="true"></i>
-                    Entradas
-                </a>
-                <a routerLink="/despesas" [class]="shortcutClass">
-                    <i class="pi pi-receipt" aria-hidden="true"></i>
-                    Despesas
-                </a>
-                <a routerLink="/faturas" [class]="shortcutClass">
-                    <i class="pi pi-file-import" aria-hidden="true"></i>
-                    Faturas
-                </a>
-            </nav>
-        </section>
-    } @else {
-        <div class="grid gap-4 md:grid-cols-3" [attr.aria-busy]="summary.loading()">
+@if (annualCurrent(); as annual) {
+    <!-- Números principais: do mês escolhido ou do ano. No celular, uma fileira que desliza para o lado. -->
+    @if (headline(); as h) {
+        <div [class]="tilesRowClass" role="group" aria-label="Números do período" tabindex="0">
             <section [class]="tileClass" aria-labelledby="tile-income">
-                <h2 id="tile-income" [class]="tileLabelClass">Entrada</h2>
-                @if (s.income !== null) {
-                    <p [class]="tileValueClass">{{ s.income | brl }}</p>
-                    <a routerLink="/entradas" [class]="linkClass">Ver entradas do ano</a>
+                <h2 id="tile-income" [class]="tileLabelClass">
+                    <span class="h-2 w-2 rounded-full bg-income" aria-hidden="true"></span>
+                    {{ isYear() ? 'Entrada no ano' : 'Entrada' }}
+                </h2>
+                @if (h.income !== null) {
+                    <p [class]="tileValueClass">{{ h.income | brl }}</p>
                 } @else {
-                    <p [class]="tileValueClass" class="text-muted-color">Não cadastrada</p>
-                    <a routerLink="/entradas" [class]="linkClass">Cadastrar a entrada do mês</a>
+                    <p [class]="tileValueClass" class="!text-2xl text-muted-color">Não cadastrada</p>
+                }
+                @if (previous()?.income; as delta) {
+                    <p [class]="deltaClass">
+                        <i [class]="deltaIcon[delta.direction]" aria-hidden="true"></i>
+                        {{ delta.text }}
+                    </p>
+                }
+                <app-sparkline class="mt-auto text-muted-color" [values]="trends().income" [marker]="trendMarker()" />
+                @if (h.income === null) {
+                    <a routerLink="/entradas" [class]="linkClass">Cadastrar entrada</a>
                 }
             </section>
 
             <section [class]="tileClass" aria-labelledby="tile-expenses">
-                <h2 id="tile-expenses" [class]="tileLabelClass">Despesas</h2>
-                <p [class]="tileValueClass">{{ s.expensesTotal | brl }}</p>
+                <h2 id="tile-expenses" [class]="tileLabelClass">
+                    <span class="h-2 w-2 rounded-full bg-expense" aria-hidden="true"></span>
+                    {{ isYear() ? 'Despesas no ano' : 'Despesas' }}
+                </h2>
+                <p [class]="tileValueClass">{{ h.expensesTotal | brl }}</p>
                 <p class="m-0 text-sm text-muted-color">
-                    {{ s.expensesCount }} {{ s.expensesCount === 1 ? 'lançamento' : 'lançamentos' }}
+                    {{ h.expensesCount }} {{ h.expensesCount === 1 ? 'lançamento' : 'lançamentos' }}
                 </p>
+                @if (previous()?.expenses; as delta) {
+                    <p [class]="deltaClass">
+                        <i [class]="deltaIcon[delta.direction]" aria-hidden="true"></i>
+                        {{ delta.text }}
+                    </p>
+                }
                 @if (incomeUsage(); as usage) {
                     <div class="flex flex-col gap-1.5">
-                        <div class="h-1.5 bg-surface-100" aria-hidden="true">
+                        <div class="h-1.5 rounded-r-[4px] bg-white/[0.06]" aria-hidden="true">
                             <div
-                                class="h-full rounded-r"
-                                [class.bg-primary-600]="!usage.over"
-                                [class.bg-red-600]="usage.over"
-                                [style.width.%]="usage.width"
+                                class="h-full w-(--bar) rounded-r-[4px] transition-[width] duration-700 ease-out starting:w-0"
+                                [class.bg-expense]="!usage.over"
+                                [class.bg-negative]="usage.over"
+                                [style.--bar]="usage.width + '%'"
                             ></div>
                         </div>
-                        <span class="flex items-center gap-1 text-sm" [class.text-red-700]="usage.over">
+                        <span class="flex items-center gap-1 text-sm" [class.text-negative]="usage.over">
                             @if (usage.over) {
                                 <i class="pi pi-exclamation-triangle text-xs" aria-hidden="true"></i>
                             }
@@ -61,24 +70,46 @@
                         </span>
                     </div>
                 }
-                <ul class="m-0 flex list-none flex-col gap-1 border-t border-surface p-0 pt-3 text-sm">
-                    <li class="flex justify-between gap-3">
-                        <a routerLink="/despesas" [class]="linkClass">Fora do cartão</a>
-                        <span class="tabular-nums">{{ s.bySource.manual.amount | brl }}</span>
-                    </li>
-                    <li class="flex justify-between gap-3">
-                        <a routerLink="/faturas" [class]="linkClass">Cartão</a>
-                        <span class="tabular-nums">{{ s.bySource.card.amount | brl }}</span>
-                    </li>
-                </ul>
+                <app-sparkline
+                    class="mt-auto text-muted-color"
+                    [values]="trends().expenses"
+                    [marker]="trendMarker()"
+                    color="var(--color-expense)"
+                />
+                @if (breakdown(); as totals) {
+                    <ul class="m-0 flex list-none flex-col gap-1 border-t border-line p-0 pt-3 text-sm">
+                        <li class="flex justify-between gap-3">
+                            <a routerLink="/despesas" [class]="linkClass">
+                                <i class="pi pi-wallet text-xs" aria-hidden="true"></i> Fora do cartão
+                            </a>
+                            <span class="tabular-nums">{{ totals.bySource.manual.amount | brl }}</span>
+                        </li>
+                        <li class="flex justify-between gap-3">
+                            <a routerLink="/faturas" [class]="linkClass">
+                                <i class="pi pi-credit-card text-xs" aria-hidden="true"></i> Cartão
+                            </a>
+                            <span class="tabular-nums">{{ totals.bySource.card.amount | brl }}</span>
+                        </li>
+                    </ul>
+                }
             </section>
 
-            <section [class]="tileClass" aria-labelledby="tile-balance">
-                <h2 id="tile-balance" [class]="tileLabelClass">Saldo</h2>
-                <p [class]="tileValueClass">{{ s.balance | brl }}</p>
+            <!-- Saldo: cartão de destaque, com brilho laranja no canto. -->
+            <section [class]="tileClass" class="overflow-hidden" aria-labelledby="tile-balance">
+                <div
+                    class="pointer-events-none absolute -top-16 -right-16 h-44 w-44 rounded-full bg-cantaloupe/20 blur-3xl"
+                    aria-hidden="true"
+                ></div>
+                <h2 id="tile-balance" [class]="tileLabelClass">
+                    <i class="pi pi-sparkles text-[10px] text-cantaloupe" aria-hidden="true"></i>
+                    {{ isYear() ? 'Saldo do ano' : 'Saldo' }}
+                </h2>
+                <p [class]="tileValueClass" class="!text-4xl" [class.text-negative]="balanceSign() < 0">
+                    {{ h.balance | brl }}
+                </p>
                 @switch (balanceSign()) {
                     @case (-1) {
-                        <p class="m-0 flex items-center gap-1.5 text-sm text-red-700">
+                        <p class="m-0 flex items-center gap-1.5 text-sm text-negative">
                             <i class="pi pi-arrow-down text-xs" aria-hidden="true"></i>
                             Despesas acima da entrada
                         </p>
@@ -86,85 +117,175 @@
                     @case (1) {
                         <p class="m-0 flex items-center gap-1.5 text-sm text-muted-color">
                             <i class="pi pi-check text-xs" aria-hidden="true"></i>
-                            Sobra do mês
+                            {{ isYear() ? 'Sobra no ano' : 'Sobra do mês' }}
                         </p>
                     }
                     @default {
                         <p class="m-0 text-sm text-muted-color">Entrada e despesas empatadas</p>
                     }
                 }
-                @if (s.income === null) {
+                <app-sparkline
+                    class="mt-auto text-muted-color"
+                    [values]="trends().balance"
+                    [marker]="trendMarker()"
+                    color="var(--p-text-color)"
+                />
+                @if (h.income === null) {
                     <p class="m-0 text-xs text-muted-color">Sem entrada cadastrada, o saldo considera entrada zero.</p>
                 }
             </section>
         </div>
+    }
 
-        <div class="mt-4 grid gap-4 lg:grid-cols-2">
-            <section [class]="cardClass" aria-labelledby="by-category-title">
-                <h2 id="by-category-title" [class]="cardTitleClass">Por categoria</h2>
-                @if (categoryBars().length > 0) {
-                    <app-summary-bar-list [items]="categoryBars()" label="Despesas por categoria" />
-                } @else {
-                    <p class="m-0 text-muted-color">Nenhuma despesa neste mês.</p>
-                }
-            </section>
+    <!-- Gráfico do ano: cada mês é clicável e muda o mês do topo da tela. -->
+    <section class="surface-card mt-4 p-5 sm:p-6" aria-labelledby="year-chart-title">
+        <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <p class="m-0 text-[11px] font-semibold tracking-[0.14em] text-cantaloupe uppercase">Visão do ano</p>
+                <h2 id="year-chart-title" class="m-0 mt-1 text-lg font-semibold">Entradas e despesas</h2>
+                <p class="m-0 mt-1 text-sm text-muted-color">
+                    {{ isYear() ? 'Escolha um mês para ver o resumo dele.' : 'Toque em outro mês para trocar.' }}
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-4">
+                <ul class="m-0 flex list-none gap-4 p-0 text-sm" aria-label="Legenda">
+                    <li class="flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded-sm bg-income" aria-hidden="true"></span>Entrada
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded-sm bg-expense" aria-hidden="true"></span>Despesas
+                    </li>
+                </ul>
+                <div class="flex items-center rounded-full border border-line p-0.5">
+                    <p-button
+                        icon="pi pi-chevron-left"
+                        size="small"
+                        [text]="true"
+                        [rounded]="true"
+                        severity="secondary"
+                        [ariaLabel]="'Ano anterior (' + (year() - 1) + ')'"
+                        (onClick)="shiftYear(-1)"
+                    />
+                    <span class="min-w-12 text-center font-display font-semibold">{{ year() }}</span>
+                    <p-button
+                        icon="pi pi-chevron-right"
+                        size="small"
+                        [text]="true"
+                        [rounded]="true"
+                        severity="secondary"
+                        [ariaLabel]="'Próximo ano (' + (year() + 1) + ')'"
+                        (onClick)="shiftYear(1)"
+                    />
+                </div>
+            </div>
+        </div>
+        <app-summary-year-chart [months]="annual.months" [selected]="month()" (selectMonth)="chooseMonth($event)" />
+    </section>
 
-            <section [class]="cardClass" aria-labelledby="by-person-title">
-                <h2 id="by-person-title" [class]="cardTitleClass">Por pessoa</h2>
-                @if (personBars().length > 0) {
-                    <app-summary-bar-list [items]="personBars()" label="Despesas por pessoa" />
+    @if (isEmpty()) {
+        <section
+            class="surface-card mt-4 flex flex-col items-center gap-3 px-5 py-10 text-center"
+            aria-labelledby="summary-empty-title"
+        >
+            <i class="pi pi-chart-bar text-4xl text-cantaloupe" aria-hidden="true"></i>
+            <h2 id="summary-empty-title" class="m-0 text-lg font-semibold">
+                Nada lançado {{ isYear() ? 'em ' + year() : 'neste mês' }}
+            </h2>
+            <p class="m-0 text-muted-color">Cadastre a entrada e as despesas para ver o resumo.</p>
+            <nav class="mt-2 flex flex-wrap justify-center gap-2" aria-label="Por onde começar">
+                <a routerLink="/entradas" [class]="shortcutClass">
+                    <i class="pi pi-arrow-circle-down" aria-hidden="true"></i> Entradas
+                </a>
+                <a routerLink="/despesas" [class]="shortcutClass">
+                    <i class="pi pi-receipt" aria-hidden="true"></i> Despesas
+                </a>
+                <a routerLink="/faturas" [class]="shortcutClass">
+                    <i class="pi pi-file-import" aria-hidden="true"></i> Faturas
+                </a>
+            </nav>
+        </section>
+    } @else if (breakdownFailed()) {
+        <section class="surface-card mt-4 flex flex-col items-center gap-3 px-5 py-8 text-center" role="alert">
+            <p class="m-0">Não foi possível carregar as categorias e pessoas do mês.</p>
+            <p-button label="Tentar de novo" icon="pi pi-refresh" [outlined]="true" (onClick)="monthly.reload()" />
+        </section>
+    } @else if (breakdown(); as totals) {
+        <div
+            class="mt-4 flex flex-col gap-4 transition-opacity duration-300"
+            [class.opacity-50]="breakdownStale()"
+            [attr.aria-busy]="breakdownStale()"
+        >
+            <div class="grid gap-4 lg:grid-cols-2">
+                <section class="surface-card p-3 sm:p-4" aria-labelledby="by-category-title">
+                    <h2 id="by-category-title" [class]="cardTitleClass">Por categoria</h2>
+                    @if (categoryBars().length > 0) {
+                        <app-summary-bar-list [items]="categoryBars()" label="Despesas por categoria" />
+                    } @else {
+                        <p class="m-0 px-3 pb-3 text-muted-color">Nenhuma despesa no período.</p>
+                    }
+                </section>
+
+                <section class="surface-card p-3 sm:p-4" aria-labelledby="by-person-title">
+                    <h2 id="by-person-title" [class]="cardTitleClass">Por pessoa</h2>
+                    @if (personBars().length > 0) {
+                        <app-summary-bar-list [items]="personBars()" label="Despesas por pessoa" />
+                    } @else {
+                        <p class="m-0 px-3 pb-3 text-muted-color">Nenhuma despesa no período.</p>
+                    }
+                </section>
+            </div>
+
+            <section class="surface-card p-5 sm:p-6" aria-labelledby="net-title">
+                <h2 id="net-title" class="m-0 mb-1 text-lg font-semibold">Líquido por pessoa</h2>
+                <p class="m-0 mb-4 text-sm text-muted-color">
+                    A entrada, menos as despesas compartilhadas, é dividida igualmente entre as pessoas ativas. O
+                    líquido é essa parte menos as despesas individuais de cada uma{{
+                        isYear() ? ' (no ano, a soma dos meses)' : ''
+                    }}.
+                </p>
+                @if (totals.income === null) {
+                    <p class="m-0 text-muted-color">
+                        Cadastre a entrada para ver quanto sobra para cada pessoa.
+                        <a routerLink="/entradas" [class]="linkClass">Ir para Entradas</a>
+                    </p>
+                } @else if (netCards().length === 0) {
+                    <p class="m-0 text-muted-color">
+                        Cadastre as pessoas da casa para dividir a entrada entre elas.
+                        <a routerLink="/pessoas" [class]="linkClass">Ir para Pessoas</a>
+                    </p>
                 } @else {
-                    <p class="m-0 text-muted-color">Nenhuma despesa neste mês.</p>
+                    <app-summary-net-cards [cards]="netCards()" />
                 }
             </section>
         </div>
-
-        <section [class]="cardClass" class="mt-4" aria-labelledby="net-title">
-            <h2 id="net-title" [class]="cardTitleClass">Líquido por pessoa</h2>
-            @if (s.income === null) {
-                <p class="m-0 text-muted-color">
-                    Cadastre a entrada de {{ s.month | month }} para ver quanto sobra para cada pessoa.
-                    <a routerLink="/entradas" [class]="linkClass">Ir para Entradas</a>
-                </p>
-            } @else if (netRows().length === 0) {
-                <p class="m-0 text-muted-color">
-                    Cadastre as pessoas da casa para dividir a entrada entre elas.
-                    <a routerLink="/pessoas" [class]="linkClass">Ir para Pessoas</a>
-                </p>
-            } @else {
-                <app-summary-net-table [rows]="netRows()" labelledBy="net-title" />
-                <p class="mt-3 mb-0 text-sm text-muted-color">
-                    A entrada, menos as despesas compartilhadas, é dividida igualmente entre as pessoas ativas. O
-                    líquido é essa parte menos as despesas individuais de cada uma.
-                </p>
+    } @else {
+        <div class="mt-4 grid gap-4 lg:grid-cols-2" aria-busy="true" aria-label="Carregando categorias e pessoas">
+            @for (block of [1, 2]; track block) {
+                <div class="surface-card p-5">
+                    <p-skeleton width="8rem" height="1.25rem" styleClass="mb-4" />
+                    <p-skeleton height="9rem" />
+                </div>
             }
-        </section>
+        </div>
     }
-} @else if (failed()) {
-    <section
-        class="flex flex-col items-center gap-3 rounded-xl border border-surface bg-surface-0 px-5 py-10 text-center"
-        role="alert"
-    >
-        <i class="pi pi-exclamation-circle text-3xl text-muted-color" aria-hidden="true"></i>
-        <p class="m-0">Não foi possível carregar o resumo de {{ month() | month }}.</p>
-        <p-button label="Tentar de novo" icon="pi pi-refresh" [outlined]="true" (onClick)="summary.reload()" />
+} @else if (annualFailed()) {
+    <section class="surface-card flex flex-col items-center gap-3 px-5 py-10 text-center" role="alert">
+        <i class="pi pi-exclamation-circle text-3xl text-cantaloupe" aria-hidden="true"></i>
+        <p class="m-0">Não foi possível carregar o resumo de {{ year() }}.</p>
+        <p-button label="Tentar de novo" icon="pi pi-refresh" [outlined]="true" (onClick)="retry()" />
     </section>
 } @else {
     <div class="grid gap-4 md:grid-cols-3" aria-busy="true" aria-label="Carregando o resumo">
         @for (tile of [1, 2, 3]; track tile) {
-            <div [class]="tileClass">
+            <div class="surface-card flex flex-col gap-3 p-5">
                 <p-skeleton width="5rem" height="1rem" />
-                <p-skeleton width="9rem" height="2rem" />
-                <p-skeleton width="7rem" height="1rem" />
+                <p-skeleton width="9rem" height="2.25rem" />
+                <p-skeleton height="2.5rem" />
             </div>
         }
     </div>
-    <div class="mt-4 grid gap-4 lg:grid-cols-2" aria-hidden="true">
-        @for (block of [1, 2]; track block) {
-            <div [class]="cardClass">
-                <p-skeleton width="8rem" height="1.25rem" styleClass="mb-4" />
-                <p-skeleton height="8rem" />
-            </div>
-        }
+    <div class="surface-card mt-4 p-6" aria-hidden="true">
+        <p-skeleton width="12rem" height="1.5rem" styleClass="mb-6" />
+        <p-skeleton height="16rem" />
     </div>
 }

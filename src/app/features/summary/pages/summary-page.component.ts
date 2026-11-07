@@ -1,43 +1,69 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
+import { SelectButton } from 'primeng/selectbutton';
 import { Skeleton } from 'primeng/skeleton';
 
 import { SelectedMonthService } from '../../../core/month/selected-month.service';
 import { remoteData } from '../../../shared/data/remote-data';
-import { amountRatio, amountToCents } from '../../../shared/money/money';
+import { amountRatio, amountToCents, formatBrl } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
-import { MonthPipe } from '../../../shared/month/month.pipe';
+import { addMonths, formatMonth, formatMonthShort } from '../../../shared/month/month';
 import { PageHeaderComponent } from '../../../shared/ui/page-header.component';
+import { SparklineComponent } from '../components/sparkline.component';
 import { SummaryBarListComponent } from '../components/summary-bar-list.component';
-import { SummaryNetTableComponent } from '../components/summary-net-table.component';
-import { categoryBars, formatPercent, netRows, personBars } from '../data-access/summary-view';
-import type { Summary } from '../data-access/summary.models';
+import { SummaryNetCardsComponent } from '../components/summary-net-cards.component';
+import { SummaryYearChartComponent } from '../components/summary-year-chart.component';
+import {
+    amountDelta,
+    type AmountDelta,
+    categoryBars,
+    formatPercent,
+    monthIndex,
+    netCards,
+    personBars,
+} from '../data-access/summary-view';
+import {
+    type AnnualSummary,
+    type Summary,
+    SUMMARY_MODE_OPTIONS,
+    type SummaryMode,
+    type SummaryTotals,
+} from '../data-access/summary.models';
 import { SummaryService } from '../data-access/summary.service';
 
-interface IncomeUsage {
-    /** Largura do medidor em % (no máximo 100). */
-    readonly width: number;
-    readonly label: string;
-    /** As despesas passaram da entrada. */
-    readonly over: boolean;
+const MODE_STORAGE_KEY = 'financas.summaryMode';
+
+/** Os números do topo: do mês escolhido ou do ano inteiro. */
+interface Headline {
+    readonly income: string | null;
+    readonly expensesTotal: string;
+    readonly expensesCount: number;
+    readonly balance: string;
 }
 
 /**
- * Página inicial: o resumo do mês escolhido no topo da tela.
- * Números do mês, para onde foi o dinheiro (categoria e pessoa) e quanto sobra para cada pessoa.
+ * Página inicial: o resumo do mês escolhido no topo da tela, ou do ano inteiro.
+ *
+ * Duas buscas: o resumo anual (gráfico e números de cada mês, só muda quando muda o ano)
+ * e o mensal (categorias, pessoas e líquido do mês). Por isso trocar de mês no gráfico
+ * atualiza os números na hora e só as listas esperam a API.
  */
 @Component({
     selector: 'app-summary-page',
     imports: [
+        FormsModule,
         RouterLink,
         Button,
+        SelectButton,
         Skeleton,
         BrlPipe,
-        MonthPipe,
         PageHeaderComponent,
+        SparklineComponent,
         SummaryBarListComponent,
-        SummaryNetTableComponent,
+        SummaryNetCardsComponent,
+        SummaryYearChartComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './summary-page.component.html',
@@ -47,60 +73,198 @@ export class SummaryPageComponent {
     private readonly selectedMonth = inject(SelectedMonthService);
 
     protected readonly month = this.selectedMonth.month;
-    protected readonly summary = remoteData({
+    protected readonly year = this.selectedMonth.year;
+    protected readonly mode = signal<SummaryMode>(readMode());
+    protected readonly modeOptions = [...SUMMARY_MODE_OPTIONS];
+
+    protected readonly annual = remoteData({
+        params: () => this.year(),
+        load: (year) => this.summaryService.findByYear(year),
+        initialValue: null as AnnualSummary | null,
+    });
+    protected readonly monthly = remoteData({
         params: () => this.month(),
         load: (month) => this.summaryService.findByMonth(month),
         initialValue: null as Summary | null,
     });
 
-    /** Resumo do mês selecionado. Fica null enquanto um mês novo carrega, para nunca mostrar números de outro mês. */
-    protected readonly current = computed(() => {
-        const summary = this.summary.value();
+    /** Resumo anual do ano selecionado (null enquanto um ano novo carrega). */
+    protected readonly annualCurrent = computed(() => {
+        const annual = this.annual.value();
 
-        return summary?.month === this.month() ? summary : null;
+        return annual?.year === this.year() ? annual : null;
     });
-    protected readonly failed = computed(() => !this.summary.loading() && this.current() === null);
-    protected readonly isEmpty = computed(() => {
-        const summary = this.current();
+    protected readonly annualFailed = computed(() => !this.annual.loading() && this.annualCurrent() === null);
 
-        return summary !== null && summary.income === null && summary.expensesCount === 0;
-    });
+    private readonly monthPosition = computed(() => monthIndex(this.month()));
+    protected readonly isYear = computed(() => this.mode() === 'year');
+    protected readonly subtitle = computed(() => (this.isYear() ? `Ano de ${this.year()}` : formatMonth(this.month())));
 
-    /** Quanto da entrada as despesas consomem. */
-    protected readonly incomeUsage = computed<IncomeUsage | null>(() => {
-        const summary = this.current();
+    protected readonly headline = computed<Headline | null>(() => {
+        const annual = this.annualCurrent();
 
-        if (summary === null || summary.income === null) {
+        if (!annual) {
             return null;
         }
 
-        const ratio = amountRatio(summary.expensesTotal, summary.income);
+        return this.isYear() ? annual : (annual.months[this.monthPosition()] ?? null);
+    });
+    protected readonly isEmpty = computed(() => {
+        const headline = this.headline();
+
+        return headline !== null && headline.income === null && headline.expensesCount === 0;
+    });
+
+    /** Comparação com o mês anterior (só no modo Mês e a partir de fevereiro). */
+    protected readonly previous = computed(() => {
+        const annual = this.annualCurrent();
+        const headline = this.headline();
+        const position = this.monthPosition();
+
+        if (this.isYear() || !annual || !headline || position === 0) {
+            return null;
+        }
+
+        const before = annual.months[position - 1];
+        const label = formatMonthShort(before.month).split('/')[0];
+
+        return {
+            income:
+                before.income === null || headline.income === null
+                    ? null
+                    : deltaView(amountDelta(headline.income, before.income), label),
+            expenses: deltaView(amountDelta(headline.expensesTotal, before.expensesTotal), label),
+        };
+    });
+
+    /** Quanto da entrada as despesas consomem. */
+    protected readonly incomeUsage = computed(() => {
+        const headline = this.headline();
+
+        if (!headline || headline.income === null) {
+            return null;
+        }
+
+        const ratio = amountRatio(headline.expensesTotal, headline.income);
 
         return { width: Math.min(100, ratio * 100), label: formatPercent(ratio), over: ratio > 1 };
     });
-    /** -1, 0 ou 1: saldo negativo, zerado ou positivo. */
-    protected readonly balanceSign = computed(() => Math.sign(amountToCents(this.current()?.balance ?? '0')));
+    protected readonly balanceSign = computed(() => Math.sign(amountToCents(this.headline()?.balance ?? '0')));
 
+    /** Linhas dos minigráficos (centavos de janeiro a dezembro). */
+    protected readonly trends = computed(() => {
+        const months = this.annualCurrent()?.months ?? [];
+
+        return {
+            income: months.map((month) => (month.income === null ? 0 : amountToCents(month.income))),
+            expenses: months.map((month) => amountToCents(month.expensesTotal)),
+            balance: months.map((month) => amountToCents(month.balance)),
+        };
+    });
+    protected readonly trendMarker = computed(() => (this.isYear() ? null : this.monthPosition()));
+
+    /** Categorias, pessoas e líquido: do mês (resumo mensal) ou do ano (resumo anual). */
+    protected readonly breakdown = computed<SummaryTotals | null>(() => {
+        if (this.isYear()) {
+            return this.annualCurrent();
+        }
+
+        // Ao trocar de mês, mostra o anterior apagado até o novo chegar (sem piscar a tela).
+        return this.monthly.value();
+    });
+    protected readonly breakdownStale = computed(
+        () => !this.isYear() && this.monthly.value() !== null && this.monthly.value()?.month !== this.month(),
+    );
+    protected readonly breakdownFailed = computed(
+        () => !this.isYear() && !this.monthly.loading() && this.breakdownStale(),
+    );
     protected readonly categoryBars = computed(() => {
-        const summary = this.current();
+        const totals = this.breakdown();
 
-        return summary ? categoryBars(summary.byCategory, summary.expensesTotal) : [];
+        return totals ? categoryBars(totals.byCategory, totals.expensesTotal) : [];
     });
     protected readonly personBars = computed(() => {
-        const summary = this.current();
+        const totals = this.breakdown();
 
-        return summary ? personBars(summary.byPerson, summary.expensesTotal) : [];
+        return totals ? personBars(totals.byPerson, totals.expensesTotal) : [];
     });
-    protected readonly netRows = computed(() => netRows(this.current()?.netByPerson ?? []));
+    protected readonly netCards = computed(() => netCards(this.breakdown()?.netByPerson ?? []));
 
     // Classes repetidas nos cartões da página.
-    protected readonly cardClass = 'flex flex-col rounded-xl border border-surface bg-surface-0 p-5';
-    protected readonly cardTitleClass = 'mt-0 mb-4 text-base font-semibold';
-    protected readonly tileClass = 'flex flex-col gap-3 rounded-xl border border-surface bg-surface-0 p-5';
-    protected readonly tileLabelClass = 'm-0 text-sm font-medium text-muted-color';
-    protected readonly tileValueClass = 'm-0 text-2xl font-semibold';
-    protected readonly linkClass = 'font-medium text-primary-700 underline-offset-2 hover:underline';
+    /** Celular: fileira com rolagem lateral (um cartão por vez, o próximo aparecendo na borda). */
+    protected readonly tilesRowClass =
+        '-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 ' +
+        'md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:pb-0';
+    protected readonly tileClass =
+        'surface-card flex w-[86%] shrink-0 snap-center flex-col gap-2 p-5 sm:w-[60%] md:w-auto';
+    protected readonly tileLabelClass =
+        'm-0 flex items-center gap-2 font-sans text-xs font-semibold tracking-[0.12em] text-muted-color uppercase';
+    protected readonly tileValueClass = 'm-0 font-display text-3xl font-bold tracking-tight';
+    protected readonly deltaClass = 'm-0 flex items-center gap-1.5 text-sm text-muted-color';
+    protected readonly deltaIcon: Record<DeltaView['direction'], string> = {
+        up: 'pi pi-arrow-up-right text-xs',
+        down: 'pi pi-arrow-down-right text-xs',
+        same: 'pi pi-equals text-xs',
+    };
+    protected readonly cardTitleClass = 'm-0 px-3 pt-2 pb-3 text-lg font-semibold';
+    protected readonly linkClass =
+        'inline-flex items-center gap-1.5 font-medium text-primary-300 no-underline underline-offset-2 hover:underline';
     protected readonly shortcutClass =
-        'inline-flex items-center gap-2 rounded-border border border-surface px-4 py-2 text-color no-underline ' +
-        'transition-colors hover:bg-emphasis';
+        'inline-flex items-center gap-2 rounded-xl border border-line px-4 py-2 text-color no-underline ' +
+        'transition-colors hover:border-cantaloupe/50 hover:bg-cantaloupe/10';
+
+    protected setMode(mode: SummaryMode | null): void {
+        if (!mode) {
+            return;
+        }
+
+        this.mode.set(mode);
+        storeMode(mode);
+    }
+
+    /** Mês escolhido no gráfico: vira o mês do topo da tela e o resumo passa a ser dele. */
+    protected chooseMonth(month: string): void {
+        this.selectedMonth.set(month);
+        this.setMode('month');
+    }
+
+    protected shiftYear(delta: number): void {
+        this.selectedMonth.set(addMonths(this.month(), delta * 12));
+    }
+
+    protected retry(): void {
+        this.annual.reload();
+        this.monthly.reload();
+    }
+}
+
+interface DeltaView {
+    readonly direction: AmountDelta['direction'];
+    /** `R$ 340,00 a mais que out` */
+    readonly text: string;
+}
+
+function deltaView(delta: AmountDelta, monthLabel: string): DeltaView {
+    const text =
+        delta.direction === 'same'
+            ? `Igual a ${monthLabel}`
+            : `${formatBrl(delta.amount)} a ${delta.direction === 'up' ? 'mais' : 'menos'} que ${monthLabel}`;
+
+    return { direction: delta.direction, text };
+}
+
+function readMode(): SummaryMode {
+    try {
+        return sessionStorage.getItem(MODE_STORAGE_KEY) === 'year' ? 'year' : 'month';
+    } catch {
+        return 'month';
+    }
+}
+
+function storeMode(mode: SummaryMode): void {
+    try {
+        sessionStorage.setItem(MODE_STORAGE_KEY, mode);
+    } catch {
+        // Sem acesso ao storage: só não lembra a escolha.
+    }
 }

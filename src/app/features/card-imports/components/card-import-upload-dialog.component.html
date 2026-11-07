@@ -1,93 +1,157 @@
 <p-dialog
-    header="Enviar fatura"
+    [header]="header()"
     [visible]="visible()"
     (visibleChange)="visible.set($event)"
     [modal]="true"
     [draggable]="false"
-    [style]="{ width: '32rem' }"
-    [breakpoints]="{ '640px': '95vw' }"
+    [style]="{ width: step() === 'review' ? '64rem' : '32rem' }"
+    [breakpoints]="{ '1024px': '95vw' }"
 >
-    @if (result()) {
-        <div class="flex flex-col gap-4">
-            <p-message severity="success" [text]="'Fatura de ' + resultMonth() + ' importada.'" />
-            <ul class="m-0 flex list-disc flex-col gap-1 pl-5">
-                @for (line of resultLines(); track line) {
-                    <li>{{ line }}</li>
-                }
-            </ul>
-            <div class="flex justify-end">
-                <p-button label="Fechar" (onClick)="visible.set(false)" />
+    @switch (step()) {
+        @case ('done') {
+            <div class="flex flex-col gap-4">
+                <p-message severity="success" [text]="'Fatura de ' + resultMonth() + ' salva.'" />
+                <ul class="m-0 flex list-disc flex-col gap-1 pl-5">
+                    @for (line of resultLines(); track line) {
+                        <li>{{ line }}</li>
+                    }
+                </ul>
+                <div class="flex justify-end">
+                    <p-button label="Fechar" (onClick)="visible.set(false)" />
+                </div>
             </div>
-        </div>
-    } @else if (visible()) {
-        <!-- Recriado a cada abertura: o campo de arquivo começa sempre vazio. -->
-        <form [formGroup]="form" (ngSubmit)="send()" class="flex flex-col gap-4" novalidate>
-            <p class="m-0">
-                Cartão: <strong>{{ card().name }}</strong>
-                <span class="text-muted-color">({{ card().bank | cardBank }})</span>
-            </p>
+        }
 
-            <div class="flex flex-col gap-2">
-                <label for="import-month" class="font-medium">Mês da fatura</label>
-                <p-datepicker
-                    inputId="import-month"
-                    formControlName="month"
-                    view="month"
-                    dateFormat="MM 'de' yy"
-                    [readonlyInput]="true"
-                    appendTo="body"
-                    [fluid]="true"
-                />
-                <app-field-error [control]="form.controls.month" />
-            </div>
+        @case ('review') {
+            @if (preview(); as currentPreview) {
+                <div class="flex flex-col gap-4">
+                    <p class="m-0 text-sm text-muted-color">
+                        {{ card().name }} · {{ currentPreview.fileName }}. Nada foi gravado ainda: revise e clique em
+                        <strong>Salvar fatura</strong>.
+                    </p>
 
-            <div class="flex flex-col gap-2">
-                <label for="import-file" class="font-medium">Arquivo {{ extension() }}</label>
-                <input
-                    id="import-file"
-                    type="file"
-                    [accept]="extension()"
-                    (change)="onFileChange($event)"
-                    class="block w-full rounded-border border border-surface p-2 text-sm file:mr-3 file:cursor-pointer file:rounded-border file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:font-medium file:text-primary-700"
-                    aria-describedby="import-file-help"
-                />
-                <small id="import-file-help" class="text-muted-color">
-                    Arquivo exportado pelo app do banco, com até 2 MB.
-                </small>
-                @if (fileError(); as error) {
-                    <small class="text-sm text-red-600" role="alert">{{ error }}</small>
-                }
-            </div>
+                    @if (reviewError(); as error) {
+                        <p-message severity="error">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <span>{{ error.message }}</span>
+                                @if (error.repreview) {
+                                    <p-button
+                                        label="Pré-visualizar de novo"
+                                        size="small"
+                                        [outlined]="true"
+                                        (onClick)="runPreview()"
+                                    />
+                                }
+                            </div>
+                        </p-message>
+                    }
 
-            @if (asksPassword()) {
-                <div class="flex flex-col gap-2">
-                    <label for="import-password" class="font-medium">
-                        Senha do PDF <span class="font-normal text-muted-color">(se o arquivo tiver)</span>
-                    </label>
-                    <p-password
-                        inputId="import-password"
-                        formControlName="password"
-                        autocomplete="off"
-                        [feedback]="false"
-                        [toggleMask]="true"
-                        [fluid]="true"
-                        ariaLabel="Senha do PDF"
-                    />
-                    <small class="text-muted-color">Usada só para abrir o arquivo; não fica gravada.</small>
-                    <app-field-error [control]="form.controls.password" />
+                    <app-card-import-review [preview]="currentPreview" [rows]="rows" />
+
+                    <div class="flex flex-wrap justify-between gap-2 border-t border-surface pt-4">
+                        <p-button
+                            label="Voltar"
+                            icon="pi pi-arrow-left"
+                            severity="secondary"
+                            [text]="true"
+                            (onClick)="backToFile()"
+                        />
+                        <div class="flex gap-2">
+                            <p-button
+                                label="Cancelar"
+                                severity="secondary"
+                                [text]="true"
+                                (onClick)="visible.set(false)"
+                            />
+                            <p-button
+                                label="Salvar fatura"
+                                icon="pi pi-check"
+                                [loading]="loading()"
+                                (onClick)="save()"
+                            />
+                        </div>
+                    </div>
                 </div>
             }
+        }
 
-            <p-message severity="warn">
-                A fatura substitui o que este cartão tem no mês escolhido: compras que não estiverem no arquivo são
-                removidas. Parcelas futuras são lançadas nos meses seguintes, até o próximo mês que já tiver fatura
-                enviada.
-            </p-message>
+        @default {
+            @if (visible()) {
+                <!-- Recriado a cada abertura: o campo de arquivo começa sempre vazio. -->
+                <form [formGroup]="form" (ngSubmit)="runPreview()" class="flex flex-col gap-4" novalidate>
+                    <p class="m-0">
+                        Cartão: <strong>{{ card().name }}</strong>
+                        <span class="text-muted-color">({{ card().bank | cardBank }})</span>
+                    </p>
 
-            <div class="flex justify-end gap-2">
-                <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
-                <p-button type="submit" label="Enviar" icon="pi pi-upload" [loading]="sending()" />
-            </div>
-        </form>
+                    <div class="flex flex-col gap-2">
+                        <label for="import-month" class="font-medium">Mês da fatura</label>
+                        <p-datepicker
+                            inputId="import-month"
+                            formControlName="month"
+                            view="month"
+                            dateFormat="MM 'de' yy"
+                            [readonlyInput]="true"
+                            appendTo="body"
+                            [fluid]="true"
+                        />
+                        <app-field-error [control]="form.controls.month" />
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="import-file" class="font-medium">Arquivo {{ extension() }}</label>
+                        <input
+                            id="import-file"
+                            type="file"
+                            [accept]="extension()"
+                            (change)="onFileChange($event)"
+                            class="block w-full rounded-border border border-surface p-2 text-sm file:mr-3 file:cursor-pointer file:rounded-border file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:font-medium file:text-primary-700"
+                            aria-describedby="import-file-help"
+                        />
+                        <small id="import-file-help" class="text-muted-color">
+                            @if (file(); as chosen) {
+                                Arquivo escolhido: <strong>{{ chosen.name }}</strong
+                                >.
+                            } @else {
+                                Arquivo exportado pelo app do banco, com até 2 MB.
+                            }
+                        </small>
+                        @if (fileError(); as error) {
+                            <small class="text-sm text-red-600" role="alert">{{ error }}</small>
+                        }
+                    </div>
+
+                    @if (asksPassword()) {
+                        <div class="flex flex-col gap-2">
+                            <label for="import-password" class="font-medium">
+                                Senha do PDF <span class="font-normal text-muted-color">(se o arquivo tiver)</span>
+                            </label>
+                            <p-password
+                                inputId="import-password"
+                                formControlName="password"
+                                autocomplete="off"
+                                [feedback]="false"
+                                [toggleMask]="true"
+                                [fluid]="true"
+                                ariaLabel="Senha do PDF"
+                            />
+                            <small class="text-muted-color">Usada só para abrir o arquivo; não fica gravada.</small>
+                            <app-field-error [control]="form.controls.password" />
+                        </div>
+                    }
+
+                    <p-message severity="info">
+                        Primeiro você confere as compras e escolhe apelido, categoria e pessoa; nada é gravado até
+                        clicar em <strong>Salvar fatura</strong>. Ao salvar, a fatura substitui o que este cartão tem no
+                        mês escolhido, e parcelas futuras são lançadas até o próximo mês que já tiver fatura enviada.
+                    </p-message>
+
+                    <div class="flex justify-end gap-2">
+                        <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
+                        <p-button type="submit" label="Pré-visualizar" icon="pi pi-eye" [loading]="loading()" />
+                    </div>
+                </form>
+            }
+        }
     }
 </p-dialog>

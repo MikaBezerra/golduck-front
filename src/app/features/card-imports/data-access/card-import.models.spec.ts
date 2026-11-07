@@ -10,6 +10,17 @@ describe('describeImportSummary', () => {
         ]);
     });
 
+    it('na pré-visualização, descreve o que vai acontecer ao salvar', () => {
+        expect(
+            describeImportSummary({ created: 2, updated: 1, removed: 1, projected: 3, ignored: 0 }, 'preview'),
+        ).toEqual([
+            '2 compras novas',
+            '1 compra já lançada será atualizada',
+            '1 despesa será removida (não estão no arquivo)',
+            '3 parcelas futuras serão lançadas nos próximos meses',
+        ]);
+    });
+
     it('mostra remoções e omite o que não aconteceu', () => {
         expect(describeImportSummary({ created: 1, updated: 0, removed: 2, projected: 0, ignored: 0 })).toEqual([
             '1 compra nova',

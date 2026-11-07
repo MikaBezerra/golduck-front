@@ -1,0 +1,166 @@
+<div class="flex flex-col gap-4">
+    <div class="grid gap-3 rounded-lg bg-emphasis p-4 sm:grid-cols-[1fr_auto]">
+        <div>
+            <p class="m-0 mb-2 font-medium">Ao salvar:</p>
+            <ul class="m-0 flex list-disc flex-col gap-1 pl-5 text-sm">
+                @for (line of summaryLines(); track line) {
+                    <li>{{ line }}</li>
+                }
+            </ul>
+        </div>
+        <div class="sm:text-right">
+            <span class="block text-sm text-muted-color">Total da fatura</span>
+            <span class="text-xl font-semibold tabular-nums">{{ total() | brl }}</span>
+        </div>
+    </div>
+
+    @if (preview().removed.length > 0) {
+        <p-message severity="warn">
+            <div class="flex flex-col gap-1">
+                <span class="font-medium">Serão removidas deste mês por não estarem no arquivo:</span>
+                <ul class="m-0 list-disc pl-5 text-sm">
+                    @for (expense of preview().removed; track expense.id) {
+                        <li>
+                            {{ expense.transactionDate | isoDate: 'short' }} · {{ expense.description }} ·
+                            {{ expense.amount | brl }}
+                        </li>
+                    }
+                </ul>
+            </div>
+        </p-message>
+    }
+
+    <div class="flex flex-wrap items-center gap-3 border-b border-surface pb-3">
+        <label class="flex cursor-pointer items-center gap-2" for="review-select-all">
+            <p-checkbox
+                inputId="review-select-all"
+                [binary]="true"
+                [ngModel]="allSelected()"
+                (ngModelChange)="toggleAll($event)"
+            />
+            <span class="text-sm">Selecionar todas ({{ preview().transactions.length }})</span>
+        </label>
+
+        @if (selected().size > 0) {
+            <div
+                class="flex flex-1 flex-wrap items-center justify-end gap-2"
+                role="group"
+                aria-label="Aplicar às compras marcadas"
+            >
+                <span class="text-sm text-muted-color">Para as {{ selected().size }} marcadas:</span>
+                <p-select
+                    [formControl]="bulkCategory"
+                    [options]="bulkCategoryOptions()"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Categoria"
+                    [showClear]="true"
+                    ariaLabel="Categoria para as marcadas"
+                    appendTo="body"
+                    styleClass="w-44"
+                />
+                <p-select
+                    [formControl]="bulkPerson"
+                    [options]="bulkPersonOptions()"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Pessoa"
+                    [showClear]="true"
+                    ariaLabel="Pessoa para as marcadas"
+                    appendTo="body"
+                    styleClass="w-44"
+                />
+                <p-button
+                    label="Aplicar"
+                    size="small"
+                    [disabled]="!bulkCategory.value && !bulkPerson.value"
+                    (onClick)="applyToSelected()"
+                />
+            </div>
+        }
+    </div>
+
+    @if (preview().transactions.length === 0) {
+        <p class="m-0 py-6 text-center text-muted-color">O arquivo não tem compras (só pagamentos ou créditos).</p>
+    }
+
+    <ul class="m-0 flex list-none flex-col gap-3 p-0">
+        @for (tx of preview().transactions; track tx.key; let i = $index) {
+            <li
+                class="flex flex-col gap-3 rounded-lg border p-3"
+                [class.border-surface]="!isSelected(tx.key)"
+                [class.border-primary-300]="isSelected(tx.key)"
+                [formGroup]="rows().at(i)"
+            >
+                <div class="flex items-start gap-3">
+                    <p-checkbox
+                        [binary]="true"
+                        [ngModel]="isSelected(tx.key)"
+                        (ngModelChange)="toggle(tx.key, $event)"
+                        [ngModelOptions]="{ standalone: true }"
+                        [ariaLabel]="'Marcar ' + tx.description"
+                    />
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-medium">{{ tx.description }}</span>
+                            @if (tx.installment; as installment) {
+                                <p-tag [value]="installment.number + '/' + installment.total" severity="secondary" />
+                            }
+                            @if (tx.status === 'new') {
+                                <p-tag value="Nova" severity="success" />
+                            } @else {
+                                <p-tag value="Já lançada" severity="info" />
+                            }
+                        </div>
+                        <span class="block text-sm text-muted-color">
+                            {{ tx.transactionDate | isoDate }}
+                            @if (tx.holderName) {
+                                · {{ tx.holderName }}
+                            }
+                            @if (tx.cardLastDigits) {
+                                · final {{ tx.cardLastDigits }}
+                            }
+                            @if (tx.projectedCount > 0) {
+                                · lança mais {{ tx.projectedCount }}
+                                {{ tx.projectedCount === 1 ? 'parcela futura' : 'parcelas futuras' }}
+                            }
+                        </span>
+                    </div>
+                    <span class="font-semibold whitespace-nowrap tabular-nums">{{ tx.amount | brl }}</span>
+                </div>
+
+                <div class="grid gap-2 sm:grid-cols-3">
+                    <input
+                        pInputText
+                        formControlName="nickname"
+                        [maxlength]="nicknameMaxLength"
+                        placeholder="Apelido (opcional)"
+                        autocomplete="off"
+                        [attr.aria-label]="'Apelido de ' + tx.description"
+                        [fluid]="true"
+                    />
+                    <p-select
+                        formControlName="categoryId"
+                        [options]="categoryOptions()"
+                        optionLabel="label"
+                        optionValue="value"
+                        [ariaLabel]="'Categoria de ' + tx.description"
+                        appendTo="body"
+                        [fluid]="true"
+                    />
+                    <p-select
+                        formControlName="personId"
+                        [options]="personOptions()"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Ninguém"
+                        [showClear]="true"
+                        [ariaLabel]="'Pessoa de ' + tx.description"
+                        appendTo="body"
+                        [fluid]="true"
+                    />
+                </div>
+            </li>
+        }
+    </ul>
+</div>

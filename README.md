@@ -65,7 +65,7 @@ src/app/
 └── features/              # uma pasta por módulo do back, com o mesmo nome
     ├── auth/              # tela de login
     ├── card-expenses/     # /faturas — despesas do cartão (usa os diálogos de card-imports)
-    ├── card-imports/      # envio de fatura (arquivo ou manual) e histórico de envios
+    ├── card-imports/      # envio de fatura (pré-visualizar → revisar → salvar), fatura manual e histórico
     ├── categories/        # /categorias
     ├── credit-cards/      # /cartoes
     ├── incomes/           # /entradas

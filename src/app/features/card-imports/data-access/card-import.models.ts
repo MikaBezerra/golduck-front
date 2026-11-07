@@ -12,6 +12,20 @@ export type CardImportSummary = ApiSchemas['CardImportSummary'];
 
 export type CardImportResult = ApiSchemas['CardImportResultResponse'];
 
+/**
+ * Resposta de `POST /card-imports/preview`: o que o envio faria, sem gravar nada.
+ * - `transactions`: compras do arquivo, com a sugestão de apelido, categoria e pessoa;
+ * - `removed`: despesas do mês que seriam apagadas por não estarem no arquivo;
+ * - `summary`: igual ao que o salvamento devolveria agora.
+ */
+export type CardImportPreview = ApiSchemas['CardImportPreviewResponse'];
+
+/** Uma compra da pré-visualização. `status`: `"new"` (ainda não existe no mês) ou `"update"`. */
+export type CardImportPreviewTransaction = ApiSchemas['CardImportPreviewTransactionDto'];
+
+/** Escolha do usuário para uma compra (`key` da pré-visualização), enviada ao salvar. */
+export type CardImportOverride = ApiSchemas['CardImportOverrideDto'];
+
 /** Um lançamento da fatura digitada à mão (`installment: null` para compra à vista). */
 export type ManualCardTransaction = ApiSchemas['ManualCardTransactionDto'];
 
@@ -38,21 +52,38 @@ export const MAX_MANUAL_TRANSACTIONS = 500;
 export const MAX_INSTALLMENTS = 99;
 export const MANUAL_DESCRIPTION_MAX_LENGTH = 200;
 
-/** Resumo do envio em frases curtas, para mostrar ao usuário. */
-export function describeImportSummary(summary: CardImportSummary): string[] {
+/**
+ * Resumo do envio em frases curtas, para mostrar ao usuário.
+ * `when: 'preview'` descreve o que VAI acontecer ao salvar; `'done'`, o que já aconteceu.
+ */
+export function describeImportSummary(summary: CardImportSummary, when: 'done' | 'preview' = 'done'): string[] {
     const lines: string[] = [];
     const plural = (count: number, one: string, many: string): string => `${count} ${count === 1 ? one : many}`;
+    const future = when === 'preview';
 
     lines.push(plural(summary.created, 'compra nova', 'compras novas'));
-    lines.push(plural(summary.updated, 'compra atualizada', 'compras atualizadas'));
+    lines.push(
+        future
+            ? plural(summary.updated, 'compra já lançada será atualizada', 'compras já lançadas serão atualizadas')
+            : plural(summary.updated, 'compra atualizada', 'compras atualizadas'),
+    );
 
     if (summary.removed > 0) {
-        lines.push(plural(summary.removed, 'despesa removida', 'despesas removidas') + ' (não estavam na fatura)');
+        lines.push(
+            future
+                ? plural(summary.removed, 'despesa será removida', 'despesas serão removidas') +
+                      ' (não estão no arquivo)'
+                : plural(summary.removed, 'despesa removida', 'despesas removidas') + ' (não estavam na fatura)',
+        );
     }
 
     if (summary.projected > 0) {
         lines.push(
-            plural(summary.projected, 'parcela futura lançada', 'parcelas futuras lançadas') + ' nos próximos meses',
+            future
+                ? plural(summary.projected, 'parcela futura será lançada', 'parcelas futuras serão lançadas') +
+                      ' nos próximos meses'
+                : plural(summary.projected, 'parcela futura lançada', 'parcelas futuras lançadas') +
+                      ' nos próximos meses',
         );
     }
 

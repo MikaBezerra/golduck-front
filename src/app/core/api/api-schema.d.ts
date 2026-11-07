@@ -211,9 +211,29 @@ export interface paths {
         put?: never;
         /**
          * Importa a fatura enviada pelo banco do cartão
-         * @description O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês.
+         * @description O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês. O campo opcional overrides (JSON) aplica as escolhas feitas na pré-visualização.
          */
         post: operations["CardImportController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pré-visualiza a fatura sem gravar nada
+         * @description Faz as mesmas validações e a mesma leitura do upload e calcula o mesmo plano, sem criar upload nem despesas.
+         */
+        post: operations["CardImportController_preview"];
         delete?: never;
         options?: never;
         head?: never;
@@ -632,7 +652,28 @@ export interface components {
             import: components["schemas"]["CardImportResponse"];
             summary: components["schemas"]["CardImportSummary"];
         };
-        CardImportUploadDto: {
+        CardImportOverrideDto: {
+            /**
+             * @description key devolvida pela pré-visualização
+             * @example P|2026-09|8|FERREIRA COSTA
+             */
+            key: string;
+            /** @example Geladeira */
+            nickname: string | null;
+            /** Format: uuid */
+            categoryId: string;
+            /**
+             * Format: uuid
+             * @description null = compartilhada
+             */
+            personId: string | null;
+        };
+        CardImportSaveUploadDto: {
+            /**
+             * Format: binary
+             * @description Fatura: .csv para NUBANK e C6, .pdf para NEON (máx. 2 MB)
+             */
+            file: string;
             /** Format: uuid */
             cardId: string;
             /**
@@ -646,10 +687,86 @@ export interface components {
              */
             password?: string;
             /**
+             * @description JSON com até 500 itens no formato CardImportOverrideDto. Cada escolha vale para a linha do mês e as parcelas futuras lançadas por ela.
+             * @example [{"key":"P|2026-09|8|FERREIRA COSTA","nickname":"Geladeira","categoryId":"<uuid>","personId":null}]
+             */
+            overrides?: string;
+        };
+        CardImportPreviewTransactionDto: {
+            /**
+             * @description Identificador da compra no arquivo (opaco); usado nos overrides
+             * @example P|2026-08|8|FERREIRA COSTA
+             */
+            key: string;
+            /**
+             * @description "new": ainda não existe no mês; "update": já existe e será atualizada
+             * @enum {string}
+             */
+            status: "new" | "update";
+            /**
+             * Format: date
+             * @example 2026-10-26
+             */
+            transactionDate: string;
+            /** @description Descrição original do banco */
+            description: string;
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            amount: string;
+            installment: components["schemas"]["CardInstallmentDto"] | null;
+            holderName: string | null;
+            cardLastDigits: string | null;
+            /** @description Sugestão: o que será gravado sem override */
+            nickname: string | null;
+            /**
+             * Format: uuid
+             * @description Sugestão: o que será gravado sem override
+             */
+            categoryId: string;
+            /**
+             * Format: uuid
+             * @description Sugestão: o que será gravado sem override (null = compartilhada)
+             */
+            personId: string | null;
+            /** @description Parcelas futuras que esta linha vai lançar */
+            projectedCount: number;
+        };
+        CardImportPreviewResponse: {
+            /** Format: uuid */
+            cardId: string;
+            /**
+             * @description Mês da fatura
+             * @example 2026-11
+             */
+            month: string;
+            fileName: string;
+            /** @description Compras do arquivo, na ordem do arquivo */
+            transactions: components["schemas"]["CardImportPreviewTransactionDto"][];
+            /** @description Despesas do mês que serão apagadas por não estarem no arquivo (as parcelas futuras delas também saem e contam em summary.removed) */
+            removed: components["schemas"]["CardExpenseResponse"][];
+            /** @description Igual ao que o salvamento devolveria agora */
+            summary: components["schemas"]["CardImportSummary"];
+        };
+        CardImportUploadDto: {
+            /**
              * Format: binary
              * @description Fatura: .csv para NUBANK e C6, .pdf para NEON (máx. 2 MB)
              */
             file: string;
+            /** Format: uuid */
+            cardId: string;
+            /**
+             * @description Mês da fatura, AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * Format: password
+             * @description Senha do PDF protegido (Neon). Não é gravada.
+             */
+            password?: string;
         };
         ManualCardTransactionDto: {
             /**
@@ -1418,7 +1535,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["CardImportUploadDto"];
+                "multipart/form-data": components["schemas"]["CardImportSaveUploadDto"];
             };
         };
         responses: {
@@ -1430,6 +1547,41 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["CardImportResultResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardImportController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["CardImportUploadDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardImportPreviewResponse"];
                     };
                 };
             };

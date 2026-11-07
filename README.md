@@ -168,9 +168,10 @@ O back pagina com `page` (a partir de 1) e `pageSize` (1 a 100) e responde
   gravado pelo back: o JavaScript não lê o cookie, então um script malicioso na página não consegue
   roubá-lo. Login, refresh e logout vão com `withCredentials`; no `localStorage` fica só a marca
   `golduck.session` (não secreta), usada pelo guard e para sincronizar as abas.
-- Transição: enquanto o back ainda devolver o refresh token no corpo, o front guarda e envia como
-  antes (código marcado com `TODO(transição)` em `core/auth`). Quando o back usar o cookie, apague
-  esse trecho e gere os tipos de novo.
+- O cookie só vai nas rotas `/api/auth/*` (Path do cookie) e o refresh não tem corpo.
+- Contra CSRF, o back só aceita login, refresh e logout vindos de uma origem confiável: o endereço do
+  front precisa estar em `API_CORS_ORIGINS` no back (local: `http://localhost:4200`; em cada ambiente,
+  a URL publicada do front). Origem fora da lista recebe 403.
 - Para o cookie funcionar em todos os navegadores (o Safari bloqueia cookies de outro site), front e
   API precisam ficar no mesmo site: domínio próprio com a API num subdomínio (ex.: `app.exemplo.com`
   e `api.exemplo.com`) ou a API servida pelo próprio domínio do front (rewrite de `/api` na Vercel).

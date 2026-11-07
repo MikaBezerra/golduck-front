@@ -132,13 +132,10 @@ export class AuthService {
                 throw new ApiError(401, 'AUTH_NO_SESSION', 'Autenticação necessária');
             }
 
-            // O cookie vai sozinho. Só o back antigo precisa do token no corpo (legado).
-            const legacyToken = this.tokens.getLegacyRefreshToken();
-            const body = legacyToken ? { refreshToken: legacyToken } : undefined;
-
             try {
+                // Sem corpo: o navegador manda sozinho o cookie com o refresh token.
                 const tokens = await firstValueFrom(
-                    this.api.post<AuthTokens>('auth/refresh', body, { withCredentials: true }),
+                    this.api.post<AuthTokens>('auth/refresh', undefined, { withCredentials: true }),
                 );
                 this.tokens.save(tokens);
 

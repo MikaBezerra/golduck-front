@@ -51,7 +51,7 @@ describe('authInterceptor', () => {
 
     it('envia o access token válido', async () => {
         const access = fakeJwt(600);
-        tokens.save({ accessToken: access, refreshToken: 'refresh-1' });
+        tokens.save({ accessToken: access });
 
         const result = firstValueFrom(api.get('people'));
         const request = http.expectOne('/api/people');
@@ -62,17 +62,17 @@ describe('authInterceptor', () => {
     });
 
     it('não envia token para login e refresh', () => {
-        tokens.save({ accessToken: fakeJwt(600), refreshToken: 'refresh-1' });
+        tokens.save({ accessToken: fakeJwt(600) });
 
         void firstValueFrom(api.post('auth/login', { email: 'a', password: 'b' }));
         const request = http.expectOne('/api/auth/login');
 
         expect(request.request.headers.has('Authorization')).toBe(false);
-        request.flush({ data: { accessToken: fakeJwt(600), refreshToken: 'refresh-2' } });
+        request.flush({ data: { accessToken: fakeJwt(600) } });
     });
 
-    it('back antigo: faz UMA renovação (token no corpo) para várias requisições com token vencido', async () => {
-        tokens.save({ accessToken: fakeJwt(5), refreshToken: 'refresh-1' });
+    it('faz UMA renovação para várias requisições com token vencido', async () => {
+        tokens.save({ accessToken: fakeJwt(5) });
 
         const results = Promise.all([
             firstValueFrom(api.get('people')),
@@ -82,10 +82,9 @@ describe('authInterceptor', () => {
         await settle();
 
         const refresh = http.expectOne('/api/auth/refresh');
-        expect(refresh.request.body).toEqual({ refreshToken: 'refresh-1' });
 
         const newAccess = fakeJwt(900);
-        refresh.flush({ data: { accessToken: newAccess, refreshToken: 'refresh-2' } });
+        refresh.flush({ data: { accessToken: newAccess } });
         await settle();
 
         for (const url of ['/api/people', '/api/categories', '/api/incomes']) {
@@ -95,11 +94,10 @@ describe('authInterceptor', () => {
         }
 
         await results;
-        expect(tokens.getLegacyRefreshToken()).toBe('refresh-2');
     });
 
     it('renova e repete a requisição quando o back responde 401', async () => {
-        tokens.save({ accessToken: fakeJwt(600), refreshToken: 'refresh-1' });
+        tokens.save({ accessToken: fakeJwt(600) });
 
         const result = firstValueFrom(api.get<string[]>('people'));
         http.expectOne('/api/people').flush(
@@ -109,7 +107,7 @@ describe('authInterceptor', () => {
         await settle();
 
         const newAccess = fakeJwt(900);
-        http.expectOne('/api/auth/refresh').flush({ data: { accessToken: newAccess, refreshToken: 'refresh-2' } });
+        http.expectOne('/api/auth/refresh').flush({ data: { accessToken: newAccess } });
         await settle();
 
         const retry = http.expectOne('/api/people');
@@ -121,7 +119,7 @@ describe('authInterceptor', () => {
 
     it('encerra a sessão quando o refresh é recusado', async () => {
         const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-        tokens.save({ accessToken: fakeJwt(5), refreshToken: 'refresh-1' });
+        tokens.save({ accessToken: fakeJwt(5) });
 
         const result = firstValueFrom(api.get('people'));
         await settle();
@@ -155,13 +153,12 @@ describe('authInterceptor', () => {
         request.flush({ data: ['Ana'] });
 
         await expect(result).resolves.toEqual(['Ana']);
-        expect(tokens.getLegacyRefreshToken()).toBeNull();
         expect(Object.values(localStorage).some((value) => String(value).includes('.'))).toBe(false);
         expect(tokens.hasSession()).toBe(true);
     });
 
     it('refresh limitado (429) mantém a sessão e não tenta de novo antes do Retry-After', async () => {
-        tokens.save({ accessToken: fakeJwt(5), refreshToken: 'refresh-1' });
+        tokens.save({ accessToken: fakeJwt(5) });
 
         const first = firstValueFrom(api.get('people'));
         await settle();

@@ -6,12 +6,6 @@ import type { AuthTokens } from './auth.models';
 /** Marca (não secreta) de que existe uma sessão. O refresh token em si fica no cookie httpOnly. */
 const SESSION_KEY = storageKey('session');
 
-/**
- * TODO(transição): só para o back antigo, que devolvia o refresh token no corpo. Quando o back
- * estiver usando o cookie, apague esta chave e tudo o que diz "legado" neste arquivo.
- */
-const LEGACY_REFRESH_TOKEN_KEY = storageKey('refreshToken');
-
 /** Renova o access token um pouco antes de ele vencer, para não perder uma requisição no meio do caminho. */
 const EXPIRY_MARGIN_MS = 30_000;
 
@@ -46,25 +40,14 @@ export class TokenStorageService {
 
     public save(tokens: AuthTokens): void {
         this.accessToken = tokens.accessToken;
-        // Back antigo: o refresh token veio no corpo e precisa ser guardado (legado).
-        write(LEGACY_REFRESH_TOKEN_KEY, tokens.refreshToken ?? null);
         write(SESSION_KEY, '1');
         this.sessionActive.set(true);
     }
 
     public clear(): void {
         this.accessToken = null;
-        write(LEGACY_REFRESH_TOKEN_KEY, null);
         write(SESSION_KEY, null);
         this.sessionActive.set(false);
-    }
-
-    /**
-     * Refresh token guardado pelo back antigo (legado). Com o cookie, é sempre `null`.
-     * Lido sempre do storage: outra aba pode ter renovado a sessão e trocado o token.
-     */
-    public getLegacyRefreshToken(): string | null {
-        return read(LEGACY_REFRESH_TOKEN_KEY);
     }
 
     /** Access token atual, ou `null` se não houver ou se estiver para vencer. */
@@ -97,7 +80,7 @@ function readJwtExpiration(token: string): number | null {
 }
 
 function readSessionFlag(): boolean {
-    return read(SESSION_KEY) !== null || read(LEGACY_REFRESH_TOKEN_KEY) !== null;
+    return read(SESSION_KEY) !== null;
 }
 
 function read(key: string): string | null {

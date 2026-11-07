@@ -21,6 +21,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A API está no ar? (público; não consulta o banco) */
+        get: operations["HealthController_live"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Nome, versão, commit e ambiente da API (público) */
+        get: operations["VersionController_version"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -30,7 +64,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Entra com e-mail e senha */
+        /**
+         * Entra com e-mail e senha
+         * @description Devolve o access token e grava o refresh token no cookie httpOnly (Path=/api/auth).
+         */
         post: operations["AuthController_login"];
         delete?: never;
         options?: never;
@@ -47,7 +84,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Troca o refresh token por um novo par de tokens */
+        /**
+         * Gera um novo access token a partir do cookie
+         * @description Sem corpo. Lê o refresh token do cookie, troca por um novo (rotação) e grava o novo cookie. Reusar um refresh token antigo encerra a sessão. Sessão inválida: 401 AUTH_INVALID_SESSION e o cookie é apagado.
+         */
         post: operations["AuthController_refresh"];
         delete?: never;
         options?: never;
@@ -81,7 +121,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Encerra a sessão do access token enviado */
+        /**
+         * Encerra a sessão
+         * @description Encerra a sessão do cookie e/ou do Bearer (mesmo vencido) e apaga o cookie. Sempre responde 204.
+         */
         post: operations["AuthController_logout"];
         delete?: never;
         options?: never;
@@ -528,7 +571,7 @@ export interface components {
             message: string;
             /**
              * @description Também enviado no header x-request-id
-             * @example req-1
+             * @example 3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f
              */
             requestId: string;
             /** @description Presente em erros de validação */
@@ -577,11 +620,29 @@ export interface components {
                 };
             };
         };
+        LiveResponse: {
+            /** @enum {string} */
+            status: "ok";
+        };
+        VersionResponse: {
+            /** @example golduck-back */
+            name: string;
+            /** @example 0.1.0 */
+            version: string;
+            /**
+             * @description Commit publicado (7 caracteres)
+             * @example e7ed4aa
+             */
+            commit: string | null;
+            /**
+             * @description Valor de APP_ENV
+             * @example production
+             */
+            environment: string;
+        };
         AuthTokensDto: {
-            /** @description JWT de curta duração, enviado como Authorization: Bearer */
+            /** @description JWT de curta duração (15 min), enviado como Authorization: Bearer */
             accessToken: string;
-            /** @description Usado uma única vez em /auth/refresh; cada uso gera um novo */
-            refreshToken: string;
         };
         LoginDto: {
             /**
@@ -591,9 +652,6 @@ export interface components {
             email: string;
             /** Format: password */
             password: string;
-        };
-        RefreshDto: {
-            refreshToken: string;
         };
         /** @enum {string} */
         Role: "ADMIN" | "USER";
@@ -1361,6 +1419,68 @@ export interface operations {
             };
         };
     };
+    HealthController_live: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LiveResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    VersionController_version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["VersionResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     AuthController_login: {
         parameters: {
             query?: never;
@@ -1385,6 +1505,20 @@ export interface operations {
                     };
                 };
             };
+            /** @description Origem não permitida (FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Muitas tentativas; veja o header Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Erro: { error: { code, message, requestId, details? } } */
             default: {
                 headers: {
@@ -1403,11 +1537,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefreshDto"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Sucesso */
             200: {
@@ -1419,6 +1549,20 @@ export interface operations {
                         data: components["schemas"]["AuthTokensDto"];
                     };
                 };
+            };
+            /** @description Origem não permitida (FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Muitas tentativas; veja o header Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Erro: { error: { code, message, requestId, details? } } */
             default: {
@@ -1471,8 +1615,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Sessão encerrada */
+            /** @description Sessão encerrada e cookie apagado */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Origem não permitida (FORBIDDEN) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

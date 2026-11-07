@@ -37,7 +37,7 @@
                 <th class="hidden md:table-cell">Categoria</th>
                 <th class="hidden md:table-cell">Pessoa</th>
                 <th class="text-right">Valor</th>
-                <th class="w-28 text-right">Ações</th>
+                <th class="text-right sm:w-28"><span class="sr-only sm:not-sr-only">Ações</span></th>
             </tr>
         </ng-template>
 
@@ -89,7 +89,9 @@
                     <td class="hidden md:table-cell"></td>
                     <td class="text-right font-semibold whitespace-nowrap tabular-nums">{{ total() | brl }}</td>
                     <td class="text-right text-sm text-muted-color">
-                        {{ rows().length }} {{ rows().length === 1 ? 'item' : 'itens' }}
+                        <span class="hidden sm:inline">
+                            {{ rows().length }} {{ rows().length === 1 ? 'item' : 'itens' }}
+                        </span>
                     </td>
                 </tr>
             }

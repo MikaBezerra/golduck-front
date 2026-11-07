@@ -30,3 +30,12 @@ body {
         sans-serif;
     -webkit-font-smoothing: antialiased;
 }
+
+/* Tabelas mais compactas no celular (variáveis de tema do PrimeNG). */
+@media (max-width: 639px) {
+    :root {
+        --p-datatable-header-cell-padding: 0.625rem 0.5rem;
+        --p-datatable-body-cell-padding: 0.625rem 0.5rem;
+        --p-datatable-footer-cell-padding: 0.625rem 0.5rem;
+    }
+}

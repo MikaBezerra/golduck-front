@@ -27,7 +27,7 @@
             <tr>
                 <th>Mês</th>
                 <th class="text-right">Valor</th>
-                <th class="w-32 text-right">Ações</th>
+                <th class="text-right sm:w-32"><span class="sr-only sm:not-sr-only">Ações</span></th>
             </tr>
         </ng-template>
 
@@ -83,7 +83,9 @@
             <tr>
                 <td class="font-semibold">Total de {{ year() }}</td>
                 <td class="text-right font-semibold tabular-nums">{{ total() | brl }}</td>
-                <td class="text-right text-sm text-muted-color">{{ takenMonths().length }} de 12 meses</td>
+                <td class="text-right text-sm text-muted-color">
+                    <span class="hidden sm:inline">{{ takenMonths().length }} de 12 meses</span>
+                </td>
             </tr>
         </ng-template>
     </p-table>

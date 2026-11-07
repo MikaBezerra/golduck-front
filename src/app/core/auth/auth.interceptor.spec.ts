@@ -135,4 +135,31 @@ describe('authInterceptor', () => {
         expect(tokens.hasSession()).toBe(false);
         expect(navigate).toHaveBeenCalledWith(['/login'], expect.anything());
     });
+
+    it('refresh limitado (429) mantém a sessão e não tenta de novo antes do Retry-After', async () => {
+        tokens.save({ accessToken: fakeJwt(5), refreshToken: 'refresh-1' });
+
+        const first = firstValueFrom(api.get('people'));
+        await settle();
+
+        http.expectOne('/api/auth/refresh').flush(
+            { error: { code: 'TOO_MANY_REQUESTS', message: 'Too many requests', requestId: 'r-429' } },
+            { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '45' } },
+        );
+
+        await expect(first).rejects.toMatchObject({
+            code: 'TOO_MANY_REQUESTS',
+            retryAfterSeconds: 45,
+            message: 'Muitas tentativas seguidas. Tente de novo em 45 segundos.',
+        });
+        expect(tokens.hasSession()).toBe(true);
+
+        // Logo depois: falha na hora, sem chamar o back de novo.
+        const second = firstValueFrom(api.get('categories'));
+        await settle();
+
+        http.expectNone('/api/auth/refresh');
+        await expect(second).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
+        expect(tokens.hasSession()).toBe(true);
+    });
 });

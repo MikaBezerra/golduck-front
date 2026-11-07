@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { supportCode } from '../logging/ids';
-import { REQUEST_ID_HEADER } from './api-headers';
+import { REQUEST_ID_HEADER, RETRY_AFTER_HEADER } from './api-headers';
 import type { ApiErrorDetail, ApiErrorResponse } from './api.types';
 
 const NETWORK_ERROR_MESSAGE = 'Não foi possível conectar ao servidor. Verifique se a API está no ar.';
@@ -42,6 +42,8 @@ export class ApiError extends Error {
         message: string,
         public readonly requestId: string | null = null,
         public readonly details: readonly ApiErrorDetail[] = [],
+        /** Em respostas 429: segundos até poder tentar de novo (header Retry-After), se o back informou. */
+        public readonly retryAfterSeconds: number | null = null,
     ) {
         super(message);
         this.name = 'ApiError';
@@ -59,6 +61,13 @@ export class ApiError extends Error {
 
             if (error.status === 0) {
                 return new ApiError(0, 'NETWORK_ERROR', NETWORK_ERROR_MESSAGE, headerId);
+            }
+
+            if (error.status === 429) {
+                const seconds = parseRetryAfter(error.headers.get(RETRY_AFTER_HEADER));
+                const body = isApiErrorResponse(error.error) ? error.error.error : null;
+
+                return ApiError.tooManyRequests(seconds, body?.requestId ?? headerId);
             }
 
             if (isApiErrorResponse(error.error)) {
@@ -81,6 +90,16 @@ export class ApiError extends Error {
         return new ApiError(-1, 'UNEXPECTED_ERROR', UNEXPECTED_ERROR_MESSAGE);
     }
 
+    /** Limite de tentativas: mensagem amigável dizendo quanto tempo esperar. */
+    public static tooManyRequests(seconds: number | null, requestId: string | null = null): ApiError {
+        const message =
+            seconds === null
+                ? 'Muitas tentativas seguidas. Aguarde um pouco e tente de novo.'
+                : `Muitas tentativas seguidas. Tente de novo em ${formatWait(seconds)}.`;
+
+        return new ApiError(429, 'TOO_MANY_REQUESTS', message, requestId, [], seconds);
+    }
+
     public get isServerError(): boolean {
         return this.status >= 500;
     }
@@ -96,6 +115,34 @@ export class ApiError extends Error {
 
         return code ? `${this.message} (código de suporte: ${code})` : this.message;
     }
+}
+
+/** Retry-After vem em segundos ("60") ou como data HTTP; devolve os segundos que faltam. */
+export function parseRetryAfter(value: string | null, now = Date.now()): number | null {
+    if (!value) {
+        return null;
+    }
+
+    const trimmed = value.trim();
+
+    if (/^\d+$/.test(trimmed)) {
+        return Number(trimmed);
+    }
+
+    const date = Date.parse(trimmed);
+
+    return Number.isNaN(date) ? null : Math.max(0, Math.ceil((date - now) / 1000));
+}
+
+/** 45 → "45 segundos"; 90 → "2 minutos". */
+function formatWait(seconds: number): string {
+    if (seconds < 60) {
+        return seconds <= 1 ? '1 segundo' : `${seconds} segundos`;
+    }
+
+    const minutes = Math.ceil(seconds / 60);
+
+    return minutes === 1 ? '1 minuto' : `${minutes} minutos`;
 }
 
 function codeForStatus(status: number): string {

@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { defer, finalize, firstValueFrom, map, type Observable, shareReplay, tap } from 'rxjs';
+import { defer, finalize, firstValueFrom, map, type Observable, shareReplay, tap, throwError } from 'rxjs';
 
 import { ApiError } from '../api/api-error';
 import { ApiService } from '../api/api.service';
@@ -11,6 +11,9 @@ import { TokenStorageService } from './token-storage.service';
 
 const REFRESH_LOCK_NAME = storageKey('auth.refresh');
 
+/** Pausa nas renovações depois de um 429 sem Retry-After. */
+const DEFAULT_REFRESH_COOLDOWN_S = 30;
+
 /**
  * Sessão do usuário: entrar, sair e renovar o access token.
  *
@@ -19,6 +22,9 @@ const REFRESH_LOCK_NAME = storageKey('auth.refresh');
  * Por isso `refreshAccessToken()` garante UMA renovação por vez:
  * - dentro da aba: todas as requisições que precisarem esperam a mesma chamada;
  * - entre abas: um "lock" do navegador faz uma aba esperar a outra terminar.
+ *
+ * Se o back limitar as renovações (429), a sessão continua: as próximas tentativas falham na hora,
+ * sem chamar o back, até passar o tempo do Retry-After (nada de loop de refresh nem de logout).
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -28,6 +34,8 @@ export class AuthService {
     private readonly notifications = inject(NotificationService);
 
     private refreshInFlight: Observable<string> | null = null;
+    /** Até quando (ms) as renovações estão pausadas por um 429. */
+    private refreshBlockedUntil = 0;
     private readonly currentUser = signal<AuthUser | null>(null);
     private loadingUser = false;
 
@@ -61,6 +69,12 @@ export class AuthService {
 
     /** Novo access token. Chamadas simultâneas compartilham a mesma renovação. */
     public refreshAccessToken(): Observable<string> {
+        const waitMs = this.refreshBlockedUntil - Date.now();
+
+        if (waitMs > 0) {
+            return throwError(() => ApiError.tooManyRequests(Math.ceil(waitMs / 1000)));
+        }
+
         this.refreshInFlight ??= defer(async () => this.runRefresh()).pipe(
             finalize(() => (this.refreshInFlight = null)),
             shareReplay({ bufferSize: 1, refCount: false }),
@@ -125,6 +139,13 @@ export class AuthService {
                 // 400/401: o refresh token não serve mais. Falha de rede (status 0) não derruba a sessão.
                 if (apiError.status === 400 || apiError.status === 401) {
                     this.expireSession();
+                }
+
+                // 429: muitas renovações. Mantém a sessão e pausa novas tentativas pelo tempo pedido.
+                if (apiError.status === 429) {
+                    const seconds = apiError.retryAfterSeconds ?? DEFAULT_REFRESH_COOLDOWN_S;
+
+                    this.refreshBlockedUntil = Date.now() + seconds * 1000;
                 }
 
                 throw apiError;

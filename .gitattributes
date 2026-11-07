@@ -1,3 +1,7 @@
 * text=auto eol=lf
 *.ico binary
 *.png binary
+
+# Hooks do Husky e scripts de shell sempre com LF: com CRLF o "\r" quebra os argumentos no sh.
+.husky/* text eol=lf
+*.sh text eol=lf

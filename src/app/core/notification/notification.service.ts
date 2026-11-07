@@ -22,6 +22,12 @@ export class NotificationService {
     /** Mostra a mensagem que veio do back (já em pt-BR). Erros 5xx levam o id da requisição para facilitar o suporte. */
     public error(error: unknown): void {
         const apiError = ApiError.from(error);
+
+        // 401: o fluxo de sessão já avisou ("Sua sessão expirou") e levou para o login.
+        if (apiError.status === 401) {
+            return;
+        }
+
         const detail =
             apiError.isServerError && apiError.requestId
                 ? `${apiError.message} (código: ${apiError.requestId})`

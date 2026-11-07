@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Drawer } from 'primeng/drawer';
 
@@ -19,7 +19,6 @@ import { SidebarNavComponent } from './sidebar-nav.component';
 })
 export class ShellComponent {
     private readonly auth = inject(AuthService);
-    private readonly router = inject(Router);
 
     protected readonly menuOpen = signal(false);
 
@@ -27,7 +26,7 @@ export class ShellComponent {
         // Sessão encerrada em outra aba: sai desta também.
         effect(() => {
             if (!this.auth.isAuthenticated()) {
-                void this.router.navigate(['/login']);
+                untracked(() => this.auth.redirectToLogin());
             }
         });
     }

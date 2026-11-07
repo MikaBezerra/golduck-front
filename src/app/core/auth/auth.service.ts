@@ -70,7 +70,11 @@ export class AuthService {
 
         this.tokens.clear();
         this.notifications.info('Sua sessão expirou. Entre novamente.');
+        this.redirectToLogin();
+    }
 
+    /** Vai para o login lembrando a página atual, para voltar a ela depois de entrar. */
+    public redirectToLogin(): void {
         const currentUrl = this.router.url;
         const queryParams =
             currentUrl && currentUrl !== '/' && !currentUrl.startsWith('/login') ? { redirect: currentUrl } : {};

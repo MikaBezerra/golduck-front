@@ -1,0 +1,58 @@
+<app-page-header title="Pessoas" subtitle="Quem participa das despesas da casa.">
+    <p-button label="Nova pessoa" icon="pi pi-plus" (onClick)="openCreate()" />
+</app-page-header>
+
+<div class="overflow-hidden rounded-xl border border-surface bg-surface-0">
+    <p-table [value]="people()" [loading]="loading()" dataKey="id" [rowHover]="true">
+        <ng-template #header>
+            <tr>
+                <th>Nome</th>
+                <th class="hidden md:table-cell">E-mail</th>
+                <th class="hidden sm:table-cell">Celular</th>
+                <th class="w-32 text-right">Ações</th>
+            </tr>
+        </ng-template>
+
+        <ng-template #body let-person>
+            <tr>
+                <td>
+                    <span class="font-medium">{{ person.name }}</span>
+                </td>
+                <td class="hidden text-muted-color md:table-cell">{{ person.email ?? '—' }}</td>
+                <td class="hidden whitespace-nowrap text-muted-color sm:table-cell">{{ person.phone | phone }}</td>
+                <td class="text-right whitespace-nowrap">
+                    <p-button
+                        icon="pi pi-pencil"
+                        [text]="true"
+                        [rounded]="true"
+                        severity="secondary"
+                        [ariaLabel]="'Editar ' + person.name"
+                        pTooltip="Editar"
+                        tooltipPosition="top"
+                        (onClick)="openEdit(person)"
+                    />
+                    <p-button
+                        icon="pi pi-ban"
+                        [text]="true"
+                        [rounded]="true"
+                        severity="danger"
+                        [ariaLabel]="'Desativar ' + person.name"
+                        pTooltip="Desativar"
+                        tooltipPosition="top"
+                        (onClick)="deactivate(person)"
+                    />
+                </td>
+            </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+            <tr>
+                <td colspan="4" class="py-8 text-center text-muted-color">
+                    Nenhuma pessoa cadastrada. Cadastre quem divide as despesas com você.
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<app-person-form-dialog [(visible)]="dialogVisible" [person]="editing()" (saved)="load()" />

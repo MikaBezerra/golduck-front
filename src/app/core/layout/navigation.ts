@@ -18,4 +18,10 @@ export const NAV_ITEMS: readonly NavItem[] = [
         route: '/categorias',
         description: 'Organize as despesas por tipo de gasto.',
     },
+    {
+        label: 'Pessoas',
+        icon: 'pi pi-users',
+        route: '/pessoas',
+        description: 'Quem participa das despesas da casa.',
+    },
 ];

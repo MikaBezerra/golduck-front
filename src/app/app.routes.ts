@@ -27,6 +27,10 @@ export const routes: Routes = [
                 loadChildren: async () =>
                     import('./features/categories/categories.routes').then((m) => m.CATEGORIES_ROUTES),
             },
+            {
+                path: 'pessoas',
+                loadChildren: async () => import('./features/people/people.routes').then((m) => m.PEOPLE_ROUTES),
+            },
         ],
     },
     { path: '**', redirectTo: '' },

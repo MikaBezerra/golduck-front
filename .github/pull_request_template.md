@@ -8,6 +8,6 @@
 
 ## Checklist
 
-- [ ] `npm run format:check`, `npm run lint`, `npm run test:cov` e `npm run build` passam localmente
+- [ ] `npm run verify` passa localmente (format:check, lint, test:cov e build)
 - [ ] Usa um endpoint novo ou alterado? Conferi o contrato no Swagger do back e rodei `npm run api:types`
 - [ ] Mudou o endereço de algum ambiente? Atualizei `src/environments` e liberei o domínio em `API_CORS_ORIGINS` no back

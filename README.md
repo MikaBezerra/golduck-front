@@ -23,7 +23,7 @@ Pré-requisitos: Node 22 (`^22.12`, versão no [`.nvmrc`](.nvmrc): `nvm use`) e 
 `http://localhost:3000`.
 
 ```sh
-npm install
+npm install        # também ativa os hooks do Git (Husky)
 npm start          # http://localhost:4200
 ```
 
@@ -47,20 +47,29 @@ Para entrar, use um usuário criado no back com `npm run admin:create`.
 | `npm run test:cov`         | Testes com cobertura e metas mínimas (relatório em `coverage/`)    |
 | `npm run lint`             | Verifica o código com ESLint                                       |
 | `npm run format`           | Formata o código com Prettier (`format:check` só confere)          |
+| `npm run verify`           | Roda tudo o que o CI roda: `format:check`, lint, `test:cov` e build |
+
+Antes de commitar, rode `npm run verify`. A mensagem do commit é conferida pelo commitlint (hook
+`commit-msg` do Husky) no padrão Conventional Commits: `feat: ...`, `fix: ...`, `chore: ...`,
+`docs: ...`, `ci: ...` (em português depois do prefixo).
 
 ## Estrutura
 
 ```
 src/app/
 ├── core/                  # carregado uma vez só (singletons)
-│   ├── api/               # ApiService: desembrulha { data } e transforma { error } em ApiError
+│   ├── api/               # ApiService ({ data } e ApiError), x-request-id, códigos de erro
 │   ├── auth/              # sessão, tokens, guards e interceptor (renovação única do token)
 │   ├── config/            # tema e tradução do PrimeNG
-│   ├── layout/            # menu lateral, topo, página inicial e itens do menu (navigation.ts)
+│   ├── errors/            # ErrorHandler global (log + aviso com código de suporte)
+│   ├── layout/            # menu lateral, barra do celular, topo e itens do menu (navigation.ts)
+│   ├── logging/           # LoggerService com níveis e ids/códigos de suporte
 │   ├── month/             # mês selecionado no topo (compartilhado entre as telas)
-│   └── notification/      # avisos (toasts) e confirmações
+│   ├── notification/      # avisos (toasts) e confirmações
+│   ├── storage/           # prefixo das chaves gravadas no navegador
+│   └── version/           # versões do front e da API (mostradas no rodapé)
 ├── shared/                # reaproveitado por todas as features
-│   ├── data/              # remoteData(): busca dados e recarrega quando o parâmetro muda
+│   ├── data/              # remoteData() e paginação (PageQuery, Page<T>, pageParams, p-table)
 │   ├── forms/             # mensagens de erro e erros do back nos campos
 │   ├── money/             # reais: formatação, centavos, limites do campo de valor
 │   ├── month/             # utilitários de mês (AAAA-MM)
@@ -89,7 +98,8 @@ uma rota em `app.routes.ts` e um item em `core/layout/navigation.ts`.
 
 ### Receita de uma feature nova
 
-1. `data-access/x.models.ts`: copie os DTOs do back como `interface`.
+1. `data-access/x.models.ts`: rode `npm run api:types` e dê nomes curtos aos tipos gerados
+   (`export type X = ApiSchemas['XResponse']`).
 2. `data-access/x.service.ts`: um método por rota do controller, usando `ApiService`.
 3. `pages/x-page.component.ts`: a tela, com estado em `signal()`; use `remoteData()` se a busca
    depender do mês/ano selecionado.
@@ -107,7 +117,7 @@ uma rota em `app.routes.ts` e um item em `core/layout/navigation.ts`.
 | Controller (rota HTTP)            | Componente de página (rota de tela)                              |
 | Guard `CanActivate`               | Guard de rota (`CanActivateFn`)                                  |
 | Interceptor                       | Interceptor HTTP (`HttpInterceptorFn`)                           |
-| DTO                               | `interface` em `*.models.ts`                                     |
+| DTO                               | Tipo gerado do OpenAPI, apelidado em `*.models.ts`               |
 | Pipe de validação (Joi)           | `Validators` dos formulários reativos                            |
 | `nest g service x`                | `npx ng g service x`                                             |
 
@@ -119,8 +129,38 @@ uma rota em `app.routes.ts` e um item em `core/layout/navigation.ts`.
 - Dinheiro trafega como texto (`"1234.56"`), igual à API. Nunca vira `number` para somar:
   somas são feitas em centavos inteiros (`shared/money`).
 - Mês trafega como `"AAAA-MM"` (`shared/month`).
-- Mensagens de erro vêm prontas do back, em português, e são exibidas como estão.
-- Commits no mesmo padrão do back: um commit por feature (`feat: add categorias`).
+- Mensagens de erro vêm prontas do back, em português, e são exibidas como estão (com o código de
+  suporte quando houver).
+- Commits no mesmo padrão do back (Conventional Commits, conferido pelo commitlint): um commit por
+  assunto (`feat: categorias`, `fix: ...`).
+
+## Observabilidade
+
+Sem ferramenta externa: tudo fica no console do navegador, organizado, e ligado ao log do back.
+
+- **Logger com níveis** (`core/logging/logger.service.ts`): `debug`, `info`, `warn` e `error`, com hora,
+  nível destacado, dados e o erro original. O nível mínimo vem do ambiente: tudo em desenvolvimento,
+  `info` no develop e só `warn`/`error` em produção.
+- **Erros não tratados** (`core/errors/global-error-handler.ts`): viram um log com a rota e um código de
+  suporte, e um aviso amigável com o mesmo código (sem repetir o aviso se o erro se repetir).
+- **Id da requisição**: toda chamada à API leva o header `x-request-id` (UUID). O back usa o mesmo id no log
+  e devolve no erro; em falha de rede o front usa o id que enviou. As mensagens de erro mostram os 8
+  primeiros caracteres como "código de suporte", e o log do front guarda o id completo: com ele se acha
+  a mesma requisição no log do back.
+- **Limite de tentativas** (429): a mensagem diz quanto esperar (header `Retry-After`).
+- **Versões**: o rodapé mostra a versão do front (do `package.json`) e a da API (`GET /version`), com
+  commit e ambiente na dica.
+
+## Paginação
+
+O back pagina com `page` (a partir de 1) e `pageSize` (1 a 100) e responde
+`{ items, page, pageSize, total, totalPages }`. Em `shared/data/pagination.ts`:
+
+- `PageQuery` e `Page<T>`;
+- `pageParams(query, filtros)`: monta os `HttpParams` (corrige valores fora dos limites e ignora filtros
+  vazios) para usar em `api.get<Page<T>>('rota', pageParams(...))`;
+- `pageQueryFromLazyLoad(evento)` e `firstRowOf(página)`: convertem o lazy load do `p-table`
+  (`first`/`rows`) em `page`/`pageSize` e de volta.
 
 ## Autenticação, em resumo
 
@@ -227,7 +267,12 @@ metas conforme os testes crescerem.
 
 ## Problemas conhecidos do ambiente
 
-- O npm 10.9.2 (que vem com o Node 22.16) tem um bug ao **adicionar** pacotes novos
-  (`Cannot read properties of null (reading 'edgesOut')`). Instalar a partir do lockfile
-  (`npm install`/`npm ci`) funciona. Para adicionar um pacote, use `npx npm@11 install <pacote>`
-  ou atualize o Node.
+- No Windows, não rode `npm ci` nem apague a `node_modules` com o `ng serve` no ar: o servidor segura
+  binários nativos (esbuild, lightningcss) e a instalação quebra pela metade. Pare o `ng serve` antes.
+  `npm install <pacote>` funciona com ele rodando.
+- Se o npm 10.9.2 falhar ao **adicionar** um pacote (`Cannot read properties of null (reading
+  'edgesOut')`), use `npx npm@11 install <pacote>`.
+
+## Licença
+
+[MIT](LICENSE) © 2026 Mikaell Silva.

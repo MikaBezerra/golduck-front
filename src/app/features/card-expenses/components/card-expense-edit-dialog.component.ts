@@ -19,6 +19,7 @@ import { Select } from 'primeng/select';
 
 import { ApiError } from '../../../core/api/api-error';
 import { NotificationService } from '../../../core/notification/notification.service';
+import { choiceOf, personChoiceOptions, splitOfChoice } from '../../../shared/expense-split/expense-split';
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
 import { applyServerErrors, revealFormErrors, setServerError } from '../../../shared/forms/form-errors';
 import { ExpenseLookupsService } from '../../manual-expenses/data-access/expense-lookups.service';
@@ -31,7 +32,6 @@ import {
 import { CardExpenseService } from '../data-access/card-expense.service';
 
 /** No modo "várias despesas", `null` no seletor de pessoa significa "manter"; este valor remove a pessoa. */
-const NO_PERSON = '__no_person__';
 
 interface SelectOption {
     readonly label: string;
@@ -96,18 +96,17 @@ export class CardExpenseEditDialogComponent {
         const options = this.lookups.activePeople().map((person) => ({ label: person.name, value: person.id }));
         const single = this.single();
 
-        if (!single) {
-            return [{ label: 'Ninguém (remover pessoa)', value: NO_PERSON }, ...options];
-        }
-
-        if (single.personId && !options.some((option) => option.value === single.personId)) {
+        if (single?.personId && !options.some((option) => option.value === single.personId)) {
             const name = this.lookups.personById().get(single.personId)?.name ?? 'Pessoa';
 
-            return [...options, { label: `${name} (desativada)`, value: single.personId }];
+            return personChoiceOptions([...options, { label: `${name} (desativada)`, value: single.personId }]);
         }
 
-        return options;
+        return personChoiceOptions(options);
     });
+
+    /** Uma despesa só, ainda sem pessoa definida (`PENDING`). */
+    protected readonly pending = computed(() => this.single()?.split === 'PENDING');
 
     protected readonly form = new FormGroup({
         nickname: new FormControl('', {
@@ -131,7 +130,7 @@ export class CardExpenseEditDialogComponent {
                 this.form.reset({
                     nickname: single?.nickname ?? '',
                     categoryId: single?.categoryId ?? null,
-                    personId: single?.personId ?? null,
+                    personId: single ? choiceOf(single) : null,
                 });
             });
         });
@@ -188,6 +187,7 @@ export class CardExpenseEditDialogComponent {
                         'changes.nickname': 'nickname',
                         'changes.categoryId': 'categoryId',
                         'changes.personId': 'personId',
+                        'changes.split': 'personId',
                     })
                 ) {
                     this.notifications.error(apiError);
@@ -219,8 +219,9 @@ export class CardExpenseEditDialogComponent {
             changes.categoryId = categoryId;
         }
 
-        if ((personId ?? null) !== current.personId) {
-            changes.personId = personId ?? null;
+        // Vazio = continua como está (uma compra pendente continua pendente).
+        if (personId && personId !== choiceOf(current)) {
+            Object.assign(changes, splitOfChoice(personId));
         }
 
         return changes;
@@ -240,7 +241,7 @@ export class CardExpenseEditDialogComponent {
         }
 
         if (personId) {
-            changes.personId = personId === NO_PERSON ? null : personId;
+            Object.assign(changes, splitOfChoice(personId));
         }
 
         return changes;

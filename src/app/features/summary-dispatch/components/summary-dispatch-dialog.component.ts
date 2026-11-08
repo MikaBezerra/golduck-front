@@ -88,6 +88,7 @@ export class SummaryDispatchDialogComponent {
         return (
             preview !== null &&
             preview.enabled &&
+            preview.pending.count === 0 &&
             preview.recipients.some((recipient) => recipient.hasEmail) &&
             !this.sending()
         );

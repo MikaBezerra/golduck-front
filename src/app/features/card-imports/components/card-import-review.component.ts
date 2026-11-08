@@ -12,6 +12,7 @@ import { Tag } from 'primeng/tag';
 import { map, startWith, switchMap } from 'rxjs';
 
 import { IsoDatePipe } from '../../../shared/date/iso-date.pipe';
+import { personChoiceOptions } from '../../../shared/expense-split/expense-split';
 import { sumAmounts } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
 import {
@@ -127,7 +128,7 @@ export class CardImportReviewComponent {
             .filter((id): id is string => id !== null && !known.has(id))
             .map((id) => ({ label: `${this.lookups.personById().get(id)?.name ?? 'Pessoa'} (desativada)`, value: id }));
 
-        return [...options, ...inactive];
+        return personChoiceOptions([...options, ...inactive]);
     });
 
     protected readonly bulkCategoryOptions = computed(() =>

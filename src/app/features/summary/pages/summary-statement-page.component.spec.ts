@@ -66,6 +66,7 @@ const STATEMENT = {
     reserve: { month: null, accumulated: '0.00' },
     hasPeople: true,
     incomeMissing: false,
+    pending: { amount: '0.00', count: 0 },
 } as SummaryStatement;
 
 describe('SummaryStatementPageComponent (resumo do mês em tabela)', () => {

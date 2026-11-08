@@ -34,6 +34,10 @@ interface Internals {
     readonly moveVisible: Signal<boolean>;
     readonly moving: Signal<CardExpense | null>;
     readonly bill: { value: Signal<unknown> };
+    readonly rows: Signal<readonly { readonly id: string; readonly personName: string; readonly pending: boolean }[]>;
+    readonly pendingCount: Signal<number>;
+    readonly onlyPending: Signal<boolean>;
+    togglePendingFilter(): void;
     syncCard(): void;
     syncAll(): void;
     afterBillChange(): void;
@@ -57,9 +61,12 @@ describe('CardExpensesPageComponent (faturas do cartão)', () => {
     const cardSync = { syncCard: vi.fn(), syncAll: vi.fn() };
     let notifications: NotificationsMock;
 
-    function render(cards: CreditCard[] = [aSyncedCreditCard({ id: 'card-1', name: 'C6' })]) {
+    function render(
+        cards: CreditCard[] = [aSyncedCreditCard({ id: 'card-1', name: 'C6' })],
+        expenses: CardExpense[] = [aCardExpense({ origin: 'MANUAL' })],
+    ) {
         sessionStorage.clear();
-        cardExpenses.findByMonth.mockReset().mockReturnValue(of([aCardExpense({ origin: 'MANUAL' })]));
+        cardExpenses.findByMonth.mockReset().mockReturnValue(of(expenses));
         creditCards.findAll.mockReset().mockReturnValue(of(cards));
         creditCards.findBill.mockReset().mockReturnValue(of(aCardBill({ source: 'bank' })));
         cardSync.syncCard.mockReset();
@@ -101,6 +108,38 @@ describe('CardExpensesPageComponent (faturas do cartão)', () => {
         expect(text()).toContain('O banco já informou o fechamento desta fatura.');
         expect(text()).toContain('Atualizar');
         expect(text()).toContain('À mão');
+    });
+
+    it('compras sem pessoa: aviso com a quantidade, etiqueta na linha e filtro "só elas"', () => {
+        const { page, text } = render(undefined, [
+            aCardExpense({ id: 'ce-1', split: 'PENDING' }),
+            aCardExpense({ id: 'ce-2' }),
+            aCardExpense({ id: 'ce-3', split: 'PENDING', excluded: true }),
+        ]);
+
+        expect(page.pendingCount()).toBe(1);
+        expect(page.rows().map((row) => [row.id, row.personName, row.pending])).toEqual([
+            ['ce-1', 'Sem pessoa', true],
+            ['ce-2', 'Compartilhada', false],
+            ['ce-3', 'Sem pessoa', false],
+        ]);
+        expect(text()).toContain('1 compra sem pessoa definida.');
+
+        page.togglePendingFilter();
+
+        expect(page.onlyPending()).toBe(true);
+        expect(page.rows().map((row) => row.id)).toEqual(['ce-1']);
+        expect(text()).toContain('Mostrar todas');
+    });
+
+    it('sem compras pendentes, nem aviso nem filtro', () => {
+        const { page, text } = render();
+
+        page.togglePendingFilter();
+
+        expect(page.pendingCount()).toBe(0);
+        expect(page.onlyPending()).toBe(false);
+        expect(text()).not.toContain('sem pessoa definida');
     });
 
     it('cartão sem ciclo nem sincronização: não busca a fatura e explica onde configurar', () => {

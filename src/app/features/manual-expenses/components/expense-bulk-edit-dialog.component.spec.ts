@@ -18,8 +18,6 @@ interface Internals {
     save(): void;
 }
 
-const NO_PERSON = '__no_person__';
-
 describe('ExpenseBulkEditDialogComponent (várias despesas de uma vez)', () => {
     const expenses = { updateMany: vi.fn() };
     const notifications = notificationsMock();
@@ -41,11 +39,11 @@ describe('ExpenseBulkEditDialogComponent (várias despesas de uma vez)', () => {
         return { fixture, dialog: internals<Internals>(fixture) };
     }
 
-    it('começa vazio, com "Ninguém" como primeira opção de pessoa', () => {
+    it('começa vazio, com "Compartilhada" como primeira opção de pessoa', () => {
         const { dialog } = open();
 
         expect(dialog.form.getRawValue()).toEqual({ title: '', amount: null, categoryId: null, personId: null });
-        expect(dialog.personOptions()[0]).toEqual({ label: 'Ninguém (remover pessoa)', value: NO_PERSON });
+        expect(dialog.personOptions()[0]).toEqual({ label: 'Compartilhada', value: 'SHARED' });
     });
 
     it('sem nada preenchido, pede para escolher algo', () => {
@@ -61,12 +59,12 @@ describe('ExpenseBulkEditDialogComponent (várias despesas de uma vez)', () => {
         const { fixture, dialog } = open();
         expenses.updateMany.mockReturnValue(of(selected));
 
-        dialog.form.patchValue({ title: ' Conta de luz ', amount: 180, personId: NO_PERSON });
+        dialog.form.patchValue({ title: ' Conta de luz ', amount: 180, personId: 'SHARED' });
         dialog.save();
 
         expect(expenses.updateMany).toHaveBeenCalledWith({
             ids: ['e-1', 'e-2'],
-            changes: { title: 'Conta de luz', amount: '180.00', personId: null },
+            changes: { title: 'Conta de luz', amount: '180.00', split: 'SHARED' },
         });
         expect(notifications.success).toHaveBeenCalledWith('2 despesas atualizadas.');
         expect(fixture.componentInstance.visible()).toBe(false);

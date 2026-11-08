@@ -19,6 +19,7 @@ import { Password } from 'primeng/password';
 
 import { ApiError } from '../../../core/api/api-error';
 import { NotificationService } from '../../../core/notification/notification.service';
+import { choiceOf, splitOfChoice } from '../../../shared/expense-split/expense-split';
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
 import { revealFormErrors, setServerError } from '../../../shared/forms/form-errors';
 import { dateToMonthKey, formatMonth, monthKeyToDate } from '../../../shared/month/month';
@@ -245,13 +246,13 @@ export class CardImportUploadDialogComponent {
     private collectOverrides(preview: CardImportPreview): CardImportOverride[] {
         return preview.transactions.flatMap((tx, index) => {
             const { nickname, categoryId, personId } = this.rows.at(index).getRawValue();
-            const chosen = { nickname: nickname.trim() || null, categoryId, personId: personId ?? null };
+            const chosen = { nickname: nickname.trim() || null, categoryId };
+            // personId guarda a escolha do select (pessoa ou "Compartilhada"); vazio = sem pessoa (PENDING).
             const changed =
-                chosen.nickname !== tx.nickname ||
-                chosen.categoryId !== tx.categoryId ||
-                chosen.personId !== tx.personId;
+                chosen.nickname !== tx.nickname || chosen.categoryId !== tx.categoryId || personId !== choiceOf(tx);
+            const split = personId ? splitOfChoice(personId) : ({ split: 'PENDING' } as const);
 
-            return changed ? [{ key: tx.key, ...chosen }] : [];
+            return changed ? [{ key: tx.key, ...chosen, ...split }] : [];
         });
     }
 
@@ -287,12 +288,12 @@ export class CardImportUploadDialogComponent {
         let applied = false;
 
         for (const detail of error.details) {
-            const match = /^overrides\[(\d+)\]\.(nickname|categoryId|personId)$/.exec(detail.field);
+            const match = /^overrides\[(\d+)\]\.(nickname|categoryId|personId|split)$/.exec(detail.field);
             const key = match ? overrides[Number(match[1])]?.key : undefined;
             const index = key ? preview.transactions.findIndex((tx) => tx.key === key) : -1;
 
             if (match && index >= 0) {
-                setServerError(this.rows.at(index).get(match[2]), detail.message);
+                setServerError(this.rows.at(index).get(match[2] === 'split' ? 'personId' : match[2]), detail.message);
                 applied = true;
             }
         }
@@ -311,7 +312,7 @@ export class CardImportUploadDialogComponent {
                         nonNullable: true,
                         validators: [Validators.required],
                     }),
-                    personId: new FormControl<string | null>(tx.personId),
+                    personId: new FormControl<string | null>(choiceOf(tx)),
                     exclude: new FormControl(tx.excluded, { nonNullable: true }),
                     remember: new FormControl(false, { nonNullable: true }),
                     scope: new FormControl<CardExpenseScope>('all', { nonNullable: true }),

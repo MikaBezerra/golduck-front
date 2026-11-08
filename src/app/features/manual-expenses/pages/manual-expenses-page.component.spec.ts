@@ -16,7 +16,7 @@ import { ManualExpensesPageComponent } from './manual-expenses-page.component';
 
 interface Row extends ManualExpense {
     readonly categoryName: string;
-    readonly personName: string | null;
+    readonly personName: string;
 }
 
 interface Internals {
@@ -75,7 +75,7 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
 
         expect(expenses.findByMonth).toHaveBeenLastCalledWith('2026-11');
         expect(page.rows().map((row) => [row.title, row.categoryName, row.personName])).toEqual([
-            ['Aluguel', 'Casa', null],
+            ['Aluguel', 'Casa', 'Compartilhada'],
             ['Curso', 'Velha', 'Ana'],
         ]);
     });

@@ -15,6 +15,7 @@ import { formatMonth } from '../../../shared/month/month';
 import { mediaQuery } from '../../../shared/ui/media-query';
 import { PageHeaderComponent } from '../../../shared/ui/page-header.component';
 import { SummaryDispatchDialogComponent } from '../../summary-dispatch/components/summary-dispatch-dialog.component';
+import { PendingExpensesNoticeComponent } from '../components/pending-expenses-notice.component';
 import type { SummaryDispatchPreview } from '../../summary-dispatch/data-access/summary-dispatch.models';
 import { SummaryDispatchService } from '../../summary-dispatch/data-access/summary-dispatch.service';
 import type { SummaryStatement, SummaryStatementRow } from '../data-access/summary.models';
@@ -40,6 +41,7 @@ import { SummaryService } from '../data-access/summary.service';
         BrlPipe,
         PageHeaderComponent,
         SummaryDispatchDialogComponent,
+        PendingExpensesNoticeComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './summary-statement-page.component.html',

@@ -25,6 +25,7 @@ const month = (
     expensesTotal,
     expensesCount: count,
     balance,
+    pendingCount: 0,
 });
 
 describe('summary-view', () => {

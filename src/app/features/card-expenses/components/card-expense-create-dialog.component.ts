@@ -20,6 +20,7 @@ import { Select } from 'primeng/select';
 
 import { ApiError } from '../../../core/api/api-error';
 import { NotificationService } from '../../../core/notification/notification.service';
+import { personChoiceOptions, splitOfChoice } from '../../../shared/expense-split/expense-split';
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
 import { applyServerErrors, revealFormErrors, setServerError } from '../../../shared/forms/form-errors';
 import { numberToAmount } from '../../../shared/money/money';
@@ -70,7 +71,7 @@ export class CardExpenseCreateDialogComponent {
         this.lookups.activeCategories().map((category) => ({ label: category.name, value: category.id })),
     );
     protected readonly personOptions = computed(() =>
-        this.lookups.activePeople().map((person) => ({ label: person.name, value: person.id })),
+        personChoiceOptions(this.lookups.activePeople().map((person) => ({ label: person.name, value: person.id }))),
     );
     protected readonly defaultCategoryName = computed(() => this.lookups.defaultCategory()?.name ?? 'Outros');
 
@@ -96,7 +97,8 @@ export class CardExpenseCreateDialogComponent {
                 validators: [Validators.maxLength(CARD_EXPENSE_NICKNAME_MAX_LENGTH)],
             }),
             categoryId: new FormControl<string | null>(null),
-            personId: new FormControl<string | null>(null),
+            /** Id da pessoa ou "Compartilhada" (`SHARED_CHOICE`): obrigatório, a compra nasce classificada. */
+            personId: new FormControl<string | null>(null, Validators.required),
         },
         { validators: [installmentPairValidator] },
     );
@@ -153,6 +155,8 @@ export class CardExpenseCreateDialogComponent {
                     !applyServerErrors(this.form, apiError, {
                         'installment.number': 'installmentNumber',
                         'installment.total': 'installmentTotal',
+                        split: 'personId',
+                        personId: 'personId',
                     })
                 ) {
                     this.notifications.error(apiError);
@@ -176,7 +180,7 @@ export class CardExpenseCreateDialogComponent {
                 : {}),
             ...(nickname ? { nickname } : {}),
             ...(value.categoryId ? { categoryId: value.categoryId } : {}),
-            ...(value.personId ? { personId: value.personId } : {}),
+            ...splitOfChoice(value.personId ?? ''),
         };
     }
 }

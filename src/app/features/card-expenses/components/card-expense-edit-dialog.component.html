@@ -72,13 +72,18 @@
                     [options]="personOptions()"
                     optionLabel="label"
                     optionValue="value"
-                    [placeholder]="single() ? 'Ninguém' : 'Manter como está'"
-                    [showClear]="true"
+                    [placeholder]="pending() ? 'Escolha a pessoa' : 'Manter como está'"
+                    [showClear]="!single()"
                     [filter]="personOptions().length > 8"
                     appendTo="body"
                     [fluid]="true"
                 />
                 <app-field-error [control]="form.controls.personId" />
+                @if (pending()) {
+                    <small class="text-cantaloupe">
+                        Compra nova, ainda sem pessoa: escolha alguém ou "Compartilhada".
+                    </small>
+                }
             </div>
         </div>
 

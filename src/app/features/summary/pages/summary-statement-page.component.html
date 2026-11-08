@@ -57,6 +57,7 @@
             <a routerLink="/entradas" class="font-medium text-primary-300">Cadastrar</a>
         </p>
     }
+    <app-pending-expenses-notice [pending]="s.pending" />
 
     @if (s.columns.length > 1) {
         <p class="m-0 mb-2 flex items-center gap-1.5 text-xs text-muted-color sm:hidden" aria-hidden="true">

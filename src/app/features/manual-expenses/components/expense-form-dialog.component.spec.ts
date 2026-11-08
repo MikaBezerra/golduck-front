@@ -16,6 +16,7 @@ interface Internals {
     readonly form: FormGroup;
     readonly replicateCount: Signal<number>;
     readonly categoryOptions: Signal<{ label: string; value: string }[]>;
+    readonly personOptions: Signal<{ label: string; value: string }[]>;
     save(): void;
 }
 
@@ -49,7 +50,23 @@ describe('ExpenseFormDialogComponent', () => {
 
         expect((value.month as Date).getMonth()).toBe(9);
         expect(value.categoryId).toBe('c-outros');
+        expect(value.personId).toBeNull();
         expect(value.replicate).toBe(false);
+    });
+
+    it('a pessoa é obrigatória: "Compartilhada" vem antes das pessoas', () => {
+        const { dialog } = open();
+
+        expect(dialog.personOptions()).toEqual([
+            { label: 'Compartilhada', value: 'SHARED' },
+            { label: 'Ana', value: 'p-ana' },
+        ]);
+
+        dialog.form.patchValue({ title: 'Luz', amount: 150 });
+        dialog.save();
+
+        expect(expenses.create).not.toHaveBeenCalled();
+        expect(dialog.form.get('personId')?.hasError('required')).toBe(true);
     });
 
     it('conta quantos meses a réplica vai criar (do mês escolhido até dezembro)', () => {
@@ -73,6 +90,7 @@ describe('ExpenseFormDialogComponent', () => {
             title: 'Internet',
             amount: '99.90',
             categoryId: 'c-outros',
+            split: 'PERSONAL',
             personId: 'p-ana',
             replicateUntilYearEnd: true,
         });
@@ -80,11 +98,11 @@ describe('ExpenseFormDialogComponent', () => {
         expect(fixture.componentInstance.visible()).toBe(false);
     });
 
-    it('sem pessoa e sem réplica, não manda esses campos', () => {
+    it('compartilhada e sem réplica: manda split SHARED, sem pessoa nem réplica', () => {
         const { dialog } = open();
         expenses.create.mockReturnValue(of([aManualExpense()]));
 
-        dialog.form.patchValue({ title: 'Luz', amount: 150 });
+        dialog.form.patchValue({ title: 'Luz', amount: 150, personId: 'SHARED' });
         dialog.save();
 
         expect(expenses.create).toHaveBeenCalledWith({
@@ -92,6 +110,7 @@ describe('ExpenseFormDialogComponent', () => {
             title: 'Luz',
             amount: '150.00',
             categoryId: 'c-outros',
+            split: 'SHARED',
         });
         expect(notifications.success).toHaveBeenCalledWith('Despesa lançada.');
     });
@@ -113,13 +132,14 @@ describe('ExpenseFormDialogComponent', () => {
         expenses.updateMany.mockReturnValue(of([current]));
 
         expect(dialog.form.get('month')?.disabled).toBe(true);
+        expect(dialog.form.get('personId')?.value).toBe('SHARED');
 
         dialog.form.patchValue({ amount: 1600, personId: 'p-ana' });
         dialog.save();
 
         expect(expenses.updateMany).toHaveBeenCalledWith({
             ids: ['expense-5'],
-            changes: { amount: '1600.00', personId: 'p-ana' },
+            changes: { amount: '1600.00', split: 'PERSONAL', personId: 'p-ana' },
         });
         expect(notifications.success).toHaveBeenCalledWith('Despesa atualizada.');
     });
@@ -142,7 +162,7 @@ describe('ExpenseFormDialogComponent', () => {
 
     it('erros do back com código conhecido vão para o campo; os de "changes.*" também', () => {
         const { dialog } = open();
-        dialog.form.patchValue({ title: 'Luz', amount: 150 });
+        dialog.form.patchValue({ title: 'Luz', amount: 150, personId: 'SHARED' });
 
         expenses.create.mockReturnValue(apiError(400, 'MANUAL_EXPENSE_INACTIVE_CATEGORY', 'Categoria desativada'));
         dialog.save();

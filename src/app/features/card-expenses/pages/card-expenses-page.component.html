@@ -120,6 +120,32 @@
         <app-card-sync-result [results]="results" (dismissed)="syncResults.set(null)" />
     }
 
+    @if (pendingCount() > 0) {
+        <div
+            class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-cantaloupe/50 bg-cantaloupe/10 px-4 py-2.5"
+            role="status"
+        >
+            <i class="pi pi-user-plus text-cantaloupe" aria-hidden="true"></i>
+            <p class="m-0 flex-1 text-sm">
+                <span class="font-medium">
+                    {{ pendingCount() }}
+                    {{ pendingCount() === 1 ? 'compra sem pessoa definida' : 'compras sem pessoa definida' }}.
+                </span>
+                <span class="text-muted-color">
+                    Contam como compartilhadas, e o resumo só pode ser enviado por e-mail depois que você escolher.
+                </span>
+            </p>
+            <p-button
+                [label]="onlyPending() ? 'Mostrar todas' : 'Mostrar só elas'"
+                [icon]="onlyPending() ? 'pi pi-list' : 'pi pi-filter'"
+                size="small"
+                [outlined]="true"
+                severity="secondary"
+                (onClick)="togglePendingFilter()"
+            />
+        </div>
+    }
+
     @if (selected().length > 0) {
         <div
             class="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/40 bg-primary/15 px-4 py-2.5 backdrop-blur-md"
@@ -179,7 +205,7 @@
             </ng-template>
 
             <ng-template #body let-expense>
-                <tr [class.opacity-60]="expense.excluded">
+                <tr [class.opacity-60]="expense.excluded" [class]="expense.pending ? 'bg-cantaloupe/10' : ''">
                     <td>
                         <p-tableCheckbox
                             [value]="expense"
@@ -196,6 +222,16 @@
                         }}</span>
                         @if (expense.excluded) {
                             <p-tag value="Excluída" severity="warn" styleClass="ml-2" />
+                        }
+                        @if (expense.pending) {
+                            <p-tag
+                                value="Sem pessoa"
+                                icon="pi pi-user-plus"
+                                severity="warn"
+                                styleClass="ml-2"
+                                pTooltip="Compra nova: escolha a pessoa ou Compartilhada em Editar"
+                                tooltipPosition="top"
+                            />
                         }
                         @if (expense.origin === 'MANUAL') {
                             <p-tag
@@ -219,7 +255,7 @@
                             <span class="block text-sm text-muted-color">{{ expense.originalDescription }}</span>
                         }
                         <span class="block text-sm text-muted-color md:hidden">
-                            {{ expense.categoryName }}{{ expense.personName ? ' · ' + expense.personName : '' }}
+                            {{ expense.categoryName }} · {{ expense.personName }}
                         </span>
                         @if (expense.holderName || expense.cardLastDigits) {
                             <span class="block text-xs text-muted-color">
@@ -231,7 +267,13 @@
                         }
                     </td>
                     <td class="hidden md:table-cell">{{ expense.categoryName }}</td>
-                    <td class="hidden text-muted-color lg:table-cell">{{ expense.personName ?? '—' }}</td>
+                    <td
+                        class="hidden lg:table-cell"
+                        [class.text-muted-color]="!expense.pending"
+                        [class.text-cantaloupe]="expense.pending"
+                    >
+                        {{ expense.personName }}
+                    </td>
                     <td class="text-right font-medium whitespace-nowrap tabular-nums">{{ expense.amount | brl }}</td>
                     <td class="text-right whitespace-nowrap">
                         @if (expense.excluded) {

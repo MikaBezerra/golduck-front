@@ -41,7 +41,13 @@ describe('CardExpenseCreateDialogComponent', () => {
     }
 
     function fill(dialog: Internals, extra: Record<string, unknown> = {}): void {
-        dialog.form.patchValue({ date: '2026-10-20', description: ' Padaria ', amount: 30, ...extra });
+        dialog.form.patchValue({
+            date: '2026-10-20',
+            description: ' Padaria ',
+            amount: 30,
+            personId: 'SHARED',
+            ...extra,
+        });
     }
 
     it('abre na fatura da tela, com a categoria padrão como sugestão', () => {
@@ -51,7 +57,7 @@ describe('CardExpenseCreateDialogComponent', () => {
         expect(dialog.defaultCategoryName()).toBe('Outros');
     });
 
-    it('exige data, descrição e valor', () => {
+    it('exige data, descrição, valor e a pessoa (ou Compartilhada)', () => {
         const { dialog } = open();
 
         dialog.save();
@@ -60,6 +66,7 @@ describe('CardExpenseCreateDialogComponent', () => {
         expect(dialog.form.get('date')?.hasError('required')).toBe(true);
         expect(dialog.form.get('description')?.hasError('required')).toBe(true);
         expect(dialog.form.get('amount')?.hasError('required')).toBe(true);
+        expect(dialog.form.get('personId')?.hasError('required')).toBe(true);
     });
 
     it('compra à vista: envia só o preenchido, com o valor em texto', () => {
@@ -75,6 +82,7 @@ describe('CardExpenseCreateDialogComponent', () => {
             date: '2026-10-20',
             description: 'Padaria',
             amount: '30.00',
+            split: 'SHARED',
         });
         expect(notifications.success).toHaveBeenCalledWith('Compra adicionada em Novembro de 2026.');
         expect(created).toHaveBeenCalledWith('2026-11');
@@ -101,6 +109,7 @@ describe('CardExpenseCreateDialogComponent', () => {
                 installment: { number: 1, total: 3 },
                 nickname: 'Pão',
                 categoryId: 'c-casa',
+                split: 'PERSONAL',
                 personId: 'p-ana',
             }),
         );
@@ -147,7 +156,7 @@ describe('CardExpenseCreateDialogComponent', () => {
         dialog.save();
         expect(dialog.form.get('personId')?.getError('server')).toBe('Pessoa inativa');
 
-        dialog.form.patchValue({ personId: null });
+        dialog.form.patchValue({ personId: 'SHARED' });
         cardExpenses.create.mockReturnValue(apiError(422, 'CARD_EXPENSE_INSTALLMENT_INVALID', 'Parcela inválida'));
         dialog.save();
         expect(dialog.form.get('installmentNumber')?.getError('server')).toBe('Parcela inválida');

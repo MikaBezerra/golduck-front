@@ -86,7 +86,7 @@ As listas atuais do Golduck não são paginadas.
 | incomes | `GET /incomes?year=`, `GET/PATCH/DELETE /incomes/:month`, `POST /incomes` |
 | reserves | `GET /reserves?year=`, `GET /reserves/totals`, `PATCH/DELETE /reserves/:month`, `POST /reserves` |
 | manual-expenses | `GET /manual-expenses?month=`, `GET /manual-expenses/:id`, `POST`, `PATCH` e `DELETE /manual-expenses` (`{ ids, changes }` / `{ ids }`) |
-| card-expenses | `GET /card-expenses?month=&cardId=[&includeExcluded=true]`, `GET /card-expenses/:id`, `PATCH /card-expenses`, `DELETE /card-expenses` e `POST /card-expenses/restore` (`{ ids, scope }`), `POST /card-expenses` ("Adicionar compra"), `POST /card-expenses/:id/move` (mudar de fatura/parcela) |
+| card-expenses | `GET /card-expenses?month=&cardId=[&includeExcluded=true][&split=PENDING]`, `GET /card-expenses/:id`, `PATCH /card-expenses`, `DELETE /card-expenses` e `POST /card-expenses/restore` (`{ ids, scope }`), `POST /card-expenses` ("Adicionar compra"), `POST /card-expenses/:id/move` (mudar de fatura/parcela) |
 | card-imports | `POST /card-imports/preview` e `POST /card-imports` (multipart), `GET /card-imports[?cardId=&month=]`, `DELETE /card-imports/:id` |
 | summary | `GET /summary?month=`, `GET /summary/annual?year=`, `GET /summary/statement?month=` |
 | summary-dispatch | `GET /summary/dispatches/preview?month=`, `POST /summary/dispatches` (header `Idempotency-Key`; `{ month, personIds? }`), `GET /summary/dispatches/email?month=&personId=` (só ADMIN) |

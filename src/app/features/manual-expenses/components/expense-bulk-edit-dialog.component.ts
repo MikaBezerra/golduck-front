@@ -20,6 +20,7 @@ import { Select } from 'primeng/select';
 
 import { ApiError } from '../../../core/api/api-error';
 import { NotificationService } from '../../../core/notification/notification.service';
+import { personChoiceOptions, splitOfChoice } from '../../../shared/expense-split/expense-split';
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
 import { applyServerErrors, revealFormErrors, setServerError } from '../../../shared/forms/form-errors';
 import { numberToAmount } from '../../../shared/money/money';
@@ -33,7 +34,6 @@ import {
 import { ManualExpenseService } from '../data-access/manual-expense.service';
 
 /** Valores especiais do seletor de pessoa (o `null` já significa "manter"). */
-const NO_PERSON = '__no_person__';
 
 /**
  * Altera várias despesas de uma vez (`PATCH /manual-expenses`).
@@ -64,8 +64,7 @@ export class ExpenseBulkEditDialogComponent {
         this.lookups.activeCategories().map((category) => ({ label: category.name, value: category.id })),
     );
     protected readonly personOptions = computed(() => [
-        { label: 'Ninguém (remover pessoa)', value: NO_PERSON },
-        ...this.lookups.activePeople().map((person) => ({ label: person.name, value: person.id })),
+        ...personChoiceOptions(this.lookups.activePeople().map((person) => ({ label: person.name, value: person.id }))),
     ]);
 
     protected readonly form = new FormGroup({
@@ -108,7 +107,7 @@ export class ExpenseBulkEditDialogComponent {
         }
 
         if (personId) {
-            changes.personId = personId === NO_PERSON ? null : personId;
+            Object.assign(changes, splitOfChoice(personId));
         }
 
         if (Object.keys(changes).length === 0) {
@@ -145,6 +144,7 @@ export class ExpenseBulkEditDialogComponent {
                         'changes.amount': 'amount',
                         'changes.categoryId': 'categoryId',
                         'changes.personId': 'personId',
+                        'changes.split': 'personId',
                     })
                 ) {
                     this.notifications.error(apiError);

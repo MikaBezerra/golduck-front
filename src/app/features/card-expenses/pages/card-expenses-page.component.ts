@@ -26,6 +26,7 @@ import { NotificationService } from '../../../core/notification/notification.ser
 import { storageKey } from '../../../core/storage/storage-key';
 import { remoteData } from '../../../shared/data/remote-data';
 import { IsoDatePipe } from '../../../shared/date/iso-date.pipe';
+import { splitLabel } from '../../../shared/expense-split/expense-split';
 import { sumAmounts } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
 import { MonthPipe } from '../../../shared/month/month.pipe';
@@ -58,7 +59,10 @@ const SELECTED_CARD_KEY = storageKey('selectedCard');
 
 interface CardExpenseRow extends CardExpense {
     readonly categoryName: string;
-    readonly personName: string | null;
+    /** Nome da pessoa, "Compartilhada" ou "Sem pessoa". */
+    readonly personName: string;
+    /** Ainda sem pessoa definida (`PENDING`) e não excluída: aparece destacada. */
+    readonly pending: boolean;
 }
 
 /**
@@ -128,6 +132,10 @@ export class CardExpensesPageComponent implements OnInit {
     /** Excluídas ficam escondidas; com isto ligado, aparecem para poder restaurar. */
     protected readonly showExcluded = signal(false);
 
+    protected togglePendingFilter(): void {
+        this.pendingFilter.update((value) => !value);
+    }
+
     protected readonly expenses = remoteData({
         params: () => ({
             month: this.month(),
@@ -150,12 +158,23 @@ export class CardExpensesPageComponent implements OnInit {
         const categories = this.lookups.categoryById();
         const people = this.lookups.personById();
 
-        return this.expenses.value().map((expense) => ({
+        const rows = this.expenses.value().map((expense) => ({
             ...expense,
             categoryName: categories.get(expense.categoryId)?.name ?? '…',
-            personName: expense.personId ? (people.get(expense.personId)?.name ?? '…') : null,
+            personName: splitLabel(expense, (id) => people.get(id)?.name),
+            pending: expense.split === 'PENDING' && !expense.excluded,
         }));
+
+        return this.onlyPending() ? rows.filter((row) => row.pending) : rows;
     });
+
+    /** Compras da fatura ainda sem pessoa (as excluídas não contam, como no back). */
+    protected readonly pendingCount = computed(
+        () => this.expenses.value().filter((expense) => expense.split === 'PENDING' && !expense.excluded).length,
+    );
+    /** Liga o filtro "só as sem pessoa"; desliga sozinho quando não sobra nenhuma. */
+    private readonly pendingFilter = signal(false);
+    protected readonly onlyPending = computed(() => this.pendingFilter() && this.pendingCount() > 0);
     /** Excluídas não entram no total (como no back). */
     protected readonly total = computed(() =>
         sumAmounts(

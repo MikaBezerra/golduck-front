@@ -90,6 +90,7 @@ describe('CardExpenseService (contrato com /api/card-expenses)', () => {
             description: 'Padaria',
             amount: '30.00',
             installment: { number: 1, total: 3 },
+            split: 'SHARED' as const,
         };
         const result = firstValueFrom(service.create(body));
         const request = expectApiCall(http, 'POST', 'card-expenses');

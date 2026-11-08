@@ -890,8 +890,13 @@ export interface components {
             /** Format: uuid */
             categoryId: string;
             /**
+             * @description PENDING (compra do cartão ainda sem pessoa: conta como compartilhada, mas bloqueia o envio do resumo), SHARED (compartilhada) ou PERSONAL (individual, de personId)
+             * @enum {string}
+             */
+            split: "PENDING" | "SHARED" | "PERSONAL";
+            /**
              * Format: uuid
-             * @description null = compartilhada
+             * @description Só na despesa individual (PERSONAL)
              */
             personId: string | null;
             /** @description Excluída: fora das listas (salvo includeExcluded) e dos totais */
@@ -901,6 +906,8 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        /** @enum {string} */
+        ExpenseSplit: "PENDING" | "SHARED" | "PERSONAL";
         CreateCardExpenseDto: {
             /** Format: uuid */
             cardId: string;
@@ -931,8 +938,13 @@ export interface components {
              */
             categoryId?: string;
             /**
+             * @description SHARED (compartilhada) ou PERSONAL (individual: exige personId)
+             * @enum {string}
+             */
+            split: "SHARED" | "PERSONAL";
+            /**
              * Format: uuid
-             * @description null ou omitido = compartilhada
+             * @description Obrigatório com split PERSONAL; com SHARED, omitido ou null
              */
             personId?: string | null;
         };
@@ -959,8 +971,13 @@ export interface components {
             /** Format: uuid */
             categoryId?: string;
             /**
+             * @description SHARED (compartilhada) ou PERSONAL (individual: exige personId)
+             * @enum {string}
+             */
+            split?: "SHARED" | "PERSONAL";
+            /**
              * Format: uuid
-             * @description null torna a despesa compartilhada
+             * @description Obrigatório com split PERSONAL; nos outros casos, omitido ou null
              */
             personId?: string | null;
         };
@@ -1249,10 +1266,15 @@ export interface components {
             /** Format: uuid */
             categoryId: string;
             /**
-             * Format: uuid
-             * @description null = compartilhada
+             * @description PENDING (deixar para depois), SHARED ou PERSONAL
+             * @enum {string}
              */
-            personId: string | null;
+            split: "PENDING" | "SHARED" | "PERSONAL";
+            /**
+             * Format: uuid
+             * @description Obrigatório com split PERSONAL; nos outros casos, omitido ou null
+             */
+            personId?: string | null;
         };
         CardImportExclusionDto: {
             /** @description key devolvida pela pré-visualização */
@@ -1293,7 +1315,7 @@ export interface components {
             password?: string;
             /**
              * @description JSON com até 500 itens no formato CardImportOverrideDto. Cada escolha vale para a linha do mês e as parcelas futuras lançadas por ela.
-             * @example [{"key":"P|2026-09|8|FERREIRA COSTA","nickname":"Geladeira","categoryId":"<uuid>","personId":null}]
+             * @example [{"key":"P|2026-09|8|FERREIRA COSTA","nickname":"Geladeira","categoryId":"<uuid>","split":"SHARED"}]
              */
             overrides?: string;
             /**
@@ -1336,8 +1358,13 @@ export interface components {
              */
             categoryId: string;
             /**
+             * @description Sugestão: o que será gravado sem override (compra nova = PENDING)
+             * @enum {string}
+             */
+            split: "PENDING" | "SHARED" | "PERSONAL";
+            /**
              * Format: uuid
-             * @description Sugestão: o que será gravado sem override (null = compartilhada)
+             * @description Sugestão: o que será gravado sem override (só com PERSONAL)
              */
             personId: string | null;
             /** @description Parcelas futuras que esta linha vai lançar */
@@ -1471,8 +1498,13 @@ export interface components {
             /** Format: uuid */
             categoryId: string;
             /**
+             * @description SHARED ou PERSONAL (despesa manual nunca fica PENDING)
+             * @enum {string}
+             */
+            split: "PENDING" | "SHARED" | "PERSONAL";
+            /**
              * Format: uuid
-             * @description null = compartilhada
+             * @description Só na despesa individual (PERSONAL)
              */
             personId: string | null;
             /** Format: date-time */
@@ -1499,8 +1531,13 @@ export interface components {
              */
             categoryId?: string;
             /**
+             * @description SHARED (compartilhada) ou PERSONAL (individual: exige personId)
+             * @enum {string}
+             */
+            split: "SHARED" | "PERSONAL";
+            /**
              * Format: uuid
-             * @description Pessoa da despesa individual; null ou ausente = compartilhada
+             * @description Obrigatório com split PERSONAL; com SHARED, omitido ou null
              */
             personId?: string | null;
             /** @description Cria uma despesa independente em cada mês até dezembro */
@@ -1516,8 +1553,13 @@ export interface components {
             /** Format: uuid */
             categoryId?: string;
             /**
+             * @description SHARED (compartilhada) ou PERSONAL (individual: exige personId)
+             * @enum {string}
+             */
+            split?: "SHARED" | "PERSONAL";
+            /**
              * Format: uuid
-             * @description null torna a despesa compartilhada
+             * @description Obrigatório com split PERSONAL; nos outros casos, omitido ou null
              */
             personId?: string | null;
         };
@@ -1655,6 +1697,15 @@ export interface components {
              */
             net: string;
         };
+        SummaryPendingDto: {
+            /**
+             * @description Soma das compras do cartão sem pessoa definida
+             * @example 1234.56
+             */
+            amount: string;
+            /** @description Quantidade; maior que zero = o resumo pode estar errado e o envio por e-mail fica bloqueado */
+            count: number;
+        };
         SummaryResponse: {
             /**
              * @description null quando não há entrada cadastrada no período
@@ -1684,6 +1735,8 @@ export interface components {
             byPerson: components["schemas"]["SummaryPersonDto"][];
             /** @description Líquido de cada pessoa ativa, em ordem alfabética (no anual, a soma dos líquidos mensais) */
             netByPerson: components["schemas"]["SummaryNetByPersonDto"][];
+            /** @description Compras do cartão (sem as excluídas) ainda sem pessoa: entram nas contas como compartilhadas até alguém escolher */
+            pending: components["schemas"]["SummaryPendingDto"];
             /**
              * @description Mês no formato AAAA-MM
              * @example 2026-11
@@ -1787,6 +1840,8 @@ export interface components {
             hasPeople: boolean;
             /** @description Mês sem entrada cadastrada (as contas usam zero) */
             incomeMissing: boolean;
+            /** @description Compras do cartão do mês ainda sem pessoa (contam como compartilhadas) */
+            pending: components["schemas"]["SummaryPendingDto"];
         };
         SummaryMonthDto: {
             /**
@@ -1815,6 +1870,8 @@ export interface components {
              * @example 1234.56
              */
             balance: string;
+            /** @description Compras do cartão do mês ainda sem pessoa */
+            pendingCount: number;
         };
         AnnualSummaryResponse: {
             /**
@@ -1845,6 +1902,8 @@ export interface components {
             byPerson: components["schemas"]["SummaryPersonDto"][];
             /** @description Líquido de cada pessoa ativa, em ordem alfabética (no anual, a soma dos líquidos mensais) */
             netByPerson: components["schemas"]["SummaryNetByPersonDto"][];
+            /** @description Compras do cartão (sem as excluídas) ainda sem pessoa: entram nas contas como compartilhadas até alguém escolher */
+            pending: components["schemas"]["SummaryPendingDto"];
             /** @example 2026 */
             year: number;
             /** @description Sempre os 12 meses, de janeiro a dezembro, inclusive os vazios */
@@ -1932,6 +1991,8 @@ export interface components {
             recipients: components["schemas"]["SummaryDispatchRecipientDto"][];
             /** @description Último envio do mês; null se nunca foi enviado */
             lastDispatch: components["schemas"]["SummaryDispatchResponse"] | null;
+            /** @description Compras do cartão do mês sem pessoa; com count > 0 o envio é recusado (SUMMARY_DISPATCH_PENDING_EXPENSES) */
+            pending: components["schemas"]["SummaryPendingDto"];
         };
         SummaryEmailPreviewResponse: {
             /** Format: uuid */
@@ -2217,6 +2278,8 @@ export interface operations {
                 cardId?: string;
                 /** @description Inclui as despesas excluídas */
                 includeExcluded?: boolean;
+                /** @description Só as despesas com este split (PENDING = as que faltam classificar) */
+                split?: components["schemas"]["ExpenseSplit"];
             };
             header?: never;
             path?: never;

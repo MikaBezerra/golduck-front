@@ -85,6 +85,24 @@
                 </p>
             }
 
+            @if (p.pending.count > 0) {
+                <p class="m-0 flex items-start gap-2 text-sm" role="alert">
+                    <i class="pi pi-user-plus mt-0.5 text-cantaloupe" aria-hidden="true"></i>
+                    <span>
+                        {{
+                            p.pending.count === 1
+                                ? 'Há 1 compra do cartão sem pessoa definida'
+                                : 'Há ' + p.pending.count + ' compras do cartão sem pessoa definida'
+                        }}
+                        neste mês. Escolha a pessoa (ou Compartilhada) antes de enviar: uma compra individual esquecida
+                        muda a divisão de todo mundo.
+                        <a routerLink="/faturas" class="font-medium text-primary-300" (click)="close()"
+                            >Ir para Faturas</a
+                        >
+                    </span>
+                </p>
+            }
+
             @if (p.recipients.length === 0) {
                 <p class="m-0 text-muted-color">Não há pessoas ativas neste mês para receber o resumo.</p>
             } @else {

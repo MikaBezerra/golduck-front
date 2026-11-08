@@ -46,7 +46,7 @@ describe('ManualExpenseService (contrato com /api/manual-expenses)', () => {
             title: 'Internet',
             amount: '99.90',
             categoryId: 'category-1',
-            personId: null,
+            split: 'SHARED' as const,
             replicateUntilYearEnd: true,
         };
         const result = firstValueFrom(service.create(body));

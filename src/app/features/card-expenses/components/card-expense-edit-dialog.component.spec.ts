@@ -16,13 +16,12 @@ interface Internals {
     readonly form: FormGroup;
     readonly nothingToChange: Signal<boolean>;
     readonly personOptions: Signal<{ label: string; value: string }[]>;
+    readonly pending: Signal<boolean>;
     readonly categoryOptions: Signal<{ label: string; value: string }[]>;
     readonly canMove: Signal<boolean>;
     save(): void;
     requestMove(): void;
 }
-
-const NO_PERSON = '__no_person__';
 
 describe('CardExpenseEditDialogComponent', () => {
     const cardExpenses = { updateMany: vi.fn() };
@@ -48,10 +47,40 @@ describe('CardExpenseEditDialogComponent', () => {
     describe('uma despesa', () => {
         const expense = aCardExpense({ id: 'ce-1', nickname: 'Mercado', categoryId: 'c-casa', personId: null });
 
-        it('abre com o apelido, a categoria e a pessoa atuais', () => {
+        it('abre com o apelido, a categoria e a pessoa atuais ("Compartilhada" vira SHARED no seletor)', () => {
             const { dialog } = open([expense]);
 
-            expect(dialog.form.getRawValue()).toEqual({ nickname: 'Mercado', categoryId: 'c-casa', personId: null });
+            expect(dialog.form.getRawValue()).toEqual({
+                nickname: 'Mercado',
+                categoryId: 'c-casa',
+                personId: 'SHARED',
+            });
+            expect(dialog.personOptions()[0]).toEqual({ label: 'Compartilhada', value: 'SHARED' });
+        });
+
+        it('compra pendente abre sem pessoa e continua pendente se só o apelido mudar', () => {
+            const pending = aCardExpense({ id: 'ce-2', nickname: null, categoryId: 'c-casa', split: 'PENDING' });
+            const { dialog } = open([pending]);
+            cardExpenses.updateMany.mockReturnValue(of([pending]));
+
+            expect(dialog.form.getRawValue()).toEqual({ nickname: '', categoryId: 'c-casa', personId: null });
+            expect(dialog.pending()).toBe(true);
+
+            dialog.form.patchValue({ nickname: 'Padaria' });
+            dialog.save();
+
+            expect(cardExpenses.updateMany).toHaveBeenCalledWith({ ids: ['ce-2'], changes: { nickname: 'Padaria' } });
+        });
+
+        it('escolher a pessoa de uma compra pendente manda o split', () => {
+            const pending = aCardExpense({ id: 'ce-2', categoryId: 'c-casa', split: 'PENDING' });
+            const { dialog } = open([pending]);
+            cardExpenses.updateMany.mockReturnValue(of([pending]));
+
+            dialog.form.patchValue({ personId: 'SHARED' });
+            dialog.save();
+
+            expect(cardExpenses.updateMany).toHaveBeenCalledWith({ ids: ['ce-2'], changes: { split: 'SHARED' } });
         });
 
         it('envia só o que mudou; apelido vazio vira null', () => {
@@ -63,7 +92,7 @@ describe('CardExpenseEditDialogComponent', () => {
 
             expect(cardExpenses.updateMany).toHaveBeenCalledWith({
                 ids: ['ce-1'],
-                changes: { nickname: null, personId: 'p-ana' },
+                changes: { nickname: null, split: 'PERSONAL', personId: 'p-ana' },
             });
             expect(notifications.success).toHaveBeenCalledWith('Despesa atualizada.');
         });
@@ -112,23 +141,23 @@ describe('CardExpenseEditDialogComponent', () => {
     describe('várias despesas', () => {
         const many = [aCardExpense({ id: 'ce-1' }), aCardExpense({ id: 'ce-2' })];
 
-        it('começa com tudo vazio e oferece "Ninguém" para remover a pessoa', () => {
+        it('começa com tudo vazio e oferece "Compartilhada" antes das pessoas', () => {
             const { dialog } = open(many);
 
             expect(dialog.form.getRawValue()).toEqual({ nickname: '', categoryId: null, personId: null });
-            expect(dialog.personOptions()[0]).toEqual({ label: 'Ninguém (remover pessoa)', value: NO_PERSON });
+            expect(dialog.personOptions()[0]).toEqual({ label: 'Compartilhada', value: 'SHARED' });
         });
 
-        it('campo vazio mantém como está; "Ninguém" remove a pessoa de todas', () => {
+        it('campo vazio mantém como está; "Compartilhada" vale para todas', () => {
             const { dialog } = open(many);
             cardExpenses.updateMany.mockReturnValue(of(many));
 
-            dialog.form.patchValue({ categoryId: 'c-casa', personId: NO_PERSON });
+            dialog.form.patchValue({ categoryId: 'c-casa', personId: 'SHARED' });
             dialog.save();
 
             expect(cardExpenses.updateMany).toHaveBeenCalledWith({
                 ids: ['ce-1', 'ce-2'],
-                changes: { categoryId: 'c-casa', personId: null },
+                changes: { categoryId: 'c-casa', split: 'SHARED' },
             });
             expect(notifications.success).toHaveBeenCalledWith('2 despesas atualizadas.');
         });

@@ -49,11 +49,11 @@
                 <td>
                     <span class="font-medium">{{ expense.title }}</span>
                     <span class="block text-sm text-muted-color md:hidden">
-                        {{ expense.categoryName }}{{ expense.personName ? ' · ' + expense.personName : '' }}
+                        {{ expense.categoryName }} · {{ expense.personName }}
                     </span>
                 </td>
                 <td class="hidden md:table-cell">{{ expense.categoryName }}</td>
-                <td class="hidden text-muted-color md:table-cell">{{ expense.personName ?? '—' }}</td>
+                <td class="hidden text-muted-color md:table-cell">{{ expense.personName }}</td>
                 <td class="text-right font-medium whitespace-nowrap tabular-nums">{{ expense.amount | brl }}</td>
                 <td class="text-right whitespace-nowrap">
                     <p-button

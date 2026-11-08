@@ -26,12 +26,26 @@ rodapé ([visual-e-layout.md](visual-e-layout.md)). As telas mensais usam o **m�
 - Quem já tem sessão e abre `/login` vai para a página inicial.
 - Back: `POST /auth/login` e `GET /auth/me` ([autenticacao.md](autenticacao.md)).
 
+## De quem é a despesa (pessoa)
+
+Toda despesa tem `split` (`shared/expense-split/`): `PERSONAL` (de uma pessoa, `personId`), `SHARED`
+(compartilhada) ou `PENDING` (compra do cartão que chegou pela sincronização ou pelo upload e ninguém
+classificou ainda). Nos formulários, um select só guarda a escolha: **"Compartilhada" primeiro, depois as
+pessoas**; o front converte para `{ split: 'SHARED' }` ou `{ split: 'PERSONAL', personId }`.
+
+- Lançar despesa ou "Adicionar compra": escolher a pessoa (ou Compartilhada) é obrigatório.
+- Compra pendente: linha destacada em laranja com a etiqueta "Sem pessoa" em Faturas, aviso com a quantidade e
+  "Mostrar só elas". Editar sem escolher a pessoa mantém a compra pendente.
+- Pendentes contam como compartilhadas no resumo, mas a Visão geral e o Resumo mostram um aviso, e o envio do
+  resumo por e-mail fica bloqueado até não sobrar nenhuma no mês.
+
 ## Visão geral (`/`)
 
 - Números do mês escolhido (ou do ano inteiro): entrada, despesas, reserva e saldo, com comparação com o mês
   anterior.
 - Gráfico do ano por mês, despesas por categoria e por pessoa, e o líquido de cada pessoa com um medidor de
   quanto da parte dela já foi gasto.
+- Aviso de compras do cartão sem pessoa (`pending` do resumo, do mês ou do ano), com link para Faturas.
 - Back: `GET /summary?month=` e `GET /summary/annual?year=`.
 - Ainda faz contas (comparação, percentuais e medidores): veja "Front burro" em
   [arquitetura.md](arquitetura.md).
@@ -42,6 +56,7 @@ rodapé ([visual-e-layout.md](visual-e-layout.md)). As telas mensais usam o **m�
   igualmente), o que é de cada um e os líquidos. Linhas com seta abrem os detalhes (cada despesa, cada cartão).
 - Pessoas inativas aparecem só se tiverem gasto individual no mês (e não entram na divisão).
 - A tabela vem pronta do back (linhas, valores e estilos); o front só formata e mostra.
+- Com compras do cartão sem pessoa no mês (`pending`), mostra o aviso acima da tabela.
 - Back: `GET /summary/statement?month=`.
 
 ### Enviar por e-mail (só ADMIN)
@@ -55,23 +70,26 @@ Cada pessoa ativa recebe por e-mail o próprio resumo do mês (regras e configur
 - O diálogo busca a prévia ao abrir e lista cada pessoa: com e-mail (mascarado) ou "sem e-mail: não vai
   receber", com link para Pessoas. Se o mês já foi enviado: "Último envio em dd/mm às hh:mm. Enviar de novo?".
   "Ver e-mail" mostra o e-mail da pessoa num iframe com `sandbox` (sem scripts).
+- Com compras do cartão sem pessoa no mês (`pending.count > 0` na prévia), o diálogo explica, mostra o link
+  para Faturas e o botão Enviar fica desligado (o back recusaria com `409 SUMMARY_DISPATCH_PENDING_EXPENSES`).
 - **Sem envio duplicado:** cada abertura do diálogo gera uma `Idempotency-Key` (`crypto.randomUUID()`). Clicar
   de novo ou repetir depois de um erro de rede reaproveita a chave, e o back devolve o resultado gravado em vez
   de enviar outra vez. Enquanto envia, o botão fica em "Enviando…" e cliques extras são ignorados.
 - Resultado: aviso "X de Y enviados" e a situação de cada pessoa (enviado, sem e-mail, falhou) com a mensagem
   do back. Com falhas, "Tentar de novo para quem falhou" envia só para elas, com uma chave nova.
-- Erros do envio (409 `SUMMARY_DISPATCH_IN_PROGRESS`, 503 `MAIL_DISABLED` / `MAIL_UNAVAILABLE`) aparecem com
+- Erros do envio (409 `SUMMARY_DISPATCH_PENDING_EXPENSES` / `SUMMARY_DISPATCH_IN_PROGRESS`, 503 `MAIL_DISABLED` / `MAIL_UNAVAILABLE`) aparecem com
   a mensagem do back.
 - Back: `GET /summary/dispatches/preview`, `POST /summary/dispatches`, `GET /summary/dispatches/email`.
 
 ## Despesas (`/despesas`)
 
-- Despesas fora do cartão do mês selecionado, com categoria e pessoa (sem pessoa = compartilhada).
-- Nova despesa: título, valor, categoria (a padrão já vem marcada), pessoa e "repetir até dezembro", que
+- Despesas fora do cartão do mês selecionado, com categoria e pessoa (ou "Compartilhada").
+- Nova despesa: título, valor, categoria (a padrão já vem marcada), pessoa (obrigatória) e "repetir até dezembro", que
   cria uma despesa independente em cada mês até o fim do ano (o diálogo mostra quantas).
 - Editar: o mês fica travado e só o que mudou é enviado. Categoria ou pessoa desativada continua visível
   na despesa antiga, marcada como "(desativada)".
-- Seleção de várias linhas: editar em lote (campo vazio = manter; "Ninguém" remove a pessoa) ou excluir.
+- Seleção de várias linhas: editar em lote (campo vazio = manter; "Compartilhada" ou uma pessoa vale para
+  todas) ou excluir.
   Trocar de mês limpa a seleção.
 - Excluir pede confirmação e não pode ser desfeito.
 - Back: `GET/POST/PATCH/DELETE /manual-expenses`, mais `GET /categories?includeInactive=true` e
@@ -99,7 +117,7 @@ B, pelo **envio do arquivo da fatura** (menu ⋮). Cada linha tem a origem (`ori
   criadas, alteradas, removidas, compras à mão substituídas pelas do banco, lançamentos ignorados) ou o erro,
   com uma dica do que fazer (configurar o cartão, usar o envio de fatura...). O painel fecha no "x".
 - **Adicionar compra**: fatura (sugere a da tela), data, descrição, valor, parcela opcional (`n/total`: as
-  parcelas seguintes são lançadas sozinhas), apelido, categoria (padrão "Outros") e pessoa
+  parcelas seguintes são lançadas sozinhas), apelido, categoria (padrão "Outros") e pessoa, obrigatória
   (`POST /card-expenses`). Se a compra entrou em outra fatura, a tela vai até ela. Nem a sincronização nem o
   upload a apagam; quando o banco trouxer a mesma compra, a do banco a substitui e herda apelido, categoria e
   pessoa.
@@ -107,7 +125,7 @@ B, pelo **envio do arquivo da fatura** (menu ⋮). Cada linha tem a origem (`ori
   1. *Arquivo*: mês da fatura e arquivo do banco (`.csv` para Nubank e C6, `.pdf` com senha para Neon; até
      2 MB). Extensão, arquivo vazio e tamanho são conferidos antes de enviar.
   2. *Revisão*: o back lê o arquivo sem gravar nada (`POST /card-imports/preview`) e devolve cada compra com
-     a sugestão de apelido, categoria e pessoa. O usuário pode mudar essas escolhas e excluir compras (com
+     a sugestão de apelido, categoria e pessoa (compra nova vem "Sem pessoa (decidir depois)"). O usuário pode mudar essas escolhas e excluir compras (com
      escopo de parcelas e "não perguntar de novo"). Mostra também o que será removido do mês.
   3. *Salvar*: o arquivo é enviado de novo com as escolhas (`POST /card-imports`). Só vão as compras em que o
      usuário mudou algo e as decisões de exclusão que mudam algo. Ao final, um resumo do que aconteceu.
@@ -117,6 +135,7 @@ B, pelo **envio do arquivo da fatura** (menu ⋮). Cada linha tem a origem (`ori
   **não** restaura a situação anterior.
 - **Editar** uma ou várias despesas: apelido, categoria e pessoa. Em compras parceladas, a mudança vale também
   para as próximas parcelas (o aviso diz quantas foram atualizadas).
+- **Compras sem pessoa** (`PENDING`): veja "De quem é a despesa" acima.
 - **Mudar de fatura** (no diálogo de edição de uma despesa): fatura e, opcionalmente, parcela e total
   (`POST /card-expenses/{id}/move`; só vai o que mudou). A compra inteira muda: as outras parcelas seguem a
   partir desta, e a correção vale para as próximas sincronizações. Compras de upload não mudam (o botão fica

@@ -20,6 +20,9 @@ export type SummaryMonth = ApiSchemas['SummaryMonthDto'];
 /** O que o mensal e o anual têm em comum (totais, por origem, categoria, pessoa e líquido). */
 export type SummaryTotals = Omit<Summary, 'month'>;
 
+/** Compras do cartão ainda sem pessoa: contam como compartilhadas e bloqueiam o envio por e-mail. */
+export type SummaryPending = ApiSchemas['SummaryPendingDto'];
+
 /** Total de uma categoria no período (inclui categorias inativas que tiveram despesas). */
 export type SummaryCategory = ApiSchemas['SummaryCategoryDto'];
 

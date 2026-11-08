@@ -43,6 +43,7 @@ acrescenta o que fazer:
 | `CARD_EXPENSE_INSTALLMENT_INVALID` | embaixo da parcela em "Adicionar compra" e "Mudar de fatura" |
 | `CARD_EXPENSE_MOVE_NOT_ALLOWED` | evitado: compras de upload já chegam com "Mudar de fatura" desligado e a explicação; se vier, vira aviso |
 | `CARD_EXPENSE_INACTIVE_CATEGORY` / `_PERSON` | embaixo do campo de categoria ou pessoa |
+| `SUMMARY_DISPATCH_PENDING_EXPENSES` | aviso no diálogo de envio (o botão já fica desligado com `pending.count > 0`) |
 
 ## Limite de tentativas (429)
 

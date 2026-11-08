@@ -33,7 +33,14 @@ const ANA: SummaryDispatchRecipient = { personId: 'p-ana', name: 'Ana', hasEmail
 const BRUNO: SummaryDispatchRecipient = { personId: 'p-bruno', name: 'Bruno', hasEmail: false, recipient: null };
 
 function aPreview(overrides: Partial<SummaryDispatchPreview> = {}): SummaryDispatchPreview {
-    return { month: '2026-11', enabled: true, recipients: [ANA, BRUNO], lastDispatch: null, ...overrides };
+    return {
+        month: '2026-11',
+        enabled: true,
+        recipients: [ANA, BRUNO],
+        lastDispatch: null,
+        pending: { amount: '0.00', count: 0 },
+        ...overrides,
+    };
 }
 
 function anItem(overrides: Partial<SummaryDispatchItem> = {}): SummaryDispatchItem {
@@ -123,6 +130,14 @@ describe('SummaryDispatchDialogComponent (enviar o resumo do mês por e-mail)', 
         const { text } = open(aPreview({ lastDispatch: last }));
 
         expect(text()).toMatch(/Último envio em 08\/11 às \d{2}:30\. Enviar de novo\?/);
+    });
+
+    it('com compras do cartão sem pessoa no mês, explica e não deixa enviar', () => {
+        const { dialog, text } = open(aPreview({ pending: { amount: '35.00', count: 2 } }));
+
+        expect(dialog.canSend()).toBe(false);
+        expect(text()).toContain('Há 2 compras do cartão sem pessoa definida');
+        expect(text()).toContain('Ir para Faturas');
     });
 
     it('não deixa enviar com o e-mail desligado ou sem ninguém com e-mail', () => {

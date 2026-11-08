@@ -8,6 +8,7 @@ import { Skeleton } from 'primeng/skeleton';
 import { SelectedMonthService } from '../../../core/month/selected-month.service';
 import { storageKey } from '../../../core/storage/storage-key';
 import { remoteData } from '../../../shared/data/remote-data';
+import { PendingExpensesNoticeComponent } from '../components/pending-expenses-notice.component';
 import { amountRatio, amountToCents, formatBrl } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
 import { addMonths, formatMonth, formatMonthShort } from '../../../shared/month/month';
@@ -69,6 +70,7 @@ interface Headline {
         SummaryBarListComponent,
         SummaryNetCardsComponent,
         SummaryYearChartComponent,
+        PendingExpensesNoticeComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './summary-page.component.html',

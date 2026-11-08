@@ -16,6 +16,7 @@ import { SelectedMonthService } from '../../../core/month/selected-month.service
 import { ConfirmService } from '../../../core/notification/confirm.service';
 import { NotificationService } from '../../../core/notification/notification.service';
 import { remoteData } from '../../../shared/data/remote-data';
+import { splitLabel } from '../../../shared/expense-split/expense-split';
 import { sumAmounts } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
 import { MonthPipe } from '../../../shared/month/month.pipe';
@@ -29,7 +30,8 @@ import { ManualExpenseService } from '../data-access/manual-expense.service';
 /** Despesa pronta para a tabela: já com os nomes de categoria e pessoa. */
 interface ExpenseRow extends ManualExpense {
     readonly categoryName: string;
-    readonly personName: string | null;
+    /** Nome da pessoa ou "Compartilhada". */
+    readonly personName: string;
 }
 
 /** Despesas do mês selecionado no topo, com seleção múltipla para editar ou excluir em lote. */
@@ -69,7 +71,7 @@ export class ManualExpensesPageComponent implements OnInit {
         return this.expenses.value().map((expense) => ({
             ...expense,
             categoryName: categories.get(expense.categoryId)?.name ?? '…',
-            personName: expense.personId ? (people.get(expense.personId)?.name ?? '…') : null,
+            personName: splitLabel(expense, (id) => people.get(id)?.name),
         }));
     });
     protected readonly total = computed(() => sumAmounts(this.expenses.value().map((expense) => expense.amount)));

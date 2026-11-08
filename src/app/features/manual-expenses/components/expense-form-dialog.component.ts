@@ -23,6 +23,7 @@ import type { Observable } from 'rxjs';
 
 import { ApiError } from '../../../core/api/api-error';
 import { NotificationService } from '../../../core/notification/notification.service';
+import { choiceOf, personChoiceOptions, splitOfChoice } from '../../../shared/expense-split/expense-split';
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
 import { applyServerErrors, revealFormErrors, setServerError } from '../../../shared/forms/form-errors';
 import { amountToNumber, numberToAmount } from '../../../shared/money/money';
@@ -57,6 +58,8 @@ const FIELD_MAP: Readonly<Record<string, string>> = {
     'changes.amount': 'amount',
     'changes.categoryId': 'categoryId',
     'changes.personId': 'personId',
+    'changes.split': 'personId',
+    split: 'personId',
     replicateUntilYearEnd: 'replicate',
 };
 
@@ -103,7 +106,8 @@ export class ExpenseFormDialogComponent {
         }),
         amount: new FormControl<number | null>(null, moneyValidators),
         categoryId: new FormControl<string | null>(null),
-        personId: new FormControl<string | null>(null),
+        /** A escolha do select: id da pessoa ou "Compartilhada" (`SHARED_CHOICE`). Obrigatória. */
+        personId: new FormControl<string | null>(null, Validators.required),
         replicate: new FormControl(false, { nonNullable: true }),
     });
 
@@ -136,10 +140,12 @@ export class ExpenseFormDialogComponent {
     protected readonly personOptions = computed<SelectOption[]>(() => {
         const options = this.lookups.activePeople().map((person) => ({ label: person.name, value: person.id }));
 
-        return this.withCurrentInactive(
-            options,
-            this.expense()?.personId ?? null,
-            (id) => this.lookups.personById().get(id)?.name,
+        return personChoiceOptions(
+            this.withCurrentInactive(
+                options,
+                this.expense()?.personId ?? null,
+                (id) => this.lookups.personById().get(id)?.name,
+            ),
         );
     });
 
@@ -161,7 +167,7 @@ export class ExpenseFormDialogComponent {
                     title: expense?.title ?? '',
                     amount: expense ? amountToNumber(expense.amount) : null,
                     categoryId: expense?.categoryId ?? defaultCategoryId,
-                    personId: expense?.personId ?? null,
+                    personId: expense ? choiceOf(expense) : null,
                     replicate: false,
                 });
 
@@ -204,7 +210,7 @@ export class ExpenseFormDialogComponent {
                 title: title.trim(),
                 amount: numberToAmount(amount ?? 0),
                 ...(categoryId ? { categoryId } : {}),
-                ...(personId ? { personId } : {}),
+                ...splitOfChoice(personId ?? ''),
                 ...(replicate ? { replicateUntilYearEnd: true } : {}),
             }),
             (created) => {
@@ -233,8 +239,8 @@ export class ExpenseFormDialogComponent {
             changes.categoryId = categoryId;
         }
 
-        if ((personId ?? null) !== current.personId) {
-            changes.personId = personId ?? null;
+        if (personId && personId !== choiceOf(current)) {
+            Object.assign(changes, splitOfChoice(personId));
         }
 
         if (Object.keys(changes).length === 0) {

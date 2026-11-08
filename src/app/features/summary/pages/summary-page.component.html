@@ -11,6 +11,10 @@
     />
 </app-page-header>
 
+@if (breakdown(); as totals) {
+    <app-pending-expenses-notice [pending]="totals.pending" [yearly]="isYear()" />
+}
+
 @if (annualCurrent(); as annual) {
     <!-- Números principais: do mês escolhido ou do ano. No celular, uma fileira que desliza para o lado. -->
     @if (headline(); as h) {

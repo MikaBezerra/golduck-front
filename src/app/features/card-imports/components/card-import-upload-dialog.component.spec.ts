@@ -40,6 +40,7 @@ function transaction(overrides: Partial<CardImportPreviewTransaction> = {}): Car
         cardLastDigits: null,
         nickname: null,
         categoryId: 'c-outros',
+        split: 'PENDING',
         personId: null,
         projectedCount: 0,
         excluded: false,
@@ -195,7 +196,15 @@ describe('CardImportUploadDialogComponent (enviar fatura: arquivo → revisão �
 
             expect(cardImports.save).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    overrides: [{ key: 'mudou', nickname: 'Padaria', categoryId: 'c-outros', personId: 'p-ana' }],
+                    overrides: [
+                        {
+                            key: 'mudou',
+                            nickname: 'Padaria',
+                            categoryId: 'c-outros',
+                            split: 'PERSONAL',
+                            personId: 'p-ana',
+                        },
+                    ],
                     exclusions: [
                         { key: 'excluir', action: 'exclude', scope: 'forward', remember: false },
                         { key: 'restaurar', action: 'restore', scope: 'all', remember: false },

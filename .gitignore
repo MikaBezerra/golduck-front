@@ -45,3 +45,8 @@ Thumbs.db
 
 # configurações locais de ferramentas (ficam só na máquina)
 .claude/
+
+
+# Vercel: pasta do vercel link/pull e arquivos .env que o CLI cria (o front não usa .env)
+.vercel
+.env*

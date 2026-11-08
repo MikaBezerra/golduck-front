@@ -1,21 +1,19 @@
 import { aCategory } from '../../../../testing/fixtures';
-import { describeMovedExpenses } from './category.models';
+import { describeMovedPurchases } from './category.models';
 
-describe('describeMovedExpenses (aviso depois de excluir uma categoria)', () => {
+describe('describeMovedPurchases (aviso depois de excluir uma categoria)', () => {
     const movedTo = aCategory({ id: 'outros', name: 'Outros', isDefault: true });
 
-    it('soma as despesas fora do cartão e as compras do cartão', () => {
-        expect(describeMovedExpenses({ movedTo, movedManualExpenses: 2, movedCardExpenses: 3 })).toBe(
-            '5 despesas foram para "Outros".',
+    it('conta as compras do cartão que foram para a padrão', () => {
+        expect(describeMovedPurchases({ movedTo, movedCardExpenses: 5 })).toBe(
+            '5 compras do cartão foram para "Outros".',
         );
     });
 
     it('singular e nenhuma', () => {
-        expect(describeMovedExpenses({ movedTo, movedManualExpenses: 0, movedCardExpenses: 1 })).toBe(
-            '1 despesa foi para "Outros".',
-        );
-        expect(describeMovedExpenses({ movedTo, movedManualExpenses: 0, movedCardExpenses: 0 })).toBe(
-            'Nenhuma despesa usava essa categoria.',
+        expect(describeMovedPurchases({ movedTo, movedCardExpenses: 1 })).toBe('1 compra do cartão foi para "Outros".');
+        expect(describeMovedPurchases({ movedTo, movedCardExpenses: 0 })).toBe(
+            'Nenhuma compra do cartão usava essa categoria.',
         );
     });
 });

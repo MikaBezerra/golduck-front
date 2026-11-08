@@ -59,12 +59,12 @@ describe('ManualExpenseService (contrato com /api/manual-expenses)', () => {
     });
 
     it('altera várias de uma vez com { ids, changes }', async () => {
-        const body = { ids: ['expense-1', 'expense-2'], changes: { categoryId: 'category-2' } };
+        const body = { ids: ['expense-1', 'expense-2'], changes: { title: 'Internet' } };
         const result = firstValueFrom(service.updateMany(body));
         const request = expectApiCall(http, 'PATCH', 'manual-expenses');
 
         expect(request.request.body).toEqual(body);
-        respondData(request, [aManualExpense({ categoryId: 'category-2' })]);
+        respondData(request, [aManualExpense({ title: 'Internet' })]);
 
         await expect(result).resolves.toHaveLength(1);
     });

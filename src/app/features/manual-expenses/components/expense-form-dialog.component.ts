@@ -46,8 +46,6 @@ interface SelectOption {
 /** Erros do back que pertencem a um campo específico do formulário. */
 const FIELD_BY_ERROR_CODE: Readonly<Record<string, string>> = {
     MANUAL_EXPENSE_INVALID_AMOUNT: 'amount',
-    MANUAL_EXPENSE_INACTIVE_CATEGORY: 'categoryId',
-    CATEGORY_NOT_FOUND: 'categoryId',
     MANUAL_EXPENSE_INACTIVE_PERSON: 'personId',
     PERSON_NOT_FOUND: 'personId',
 };
@@ -56,14 +54,13 @@ const FIELD_BY_ERROR_CODE: Readonly<Record<string, string>> = {
 const FIELD_MAP: Readonly<Record<string, string>> = {
     'changes.title': 'title',
     'changes.amount': 'amount',
-    'changes.categoryId': 'categoryId',
     'changes.personId': 'personId',
     'changes.split': 'personId',
     split: 'personId',
     replicateUntilYearEnd: 'replicate',
 };
 
-/** Lança uma despesa nova ou edita uma existente. */
+/** Lança uma despesa nova ou edita uma existente. Despesa não tem categoria (só as compras do cartão). */
 @Component({
     selector: 'app-expense-form-dialog',
     imports: [
@@ -105,7 +102,6 @@ export class ExpenseFormDialogComponent {
             validators: [Validators.required, Validators.maxLength(EXPENSE_TITLE_MAX_LENGTH)],
         }),
         amount: new FormControl<number | null>(null, moneyValidators),
-        categoryId: new FormControl<string | null>(null),
         /** A escolha do select: id da pessoa ou "Compartilhada" (`SHARED_CHOICE`). Obrigatória. */
         personId: new FormControl<string | null>(null, Validators.required),
         replicate: new FormControl(false, { nonNullable: true }),
@@ -123,18 +119,6 @@ export class ExpenseFormDialogComponent {
         const month = this.monthValue();
 
         return month ? formatMonth(`${month.getFullYear()}-12`) : '';
-    });
-
-    protected readonly categoryOptions = computed<SelectOption[]>(() => {
-        const options = this.lookups
-            .activeCategories()
-            .map((category) => ({ label: category.name, value: category.id }));
-
-        return this.withCurrentInactive(
-            options,
-            this.expense()?.categoryId ?? null,
-            (id) => this.lookups.categoryById().get(id)?.name,
-        );
     });
 
     protected readonly personOptions = computed<SelectOption[]>(() => {
@@ -159,14 +143,10 @@ export class ExpenseFormDialogComponent {
             const defaultMonth = this.defaultMonth();
 
             untracked(() => {
-                // Sem categoria escolhida, o back usa a padrão; aqui ela já vem marcada para ficar visível.
-                const defaultCategoryId = this.lookups.defaultCategory()?.id ?? null;
-
                 this.form.reset({
                     month: monthKeyToDate(expense?.month ?? defaultMonth),
                     title: expense?.title ?? '',
                     amount: expense ? amountToNumber(expense.amount) : null,
-                    categoryId: expense?.categoryId ?? defaultCategoryId,
                     personId: expense ? choiceOf(expense) : null,
                     replicate: false,
                 });
@@ -201,7 +181,7 @@ export class ExpenseFormDialogComponent {
     }
 
     private create(): void {
-        const { month, title, amount, categoryId, personId, replicate } = this.form.getRawValue();
+        const { month, title, amount, personId, replicate } = this.form.getRawValue();
         const monthKey = dateToMonthKey(month ?? new Date());
 
         this.submit(
@@ -209,7 +189,6 @@ export class ExpenseFormDialogComponent {
                 month: monthKey,
                 title: title.trim(),
                 amount: numberToAmount(amount ?? 0),
-                ...(categoryId ? { categoryId } : {}),
                 ...splitOfChoice(personId ?? ''),
                 ...(replicate ? { replicateUntilYearEnd: true } : {}),
             }),
@@ -221,9 +200,9 @@ export class ExpenseFormDialogComponent {
         );
     }
 
-    /** Envia só o que mudou: reenviar uma categoria que foi desativada daria erro no back. */
+    /** Envia só o que mudou: reenviar uma pessoa que foi desativada daria erro no back. */
     private update(current: ManualExpense): void {
-        const { title, amount, categoryId, personId } = this.form.getRawValue();
+        const { title, amount, personId } = this.form.getRawValue();
         const changes: ManualExpenseChanges = {};
         const newAmount = numberToAmount(amount ?? 0);
 
@@ -233,10 +212,6 @@ export class ExpenseFormDialogComponent {
 
         if (amountToNumber(newAmount) !== amountToNumber(current.amount)) {
             changes.amount = newAmount;
-        }
-
-        if (categoryId && categoryId !== current.categoryId) {
-            changes.categoryId = categoryId;
         }
 
         if (personId && personId !== choiceOf(current)) {
@@ -277,7 +252,7 @@ export class ExpenseFormDialogComponent {
         });
     }
 
-    /** Na edição, mantém visível a categoria/pessoa atual mesmo que tenha sido desativada. */
+    /** Na edição, mantém visível a pessoa atual mesmo que tenha sido desativada. */
     private withCurrentInactive(
         options: SelectOption[],
         currentId: string | null,

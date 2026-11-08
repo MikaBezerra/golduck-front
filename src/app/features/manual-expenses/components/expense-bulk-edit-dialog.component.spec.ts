@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 
 import { NotificationService } from '../../../core/notification/notification.service';
 import { apiError, internals, openDialog } from '../../../../testing/components';
-import { aCategory, aManualExpense, aPerson } from '../../../../testing/fixtures';
+import { aManualExpense, aPerson } from '../../../../testing/fixtures';
 import { lookupsWith } from '../../../../testing/lookups';
 import { notificationsMock } from '../../../../testing/mocks';
 import { ExpenseLookupsService } from '../data-access/expense-lookups.service';
@@ -32,17 +32,17 @@ describe('ExpenseBulkEditDialogComponent (várias despesas de uma vez)', () => {
             { provide: NotificationService, useValue: notifications },
             {
                 provide: ExpenseLookupsService,
-                useValue: lookupsWith([aCategory({ id: 'c-casa' })], [aPerson({ id: 'p-ana', name: 'Ana' })]),
+                useValue: lookupsWith([], [aPerson({ id: 'p-ana', name: 'Ana' })]),
             },
         ]);
 
         return { fixture, dialog: internals<Internals>(fixture) };
     }
 
-    it('começa vazio, com "Compartilhada" como primeira opção de pessoa', () => {
+    it('começa vazio, sem categoria, com "Compartilhada" como primeira opção de pessoa', () => {
         const { dialog } = open();
 
-        expect(dialog.form.getRawValue()).toEqual({ title: '', amount: null, categoryId: null, personId: null });
+        expect(dialog.form.getRawValue()).toEqual({ title: '', amount: null, personId: null });
         expect(dialog.personOptions()[0]).toEqual({ label: 'Compartilhada', value: 'SHARED' });
     });
 

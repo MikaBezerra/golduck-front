@@ -248,8 +248,8 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Exclui a categoria e passa as despesas dela para a padrão
-         * @description Despesas fora do cartão e compras do cartão (inclusive as excluídas) vão para "Outros". A categoria padrão não pode ser excluída (409 CATEGORY_DEFAULT_PROTECTED).
+         * Exclui a categoria e passa as compras do cartão dela para a padrão
+         * @description As compras do cartão (inclusive as excluídas) vão para "Outros". A categoria padrão não pode ser excluída (409 CATEGORY_DEFAULT_PROTECTED).
          */
         delete: operations["CategoryController_delete"];
         options?: never;
@@ -594,7 +594,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Resumo das despesas do mês: total por categoria, total geral, pago e a pagar */
+        /** Resumo das despesas do mês: total, pago e a pagar */
         get: operations["ManualExpenseController_summarize"];
         put?: never;
         post?: never;
@@ -683,7 +683,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Resumo do mês: entrada, despesas, saldo, totais por categoria e por pessoa e líquido individual
+         * Resumo do mês: entrada, despesas, saldo, compras do cartão por categoria, totais por pessoa e líquido individual
          * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. A reserva do mês fica fora de expensesTotal, mas entra no saldo e na divisão como gasto compartilhado. Líquido individual = (entrada − compartilhadas − reserva) / pessoas ativas − despesas individuais.
          */
         get: operations["SummaryController_findByMonth"];
@@ -1077,10 +1077,8 @@ export interface components {
             active?: boolean;
         };
         DeleteCategoryResponse: {
-            /** @description Categoria que recebeu as despesas (a padrão) */
+            /** @description Categoria que recebeu as compras (a padrão) */
             movedTo: components["schemas"]["CategoryResponse"];
-            /** @description Despesas fora do cartão que mudaram de categoria */
-            movedManualExpenses: number;
             /** @description Compras do cartão que mudaram de categoria (inclusive as excluídas) */
             movedCardExpenses: number;
         };
@@ -1695,8 +1693,6 @@ export interface components {
              * @example 1234.56
              */
             amount: string;
-            /** Format: uuid */
-            categoryId: string;
             /**
              * @description SHARED ou PERSONAL (despesa manual nunca fica PENDING)
              * @enum {string}
@@ -1731,11 +1727,6 @@ export interface components {
              */
             amount: string;
             /**
-             * Format: uuid
-             * @description Sem categoria, usa a padrão ("Outros")
-             */
-            categoryId?: string;
-            /**
              * @description SHARED (compartilhada) ou PERSONAL (individual: exige personId)
              * @enum {string}
              */
@@ -1747,18 +1738,6 @@ export interface components {
             personId?: string | null;
             /** @description Cria uma despesa independente em cada mês até dezembro */
             replicateUntilYearEnd?: boolean;
-        };
-        ManualExpenseCategoryTotal: {
-            /** Format: uuid */
-            categoryId: string;
-            name: string;
-            /**
-             * @description Valor em reais, como texto com ponto decimal
-             * @example 1234.56
-             */
-            total: string;
-            /** @description Quantidade de despesas */
-            count: number;
         };
         ManualExpensesSummaryResponse: {
             /**
@@ -1783,8 +1762,6 @@ export interface components {
             unpaid: string;
             /** @description Quantidade de despesas do mês */
             count: number;
-            /** @description Do maior total para o menor (empate pelo nome) */
-            categories: components["schemas"]["ManualExpenseCategoryTotal"][];
         };
         ManualExpenseChangesDto: {
             title?: string;
@@ -1793,8 +1770,6 @@ export interface components {
              * @example 1234.56
              */
             amount?: string;
-            /** Format: uuid */
-            categoryId?: string;
             /**
              * @description SHARED (compartilhada) ou PERSONAL (individual: exige personId)
              * @enum {string}
@@ -1974,7 +1949,7 @@ export interface components {
              */
             balance: string;
             bySource: components["schemas"]["SummaryBySourceDto"];
-            /** @description Valor decrescente; inclui categorias inativas com despesas no período */
+            /** @description Só as compras do cartão (as despesas fora do cartão não têm categoria). Valor decrescente; inclui categorias inativas com compras no período */
             byCategory: components["schemas"]["SummaryCategoryDto"][];
             /** @description Valor decrescente; o item com personId null são as despesas compartilhadas */
             byPerson: components["schemas"]["SummaryPersonDto"][];
@@ -2141,7 +2116,7 @@ export interface components {
              */
             balance: string;
             bySource: components["schemas"]["SummaryBySourceDto"];
-            /** @description Valor decrescente; inclui categorias inativas com despesas no período */
+            /** @description Só as compras do cartão (as despesas fora do cartão não têm categoria). Valor decrescente; inclui categorias inativas com compras no período */
             byCategory: components["schemas"]["SummaryCategoryDto"][];
             /** @description Valor decrescente; o item com personId null são as despesas compartilhadas */
             byPerson: components["schemas"]["SummaryPersonDto"][];

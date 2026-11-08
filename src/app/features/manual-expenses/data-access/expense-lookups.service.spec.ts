@@ -65,6 +65,18 @@ describe('ExpenseLookupsService', () => {
         expect(lookups.defaultCategory()).toBeNull();
     });
 
+    it('com categories: false, busca só as pessoas (tela de Despesas: despesa não tem categoria)', () => {
+        people.findAll.mockReturnValue(of([aPerson({ id: 'p-ana' })]));
+        const lookups = setup();
+
+        lookups.load({ categories: false });
+
+        expect(categories.findAll).not.toHaveBeenCalled();
+        expect(lookups.loaded()).toBe(true);
+        expect(lookups.activeCategories()).toEqual([]);
+        expect(lookups.activePeople().map((person) => person.id)).toEqual(['p-ana']);
+    });
+
     it('avisa o erro e continua sem dados se a busca falhar', () => {
         const error = new Error('falhou');
         categories.findAll.mockReturnValue(throwError(() => error));

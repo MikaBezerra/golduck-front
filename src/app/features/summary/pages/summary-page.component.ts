@@ -211,7 +211,8 @@ export class SummaryPageComponent {
     protected readonly categoryBars = computed(() => {
         const totals = this.breakdown();
 
-        return totals ? categoryBars(totals.byCategory, totals.expensesTotal) : [];
+        // Só as compras do cartão têm categoria: a parte de cada uma é sobre o total do cartão.
+        return totals ? categoryBars(totals.byCategory, totals.bySource.card.amount) : [];
     });
     protected readonly personBars = computed(() => {
         const totals = this.breakdown();

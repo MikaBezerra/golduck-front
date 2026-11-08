@@ -80,12 +80,12 @@ As listas atuais do Golduck não são paginadas.
 | auth | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me` |
 | version | `GET /version` |
 | people | `GET /people[?includeInactive=true]`, `GET /people/:id`, `POST /people`, `PATCH /people/:id` |
-| categories | `GET /categories[?includeInactive=true]`, `GET /categories/:id`, `POST /categories`, `PATCH /categories/:id` |
+| categories | `GET /categories[?includeInactive=true]`, `GET /categories/:id`, `POST /categories`, `PATCH /categories/:id`, `DELETE /categories/:id` (só das compras do cartão) |
 | credit-cards | `GET /credit-cards`, `GET /credit-cards/:id`, `POST /credit-cards`, `PATCH /credit-cards/:id`, `GET /credit-cards/:id/bills?from=&to=`, `PUT /credit-cards/:id/bills/:month` (`{ bestPurchaseDate }`, `null` volta ao padrão) |
 | card-sync | `POST /credit-cards/:id/sync` ("Atualizar"), `POST /card-sync` (todos os cartões; o erro de cada um vem no resultado dele) |
 | incomes | `GET /incomes?year=`, `GET/PATCH/DELETE /incomes/:month`, `POST /incomes` |
 | reserves | `GET /reserves?year=`, `GET /reserves/totals`, `PATCH/DELETE /reserves/:month`, `POST /reserves` |
-| manual-expenses | `GET /manual-expenses?month=`, `GET /manual-expenses/:id`, `POST`, `PATCH` e `DELETE /manual-expenses` (`{ ids, changes }` / `{ ids }`) |
+| manual-expenses | `GET /manual-expenses?month=`, `GET /manual-expenses/summary?month=`, `GET /manual-expenses/:id`, `POST`, `PATCH` e `DELETE /manual-expenses` (`{ ids, changes }` / `{ ids }`; sem categoria) |
 | card-expenses | `GET /card-expenses?month=&cardId=[&includeExcluded=true][&split=PENDING]`, `GET /card-expenses/:id`, `PATCH /card-expenses`, `DELETE /card-expenses` e `POST /card-expenses/restore` (`{ ids, scope }`), `POST /card-expenses` ("Adicionar compra"), `POST /card-expenses/:id/move` (mudar de fatura/parcela) |
 | card-imports | `POST /card-imports/preview` e `POST /card-imports` (multipart), `GET /card-imports[?cardId=&month=]`, `DELETE /card-imports/:id` |
 | summary | `GET /summary?month=`, `GET /summary/annual?year=`, `GET /summary/statement?month=` |

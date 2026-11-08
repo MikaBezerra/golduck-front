@@ -57,7 +57,6 @@
                     <p-tableHeaderCheckbox ariaLabel="Selecionar todas" />
                 </th>
                 <th>Descrição</th>
-                <th class="hidden md:table-cell">Categoria</th>
                 <th class="hidden md:table-cell">Pessoa</th>
                 <th class="text-right">Valor</th>
                 <th class="text-right sm:w-36"><span class="sr-only sm:not-sr-only">Ações</span></th>
@@ -75,10 +74,9 @@
                         <p-tag value="Paga" icon="pi pi-check-circle" severity="success" styleClass="ml-2" />
                     }
                     <span class="block text-sm text-muted-color md:hidden">
-                        {{ expense.categoryName }} · {{ expense.personName }}
+                        {{ expense.personName }}
                     </span>
                 </td>
-                <td class="hidden md:table-cell">{{ expense.categoryName }}</td>
                 <td class="hidden text-muted-color md:table-cell">{{ expense.personName }}</td>
                 <td
                     class="text-right font-medium whitespace-nowrap tabular-nums"

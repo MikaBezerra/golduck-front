@@ -42,7 +42,7 @@ Ficam fora do app (excluídos no `tsconfig.app.json`) e são conferidos pelo `ty
 | `components.ts` | `renderComponent(Comp, inputs, providers)`, `openDialog(...)` (abre com `visible = true`), `internals<T>(fixture)` para acessar membros `protected` (form, save...) e `apiError(status, code, message, details)` para simular erros do back |
 | `mocks.ts` | `notificationsMock()` e `confirmMock(resposta)` |
 | `fixtures.ts` | registros de exemplo no formato da API: `aPerson()`, `aCategory()`, `aCreditCard()`, `aSyncedCreditCard()` (com ciclo e sincronização), `aCardSync()`, `aCardBill()`, `anIncome()`, `aReserve()`, `aManualExpense()`, `aCardExpense()` (cada um aceita só o que o teste quer mudar) |
-| `lookups.ts` | dublê do `ExpenseLookupsService` (categorias e pessoas das telas de despesas) |
+| `lookups.ts` | dublê do `ExpenseLookupsService` (categorias das compras do cartão e pessoas das telas de despesas) |
 
 Exemplo de teste de contrato:
 

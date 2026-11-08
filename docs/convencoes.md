@@ -27,7 +27,7 @@
   mensagem de cada campo em português.
 - Erros do back vão para o campo certo (`setServerError` e `applyServerErrors`, veja
   [api-e-tipos.md](api-e-tipos.md)); só o que não pertence a um campo vira aviso.
-- Na edição, envie só o que mudou (reenviar uma categoria desativada, por exemplo, daria erro no back).
+- Na edição, envie só o que mudou (reenviar uma categoria ou pessoa desativada, por exemplo, daria erro no back).
 - Campos opcionais vazios vão como `null` quando o back usa `null` para apagar o valor.
 
 ## Telas

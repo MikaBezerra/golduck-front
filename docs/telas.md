@@ -43,7 +43,8 @@ pessoas**; o front converte para `{ split: 'SHARED' }` ou `{ split: 'PERSONAL', 
 
 - Números do mês escolhido (ou do ano inteiro): entrada, despesas, reserva e saldo, com comparação com o mês
   anterior.
-- Gráfico do ano por mês, despesas por categoria e por pessoa, e o líquido de cada pessoa com um medidor de
+- Gráfico do ano por mês, compras do cartão por categoria ("Cartão por categoria", com a parte de cada uma
+  sobre o total do cartão), despesas por pessoa, e o líquido de cada pessoa com um medidor de
   quanto da parte dela já foi gasto.
 - Aviso de compras do cartão sem pessoa (`pending` do resumo, do mês ou do ano), com link para Faturas.
 - Back: `GET /summary?month=` e `GET /summary/annual?year=`.
@@ -83,23 +84,23 @@ Cada pessoa ativa recebe por e-mail o próprio resumo do mês (regras e configur
 
 ## Despesas (`/despesas`)
 
-- Despesas fora do cartão do mês selecionado, com categoria e pessoa (ou "Compartilhada").
-- Nova despesa: título, valor, categoria (a padrão já vem marcada), pessoa (obrigatória) e "repetir até dezembro", que
+- Despesas fora do cartão do mês selecionado, com a pessoa (ou "Compartilhada"). **Despesa não tem
+  categoria**: categorias são só das compras do cartão.
+- Nova despesa: título, valor, pessoa (obrigatória) e "repetir até dezembro", que
   cria uma despesa independente em cada mês até o fim do ano (o diálogo mostra quantas).
-- Editar: o mês fica travado e só o que mudou é enviado. Categoria ou pessoa desativada continua visível
+- Editar: o mês fica travado e só o que mudou é enviado. Pessoa desativada continua visível
   na despesa antiga, marcada como "(desativada)".
 - Seleção de várias linhas: editar em lote (campo vazio = manter; "Compartilhada" ou uma pessoa vale para
   todas) ou excluir.
   Trocar de mês limpa a seleção.
 - Excluir pede confirmação e não pode ser desfeito.
 - **Resumo do mês** no topo (`GET /manual-expenses/summary?month`, pronto do back): total, pago e a pagar,
-  com a barra do quanto já foi pago, e o total **por categoria** em barras do maior para o menor (o mesmo
-  componente da Visão geral, `summary-bar-list`). Recarrega depois de qualquer mudança na lista.
+  com a barra do quanto já foi pago. Recarrega depois de qualquer mudança na lista.
 - **Paga**: o botão ✓ de cada linha marca a despesa como paga (ou desmarca); a linha paga fica com o texto
   apagado e a etiqueta verde "Paga". Na seleção, "Marcar como pagas" e "Desmarcar pagas" (só aparecem quando
   cabem). Qualquer mês pode ser marcado (`PATCH /manual-expenses` com `changes.paid`).
-- Back: `GET/POST/PATCH/DELETE /manual-expenses`, mais `GET /categories?includeInactive=true` e
-  `GET /people?includeInactive=true` para os nomes.
+- Back: `GET/POST/PATCH/DELETE /manual-expenses`, mais `GET /people?includeInactive=true` para os nomes
+  (a tela não busca categorias: `ExpenseLookupsService.load({ categories: false })`).
 
 ## Faturas (`/faturas`)
 
@@ -188,9 +189,9 @@ Telas de cadastro com o mesmo jeito de funcionar:
   formulário exige também vencimento, melhor dia e primeira fatura. Na edição, mostra a situação da
   sincronização (como na tela de Faturas). A lista tem a coluna "Sincronização" (desligada, Meu Pluggy,
   configuração incompleta ou "Precisa de atenção" com erro, item com problema ou autorização perto do fim);
-- **Categorias**: só o nome; nome repetido aparece embaixo do campo; a categoria padrão ("Outros") é usada
-  quando nenhuma é escolhida e não pode ser alterada nem excluída. **Excluir** (ativa ou inativa) pede
-  confirmação: as despesas e compras do cartão dela passam para "Outros" e o aviso diz quantas
+- **Categorias** (só das compras do cartão): só o nome; nome repetido aparece embaixo do campo; a categoria
+  padrão ("Outros") é usada quando nenhuma é escolhida e não pode ser alterada nem excluída. **Excluir**
+  (ativa ou inativa) pede confirmação: as compras do cartão dela passam para "Outros" e o aviso diz quantas
   (`DELETE /categories/{id}`). Desativar continua existindo para só tirar a categoria das escolhas;
 - **Pessoas**: nome, e-mail e celular (opcionais; apagar o campo apaga o valor no back).
 - Back: `/credit-cards`, `/categories` e `/people`.

@@ -156,7 +156,6 @@ export function aManualExpense(overrides: Partial<ManualExpense> = {}): ManualEx
         month: '2026-11',
         title: 'Aluguel',
         amount: '1500.00',
-        categoryId: 'category-1',
         personId: null,
         // Com pessoa, individual; sem, compartilhada (passe split: 'PENDING' para uma compra sem pessoa).
         split: overrides.personId ? 'PERSONAL' : 'SHARED',

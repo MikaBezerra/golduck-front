@@ -6,7 +6,7 @@ import { SelectedMonthService } from '../../../core/month/selected-month.service
 import { ConfirmService } from '../../../core/notification/confirm.service';
 import { NotificationService } from '../../../core/notification/notification.service';
 import { internals, renderComponent } from '../../../../testing/components';
-import { aCategory, aManualExpense, aPerson } from '../../../../testing/fixtures';
+import { aManualExpense, aPerson } from '../../../../testing/fixtures';
 import { confirmMock, type ConfirmMock, notificationsMock, type NotificationsMock } from '../../../../testing/mocks';
 import { CategoryService } from '../../categories/data-access/category.service';
 import { PersonService } from '../../people/data-access/person.service';
@@ -15,7 +15,6 @@ import { ManualExpenseService } from '../data-access/manual-expense.service';
 import { ManualExpensesPageComponent } from './manual-expenses-page.component';
 
 interface Row extends ManualExpense {
-    readonly categoryName: string;
     readonly personName: string;
     readonly paid: boolean;
 }
@@ -33,18 +32,19 @@ interface Internals {
 
 describe('ManualExpensesPageComponent (despesas do mês)', () => {
     const expenses = { findByMonth: vi.fn(), deleteMany: vi.fn(), setPaid: vi.fn(), summarize: vi.fn() };
+    const categories = { findAll: vi.fn() };
     let notifications: NotificationsMock;
     let confirm: ConfirmMock;
 
     function render(confirmAnswer = true) {
         sessionStorage.clear();
+        categories.findAll.mockReset();
         expenses.findByMonth.mockReset().mockReturnValue(
             of([
-                aManualExpense({ id: 'e-1', title: 'Aluguel', categoryId: 'c-casa', personId: null }),
+                aManualExpense({ id: 'e-1', title: 'Aluguel', personId: null }),
                 aManualExpense({
                     id: 'e-2',
                     title: 'Curso',
-                    categoryId: 'c-velha',
                     personId: 'p-ana',
                     paidAt: '2026-11-05T12:00:00.000Z',
                 }),
@@ -59,10 +59,6 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
                 paid: '500.00',
                 unpaid: '1500.00',
                 count: 2,
-                categories: [
-                    { categoryId: 'c-casa', name: 'Casa', total: '1500.00', count: 1 },
-                    { categoryId: 'c-velha', name: 'Velha', total: '500.00', count: 1 },
-                ],
             }),
         );
         notifications = notificationsMock();
@@ -70,16 +66,7 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
 
         const fixture = renderComponent(ManualExpensesPageComponent, {}, [
             { provide: ManualExpenseService, useValue: expenses },
-            {
-                provide: CategoryService,
-                useValue: {
-                    findAll: () =>
-                        of([
-                            aCategory({ id: 'c-casa', name: 'Casa' }),
-                            aCategory({ id: 'c-velha', name: 'Velha', active: false }),
-                        ]),
-                },
-            },
+            { provide: CategoryService, useValue: categories },
             { provide: PersonService, useValue: { findAll: () => of([aPerson({ id: 'p-ana', name: 'Ana' })]) } },
             { provide: NotificationService, useValue: notifications },
             { provide: ConfirmService, useValue: confirm },
@@ -99,14 +86,16 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
 
     afterEach(() => sessionStorage.clear());
 
-    it('busca as despesas do mês selecionado e mostra os nomes (até de categoria desativada)', () => {
-        const { page } = render();
+    it('busca as despesas do mês selecionado e mostra o nome da pessoa (sem categoria nem busca de categorias)', () => {
+        const { page, text } = render();
 
         expect(expenses.findByMonth).toHaveBeenLastCalledWith('2026-11');
-        expect(page.rows().map((row) => [row.title, row.categoryName, row.personName])).toEqual([
-            ['Aluguel', 'Casa', 'Compartilhada'],
-            ['Curso', 'Velha', 'Ana'],
+        expect(page.rows().map((row) => [row.title, row.personName])).toEqual([
+            ['Aluguel', 'Compartilhada'],
+            ['Curso', 'Ana'],
         ]);
+        expect(categories.findAll).not.toHaveBeenCalled();
+        expect(text()).not.toContain('Categoria');
     });
 
     it('trocar de mês busca de novo e limpa a seleção', () => {
@@ -208,32 +197,31 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
         expect(notifications.error).toHaveBeenCalledWith(error);
     });
 
-    it('resumo do mês no topo: total, pago, a pagar e por categoria; recarrega depois de mudar algo', () => {
+    it('resumo do mês no topo: total, pago e a pagar (sem categorias); recarrega depois de mudar algo', () => {
         const { page, text } = render();
         expenses.setPaid.mockReturnValue(of([]));
 
         expect(expenses.summarize).toHaveBeenLastCalledWith('2026-11');
         expect(text()).toContain('Resumo de');
         expect(text()).toContain('25% pago');
-        expect(text()).toContain('Por categoria');
-        expect(text()).toContain('75% das despesas');
+        expect(text()).not.toContain('Por categoria');
 
         page.togglePaid(page.rows()[0]);
 
         expect(expenses.summarize).toHaveBeenCalledTimes(2);
     });
 
-    it('mês sem despesas: só os totais zerados, sem barras', () => {
+    it('mês sem despesas: só os totais zerados, sem a barra de pago', () => {
         const { text } = render();
         expenses.summarize.mockReturnValue(
-            of({ month: '2026-12', total: '0.00', paid: '0.00', unpaid: '0.00', count: 0, categories: [] }),
+            of({ month: '2026-12', total: '0.00', paid: '0.00', unpaid: '0.00', count: 0 }),
         );
         expenses.findByMonth.mockReturnValue(of([]));
 
         TestBed.inject(SelectedMonthService).next();
         TestBed.tick();
 
-        expect(text()).not.toContain('Por categoria');
+        expect(text()).not.toContain('pago');
         expect(text()).toContain('A pagar');
     });
 });

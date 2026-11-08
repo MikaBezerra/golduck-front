@@ -3,17 +3,16 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { amountRatio } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
 import { MonthPipe } from '../../../shared/month/month.pipe';
-import { SummaryBarListComponent } from '../../summary/components/summary-bar-list.component';
-import { formatPercent, toBars } from '../../summary/data-access/summary-view';
+import { formatPercent } from '../../summary/data-access/summary-view';
 import type { ManualExpensesSummary } from '../data-access/manual-expense.models';
 
 /**
- * Topo da tela de Despesas: total do mês, quanto já foi pago e quanto falta, e o total por categoria
- * (barras do maior para o menor, como na Visão geral). Os números vêm prontos do back.
+ * Topo da tela de Despesas: total do mês, quanto já foi pago e quanto falta. Os números vêm prontos
+ * do back (despesa não tem categoria: o total por categoria fica só nas compras do cartão).
  */
 @Component({
     selector: 'app-manual-expenses-summary',
-    imports: [BrlPipe, MonthPipe, SummaryBarListComponent],
+    imports: [BrlPipe, MonthPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="mb-4 surface-card p-4" aria-labelledby="expenses-summary-title">
@@ -45,9 +44,6 @@ import type { ManualExpensesSummary } from '../data-access/manual-expense.models
                     </span>
                     <span class="text-xs text-muted-color tabular-nums">{{ paidShare() }} pago</span>
                 </div>
-
-                <h3 class="mt-4 mb-1 text-sm font-medium text-muted-color">Por categoria</h3>
-                <app-summary-bar-list [items]="bars()" label="Despesas do mês por categoria" />
             }
         </section>
     `,
@@ -58,16 +54,4 @@ export class ManualExpensesSummaryComponent {
     private readonly paidRatio = computed(() => amountRatio(this.summary().paid, this.summary().total));
     protected readonly paidPercent = computed(() => this.paidRatio() * 100);
     protected readonly paidShare = computed(() => formatPercent(this.paidRatio()));
-    protected readonly bars = computed(() =>
-        toBars(
-            this.summary().categories.map((category) => ({
-                id: category.categoryId,
-                label: category.name,
-                note: null,
-                amount: category.total,
-                count: category.count,
-            })),
-            this.summary().total,
-        ),
-    );
 }

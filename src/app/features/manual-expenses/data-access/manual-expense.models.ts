@@ -4,7 +4,7 @@ import type { ApiSchemas } from '../../../core/api/api-types';
 export type ManualExpense = ApiSchemas['ManualExpenseResponse'];
 
 /**
- * Sem `categoryId`, o back usa a categoria padrão ("Outros"). `split` é obrigatório (`SHARED`, ou
+ * Despesa não tem categoria (categorias são só das compras do cartão). `split` é obrigatório (`SHARED`, ou
  * `PERSONAL` + `personId`): despesa manual nunca fica pendente.
  * `replicateUntilYearEnd` cria uma cópia em cada mês, do mês informado até dezembro.
  */
@@ -19,10 +19,7 @@ export type ManualExpenseChanges = ApiSchemas['ManualExpenseChangesDto'];
 /** Altera uma ou várias despesas de uma vez. */
 export type UpdateManualExpensesRequest = ApiSchemas['UpdateManualExpensesDto'];
 
-/**
- * Resumo do mês da aba Despesas (`GET /manual-expenses/summary`): total, pago, a pagar e o total por
- * categoria, do maior para o menor.
- */
+/** Resumo do mês da aba Despesas (`GET /manual-expenses/summary`): total, pago, a pagar e a quantidade. */
 export type ManualExpensesSummary = ApiSchemas['ManualExpensesSummaryResponse'];
 
 /** Limite do back (VARCHAR 160). */

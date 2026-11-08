@@ -43,16 +43,16 @@ describe('CategoriesPageComponent (excluir categoria)', () => {
         expect(element.querySelector('[aria-label="Excluir Outros"]')).toBeNull();
     });
 
-    it('exclui depois de confirmar, diz para onde foram as despesas e recarrega', async () => {
+    it('exclui depois de confirmar, diz para onde foram as compras do cartão e recarrega', async () => {
         const { page } = render();
-        service.delete.mockReturnValue(of({ movedTo: outros, movedManualExpenses: 1, movedCardExpenses: 2 }));
+        service.delete.mockReturnValue(of({ movedTo: outros, movedCardExpenses: 3 }));
 
         await page.remove(feira);
 
         expect(confirm.danger).toHaveBeenCalledWith(expect.objectContaining({ header: 'Excluir categoria' }));
         expect(service.delete).toHaveBeenCalledWith('c-feira');
         expect(notifications.success).toHaveBeenCalledWith(
-            'Categoria "Feira" excluída. 3 despesas foram para "Outros".',
+            'Categoria "Feira" excluída. 3 compras do cartão foram para "Outros".',
         );
         expect(service.findAll).toHaveBeenCalledTimes(2);
     });

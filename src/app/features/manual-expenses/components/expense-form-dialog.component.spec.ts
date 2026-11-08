@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 
 import { NotificationService } from '../../../core/notification/notification.service';
 import { apiError, internals, openDialog } from '../../../../testing/components';
-import { aCategory, aManualExpense, aPerson } from '../../../../testing/fixtures';
+import { aManualExpense, aPerson } from '../../../../testing/fixtures';
 import { lookupsWith } from '../../../../testing/lookups';
 import { notificationsMock } from '../../../../testing/mocks';
 import { ExpenseLookupsService } from '../data-access/expense-lookups.service';
@@ -15,7 +15,6 @@ import { ExpenseFormDialogComponent } from './expense-form-dialog.component';
 interface Internals {
     readonly form: FormGroup;
     readonly replicateCount: Signal<number>;
-    readonly categoryOptions: Signal<{ label: string; value: string }[]>;
     readonly personOptions: Signal<{ label: string; value: string }[]>;
     save(): void;
 }
@@ -23,12 +22,7 @@ interface Internals {
 describe('ExpenseFormDialogComponent', () => {
     const expenses = { create: vi.fn(), updateMany: vi.fn() };
     const notifications = notificationsMock();
-    const categories = [
-        aCategory({ id: 'c-outros', name: 'Outros', isDefault: true }),
-        aCategory({ id: 'c-casa', name: 'Casa' }),
-        aCategory({ id: 'c-velha', name: 'Velha', active: false }),
-    ];
-    const people = [aPerson({ id: 'p-ana', name: 'Ana' })];
+    const people = [aPerson({ id: 'p-ana', name: 'Ana' }), aPerson({ id: 'p-bia', name: 'Bia', active: false })];
 
     function open(expense: ManualExpense | null = null) {
         expenses.create.mockReset();
@@ -38,18 +32,20 @@ describe('ExpenseFormDialogComponent', () => {
         const fixture = openDialog(ExpenseFormDialogComponent, { expense, defaultMonth: '2026-10' }, [
             { provide: ManualExpenseService, useValue: expenses },
             { provide: NotificationService, useValue: notifications },
-            { provide: ExpenseLookupsService, useValue: lookupsWith(categories, people) },
+            { provide: ExpenseLookupsService, useValue: lookupsWith([], people) },
         ]);
 
         return { fixture, dialog: internals<Internals>(fixture) };
     }
 
-    it('abre no mês sugerido, com a categoria padrão marcada', () => {
-        const { dialog } = open();
+    it('abre no mês sugerido, sem campo de categoria (só as compras do cartão têm)', () => {
+        const { fixture, dialog } = open();
         const value = dialog.form.getRawValue();
 
         expect((value.month as Date).getMonth()).toBe(9);
-        expect(value.categoryId).toBe('c-outros');
+        expect(value).not.toHaveProperty('categoryId');
+        expect(document.body.textContent).not.toContain('Categoria');
+        expect(fixture.componentInstance.visible()).toBe(true);
         expect(value.personId).toBeNull();
         expect(value.replicate).toBe(false);
     });
@@ -89,7 +85,6 @@ describe('ExpenseFormDialogComponent', () => {
             month: '2026-10',
             title: 'Internet',
             amount: '99.90',
-            categoryId: 'c-outros',
             split: 'PERSONAL',
             personId: 'p-ana',
             replicateUntilYearEnd: true,
@@ -109,7 +104,6 @@ describe('ExpenseFormDialogComponent', () => {
             month: '2026-10',
             title: 'Luz',
             amount: '150.00',
-            categoryId: 'c-outros',
             split: 'SHARED',
         });
         expect(notifications.success).toHaveBeenCalledWith('Despesa lançada.');
@@ -127,7 +121,7 @@ describe('ExpenseFormDialogComponent', () => {
     });
 
     it('na edição, trava o mês e envia só o que mudou', () => {
-        const current = aManualExpense({ id: 'expense-5', title: 'Aluguel', amount: '1500.00', categoryId: 'c-casa' });
+        const current = aManualExpense({ id: 'expense-5', title: 'Aluguel', amount: '1500.00' });
         const { dialog } = open(current);
         expenses.updateMany.mockReturnValue(of([current]));
 
@@ -145,7 +139,7 @@ describe('ExpenseFormDialogComponent', () => {
     });
 
     it('na edição sem mudanças, só avisa e fecha', () => {
-        const { fixture, dialog } = open(aManualExpense({ categoryId: 'c-casa' }));
+        const { fixture, dialog } = open(aManualExpense());
 
         dialog.save();
 
@@ -154,21 +148,21 @@ describe('ExpenseFormDialogComponent', () => {
         expect(fixture.componentInstance.visible()).toBe(false);
     });
 
-    it('mantém visível a categoria desativada da despesa sendo editada', () => {
-        const { dialog } = open(aManualExpense({ categoryId: 'c-velha' }));
+    it('mantém visível a pessoa desativada da despesa sendo editada', () => {
+        const { dialog } = open(aManualExpense({ personId: 'p-bia' }));
 
-        expect(dialog.categoryOptions()).toContainEqual({ label: 'Velha (desativada)', value: 'c-velha' });
+        expect(dialog.personOptions()).toContainEqual({ label: 'Bia (desativada)', value: 'p-bia' });
     });
 
     it('erros do back com código conhecido vão para o campo; os de "changes.*" também', () => {
         const { dialog } = open();
         dialog.form.patchValue({ title: 'Luz', amount: 150, personId: 'SHARED' });
 
-        expenses.create.mockReturnValue(apiError(400, 'MANUAL_EXPENSE_INACTIVE_CATEGORY', 'Categoria desativada'));
+        expenses.create.mockReturnValue(apiError(409, 'MANUAL_EXPENSE_INACTIVE_PERSON', 'Pessoa desativada'));
         dialog.save();
-        expect(dialog.form.get('categoryId')?.getError('server')).toBe('Categoria desativada');
+        expect(dialog.form.get('personId')?.getError('server')).toBe('Pessoa desativada');
 
-        const editing = open(aManualExpense({ categoryId: 'c-casa' })).dialog;
+        const editing = open(aManualExpense()).dialog;
         expenses.updateMany.mockReturnValue(
             apiError(400, 'VALIDATION_ERROR', 'Inválido', [
                 { field: 'changes.title', code: 'string.max', message: 'Título longo demais' },

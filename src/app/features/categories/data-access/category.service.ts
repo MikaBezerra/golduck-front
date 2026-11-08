@@ -28,7 +28,7 @@ export class CategoryService {
     }
 
     /**
-     * Exclui a categoria: as despesas e compras do cartão dela vão para a padrão ("Outros"),
+     * Exclui a categoria: as compras do cartão dela vão para a padrão ("Outros"),
      * que não pode ser excluída (`409 CATEGORY_DEFAULT_PROTECTED`).
      */
     public delete(id: string): Observable<DeleteCategoryResult> {

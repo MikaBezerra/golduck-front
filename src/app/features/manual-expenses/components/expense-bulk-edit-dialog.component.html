@@ -46,38 +46,20 @@
             <app-field-error [control]="form.controls.amount" [messages]="moneyMessages" />
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div class="flex flex-col gap-2">
-                <label for="bulk-category" class="font-medium">Categoria</label>
-                <p-select
-                    inputId="bulk-category"
-                    formControlName="categoryId"
-                    [options]="categoryOptions()"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Manter como está"
-                    [showClear]="true"
-                    appendTo="body"
-                    [fluid]="true"
-                />
-                <app-field-error [control]="form.controls.categoryId" />
-            </div>
-
-            <div class="flex flex-col gap-2">
-                <label for="bulk-person" class="font-medium">Pessoa</label>
-                <p-select
-                    inputId="bulk-person"
-                    formControlName="personId"
-                    [options]="personOptions()"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Manter como está"
-                    [showClear]="true"
-                    appendTo="body"
-                    [fluid]="true"
-                />
-                <app-field-error [control]="form.controls.personId" />
-            </div>
+        <div class="flex flex-col gap-2">
+            <label for="bulk-person" class="font-medium">Pessoa</label>
+            <p-select
+                inputId="bulk-person"
+                formControlName="personId"
+                [options]="personOptions()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Manter como está"
+                [showClear]="true"
+                appendTo="body"
+                [fluid]="true"
+            />
+            <app-field-error [control]="form.controls.personId" />
         </div>
 
         <div class="flex justify-end gap-2">

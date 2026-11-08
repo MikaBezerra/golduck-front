@@ -18,7 +18,7 @@ export interface BarItem {
     readonly count: number;
     /** Largura da barra em %: valor ÷ maior valor da lista. */
     readonly width: number;
-    /** Parte do total das despesas, já formatada (`"42%"`). */
+    /** Parte do total da lista (despesas, ou só o cartão nas categorias), já formatada (`"42%"`). */
     readonly share: string;
 }
 
@@ -34,6 +34,7 @@ export function formatPercent(ratio: number): string {
     return `${Math.round(ratio * 100)}%`;
 }
 
+/** Compras do cartão por categoria (as despesas fora do cartão não têm categoria); `total` = total do cartão. */
 export function categoryBars(categories: readonly SummaryCategory[], total: string): BarItem[] {
     return toBars(
         categories.map((category) => ({

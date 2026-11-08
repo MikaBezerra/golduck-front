@@ -60,9 +60,6 @@ export class ExpenseBulkEditDialogComponent {
     protected readonly saving = signal(false);
     protected readonly nothingToChange = signal(false);
 
-    protected readonly categoryOptions = computed(() =>
-        this.lookups.activeCategories().map((category) => ({ label: category.name, value: category.id })),
-    );
     protected readonly personOptions = computed(() => [
         ...personChoiceOptions(this.lookups.activePeople().map((person) => ({ label: person.name, value: person.id }))),
     ]);
@@ -70,7 +67,6 @@ export class ExpenseBulkEditDialogComponent {
     protected readonly form = new FormGroup({
         title: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(EXPENSE_TITLE_MAX_LENGTH)] }),
         amount: new FormControl<number | null>(null, [Validators.min(MONEY_MIN), Validators.max(MONEY_MAX)]),
-        categoryId: new FormControl<string | null>(null),
         personId: new FormControl<string | null>(null),
     });
 
@@ -91,7 +87,7 @@ export class ExpenseBulkEditDialogComponent {
             return;
         }
 
-        const { title, amount, categoryId, personId } = this.form.getRawValue();
+        const { title, amount, personId } = this.form.getRawValue();
         const changes: ManualExpenseChanges = {};
 
         if (title.trim()) {
@@ -100,10 +96,6 @@ export class ExpenseBulkEditDialogComponent {
 
         if (amount !== null) {
             changes.amount = numberToAmount(amount);
-        }
-
-        if (categoryId) {
-            changes.categoryId = categoryId;
         }
 
         if (personId) {
@@ -134,15 +126,12 @@ export class ExpenseBulkEditDialogComponent {
 
                 const apiError = ApiError.from(error);
 
-                if (apiError.code === 'MANUAL_EXPENSE_INACTIVE_CATEGORY') {
-                    setServerError(this.form.controls.categoryId, apiError.message);
-                } else if (apiError.code === 'MANUAL_EXPENSE_INACTIVE_PERSON') {
+                if (apiError.code === 'MANUAL_EXPENSE_INACTIVE_PERSON') {
                     setServerError(this.form.controls.personId, apiError.message);
                 } else if (
                     !applyServerErrors(this.form, apiError, {
                         'changes.title': 'title',
                         'changes.amount': 'amount',
-                        'changes.categoryId': 'categoryId',
                         'changes.personId': 'personId',
                         'changes.split': 'personId',
                     })

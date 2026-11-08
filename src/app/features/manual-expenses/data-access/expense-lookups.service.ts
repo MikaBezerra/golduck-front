@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 
 import { NotificationService } from '../../../core/notification/notification.service';
 import type { Category } from '../../categories/data-access/category.models';
@@ -9,6 +9,7 @@ import { PersonService } from '../../people/data-access/person.service';
 
 /**
  * Categorias e pessoas que as telas de despesas precisam para mostrar nomes e preencher os seletores.
+ * Categorias só existem nas compras do cartão: a tela de Despesas carrega só as pessoas.
  *
  * Carrega TODAS (inclusive desativadas, com `?includeInactive=true`): despesas antigas podem
  * apontar para uma categoria ou pessoa desativada depois, e o nome dela continua aparecendo.
@@ -40,8 +41,11 @@ export class ExpenseLookupsService {
     );
     public readonly personById = computed(() => new Map(this.allPeople().map((person) => [person.id, person])));
 
-    public load(): void {
-        forkJoin([this.categoryService.findAll(true), this.personService.findAll(true)]).subscribe({
+    /** Com `categories: false`, não busca as categorias (a tela de Despesas não usa). */
+    public load(options: { readonly categories?: boolean } = {}): void {
+        const categories$ = options.categories === false ? of<Category[]>([]) : this.categoryService.findAll(true);
+
+        forkJoin([categories$, this.personService.findAll(true)]).subscribe({
             next: ([categories, people]) => {
                 this.allCategories.set(categories);
                 this.allPeople.set(people);

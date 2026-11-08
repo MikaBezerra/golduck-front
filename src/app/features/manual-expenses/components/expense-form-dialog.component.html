@@ -58,41 +58,21 @@
             </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div class="flex flex-col gap-2">
-                <label for="expense-category" class="font-medium">Categoria</label>
-                <p-select
-                    inputId="expense-category"
-                    formControlName="categoryId"
-                    [options]="categoryOptions()"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Categoria padrão"
-                    [filter]="categoryOptions().length > 8"
-                    appendTo="body"
-                    [fluid]="true"
-                />
-                <app-field-error [control]="form.controls.categoryId" />
-            </div>
-
-            <div class="flex flex-col gap-2">
-                <label for="expense-person" class="font-medium">
-                    Pessoa <span class="font-normal text-muted-color">(opcional)</span>
-                </label>
-                <p-select
-                    inputId="expense-person"
-                    formControlName="personId"
-                    [options]="personOptions()"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Escolha"
-                    [filter]="personOptions().length > 8"
-                    emptyMessage="Nenhuma pessoa cadastrada"
-                    appendTo="body"
-                    [fluid]="true"
-                />
-                <app-field-error [control]="form.controls.personId" />
-            </div>
+        <div class="flex flex-col gap-2">
+            <label for="expense-person" class="font-medium">Pessoa</label>
+            <p-select
+                inputId="expense-person"
+                formControlName="personId"
+                [options]="personOptions()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Escolha a pessoa ou Compartilhada"
+                [filter]="personOptions().length > 8"
+                emptyMessage="Nenhuma pessoa cadastrada"
+                appendTo="body"
+                [fluid]="true"
+            />
+            <app-field-error [control]="form.controls.personId" />
         </div>
 
         @if (!expense() && replicateCount() > 1) {

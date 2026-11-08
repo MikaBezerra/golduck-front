@@ -31,7 +31,6 @@ import { ManualExpenseService } from '../data-access/manual-expense.service';
 
 /** Despesa pronta para a tabela: já com os nomes de categoria e pessoa. */
 interface ExpenseRow extends ManualExpense {
-    readonly categoryName: string;
     /** Nome da pessoa ou "Compartilhada". */
     readonly personName: string;
     /** Marcada como paga (`paidAt` preenchido). */
@@ -70,7 +69,7 @@ export class ManualExpensesPageComponent implements OnInit {
         initialValue: [] as ManualExpense[],
     });
 
-    /** Total, pago, a pagar e total por categoria, prontos do back. */
+    /** Total, pago e a pagar, prontos do back. */
     protected readonly summary = remoteData({
         params: () => this.month(),
         load: (month) => this.expenseService.summarize(month),
@@ -78,12 +77,10 @@ export class ManualExpensesPageComponent implements OnInit {
     });
 
     protected readonly rows = computed<ExpenseRow[]>(() => {
-        const categories = this.lookups.categoryById();
         const people = this.lookups.personById();
 
         return this.expenses.value().map((expense) => ({
             ...expense,
-            categoryName: categories.get(expense.categoryId)?.name ?? '…',
             personName: splitLabel(expense, (id) => people.get(id)?.name),
             paid: expense.paidAt !== null,
         }));
@@ -109,7 +106,8 @@ export class ManualExpensesPageComponent implements OnInit {
     }
 
     public ngOnInit(): void {
-        this.lookups.load();
+        // Despesa não tem categoria: aqui só as pessoas.
+        this.lookups.load({ categories: false });
     }
 
     protected openCreate(): void {

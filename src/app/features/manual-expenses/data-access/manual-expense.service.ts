@@ -19,7 +19,7 @@ export class ManualExpenseService {
         return this.api.get<ManualExpense[]>('manual-expenses', { month });
     }
 
-    /** Total, pago, a pagar e total por categoria do mês. */
+    /** Total, pago e a pagar do mês. */
     public summarize(month: string): Observable<ManualExpensesSummary> {
         return this.api.get<ManualExpensesSummary>('manual-expenses/summary', { month });
     }

@@ -10,7 +10,16 @@
 | `deploy.yml` | push na `develop` (projeto `golduck-front-develop`) e na `main` (projeto `golduck-front`) | build com a configuração do Angular do ambiente e publicação na Vercel, sempre como produção do projeto do ambiente. **Desligado** até a variável `DEPLOY_ENABLED` ser `true` |
 
 O `npm run verify` roda localmente os mesmos passos do `ci.yml` ([fluxo-de-trabalho.md](fluxo-de-trabalho.md)).
-O `.github/dependabot.yml` abre PRs semanais (segundas) para a `develop`.
+O `.github/dependabot.yml` abre PRs semanais (segundas) para a `develop`, com o mesmo CI dos outros PRs:
+
+- **npm**: um PR com as atualizações pequenas (minor e patch) do Angular (`@angular/*` e `angular-eslint`,
+  que precisam subir juntos) e outro com as do resto. Versão grande (major) de outro pacote vem num PR próprio.
+- **Ignorados**: major do Angular, do `angular-eslint` e do PrimeNG, e minor/major do TypeScript (a faixa
+  aceita é definida pelo Angular). Essas atualizações são feitas à mão, com `ng update`, que roda as migrações.
+- **GitHub Actions**: um PR por action com versão nova.
+
+PR do Dependabot com CI verde pode ir para a `develop` (squash). CI vermelho: leia as notas de versão no PR
+antes de decidir; se a atualização precisar de mudança no código, feche o PR e faça a atualização numa branch.
 
 ## Branches e versões
 

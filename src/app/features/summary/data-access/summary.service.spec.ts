@@ -27,6 +27,17 @@ describe('SummaryService (contrato com /api/summary)', () => {
         await expect(result).resolves.toEqual(summary);
     });
 
+    it('busca a tabela do resumo do mês em /summary/statement pela query month e devolve como veio', async () => {
+        const statement = { month: '2026-11', columns: [], sections: [], hasPeople: false, incomeMissing: true };
+        const result = firstValueFrom(service.findStatement('2026-11'));
+        const request = expectApiCall(http, 'GET', 'summary/statement');
+
+        expect(queryOf(request)).toEqual({ month: '2026-11' });
+        respondData(request, statement);
+
+        await expect(result).resolves.toEqual(statement);
+    });
+
     it('busca o resumo do ano em /summary/annual pela query year', async () => {
         const annual = { year: 2026, months: [] };
         const result = firstValueFrom(service.findByYear(2026));

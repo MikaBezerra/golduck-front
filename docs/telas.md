@@ -41,8 +41,8 @@ rodapé ([visual-e-layout.md](visual-e-layout.md)). As telas mensais usam o **m�
 - Tabela do mês com uma coluna de total e uma por pessoa ativa: entrada, o que é compartilhado (dividido
   igualmente), o que é de cada um e os líquidos. Linhas com seta abrem os detalhes (cada despesa, cada cartão).
 - Pessoas inativas aparecem só se tiverem gasto individual no mês (e não entram na divisão).
-- Hoje busca entradas, reservas, pessoas, despesas manuais, despesas do cartão e cartões, e monta a tabela no
-  front (`summary-statement.ts`). Vai passar a receber a tabela pronta do back.
+- A tabela vem pronta do back (linhas, valores e estilos); o front só formata e mostra.
+- Back: `GET /summary/statement?month=`.
 
 ## Despesas (`/despesas`)
 

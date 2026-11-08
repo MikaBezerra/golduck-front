@@ -29,6 +29,21 @@ export type SummaryPerson = ApiSchemas['SummaryPersonDto'];
 /** Líquido de uma pessoa ativa: parte da entrada (já sem as compartilhadas) menos as despesas individuais. */
 export type SummaryNetByPerson = ApiSchemas['SummaryNetByPersonDto'];
 
+/**
+ * Resumo do mês em tabela (`GET /summary/statement?month=AAAA-MM`), pronto do back: uma coluna por
+ * pessoa (`columns`), as seções com as linhas (`total` e um valor por coluna em `cells`, na mesma ordem
+ * de `columns`), a quebra do líquido de cada pessoa (`breakdown`) e a reserva do mês e acumulada.
+ * O front só formata e mostra.
+ */
+export type SummaryStatement = ApiSchemas['SummaryStatementResponse'];
+
+/**
+ * Uma linha da tabela. `null` em `total` ou numa célula = não se aplica ("—"). O OpenAPI do back
+ * descreve `cells` como `string[] | null`, mas o que pode ser `null` é cada valor, então a tela
+ * sempre confere célula por célula.
+ */
+export type SummaryStatementRow = ApiSchemas['SummaryStatementRowDto'];
+
 /** O resumo mostra um mês ou o ano inteiro. */
 export type SummaryMode = 'month' | 'year';
 

@@ -9,13 +9,14 @@ import { amountToCents } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
 import { formatMonth } from '../../../shared/month/month';
 import { PageHeaderComponent } from '../../../shared/ui/page-header.component';
-import { buildStatement, type StatementRow, type StatementSource } from '../data-access/summary-statement';
-import { SummaryStatementService } from '../data-access/summary-statement.service';
+import type { SummaryStatement, SummaryStatementRow } from '../data-access/summary.models';
+import { SummaryService } from '../data-access/summary.service';
 
 /**
  * Resumo do mês em tabela: uma coluna de total e uma por pessoa ativa. Entrada, o que é
  * compartilhado (dividido igualmente), o que é de cada um e os líquidos. As linhas com seta
  * abrem os detalhes (cada despesa, cada cartão). O mês é o do seletor do topo.
+ * A tabela vem pronta do back (`GET /summary/statement`): a tela só formata e mostra.
  */
 @Component({
     selector: 'app-summary-statement-page',
@@ -24,20 +25,20 @@ import { SummaryStatementService } from '../data-access/summary-statement.servic
     templateUrl: './summary-statement-page.component.html',
 })
 export class SummaryStatementPageComponent {
-    private readonly statementService = inject(SummaryStatementService);
+    private readonly summary = inject(SummaryService);
 
     protected readonly month = inject(SelectedMonthService).month;
     protected readonly source = remoteData({
         params: () => this.month(),
-        load: (month) => this.statementService.load(month),
-        initialValue: null as StatementSource | null,
+        load: (month) => this.summary.findStatement(month),
+        initialValue: null as SummaryStatement | null,
     });
 
     /** Tabela do mês selecionado (null enquanto um mês novo carrega). */
     protected readonly statement = computed(() => {
-        const source = this.source.value();
+        const statement = this.source.value();
 
-        return source?.month === this.month() ? buildStatement(source) : null;
+        return statement?.month === this.month() ? statement : null;
     });
     protected readonly failed = computed(() => !this.source.loading() && this.statement() === null);
     protected readonly subtitle = computed(() => formatMonth(this.month()));
@@ -86,11 +87,11 @@ export class SummaryStatementPageComponent {
     }
 
     /** Texto da célula: valor, "—" (não se aplica) ou vazio nos detalhes. */
-    protected blank(row: StatementRow): string {
+    protected blank(row: SummaryStatementRow): string {
         return row.style === 'detail' ? '' : '—';
     }
 
-    protected rowClass(row: StatementRow): string {
+    protected rowClass(row: SummaryStatementRow): string {
         switch (row.style) {
             case 'subtotal':
                 return 'border-t border-line font-semibold';

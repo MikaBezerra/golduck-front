@@ -52,7 +52,7 @@ export default defineConfig({
                 },
                 // Contas do resumo feitas no front. Saem quando o back entregar os valores prontos
                 // (front "burro", veja docs/arquitetura.md); aí esta meta sai junto.
-                'src/app/features/summary/data-access/summary-{statement,view}.ts': {
+                'src/app/features/summary/data-access/summary-view.ts': {
                     statements: 95,
                     branches: 75,
                     functions: 95,

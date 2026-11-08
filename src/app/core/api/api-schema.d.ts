@@ -529,6 +529,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/summary/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resumo do mês em tabela: uma coluna por pessoa, linhas prontas e a quebra do líquido de cada pessoa
+         * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. A reserva do mês fica fora de expensesTotal, mas entra no saldo e na divisão como gasto compartilhado. Líquido individual = (entrada − compartilhadas − reserva) / pessoas ativas − despesas individuais. Em breakdown: beforeReserve − individual − reserve = net (a reserva entra uma vez só). reserve.accumulated soma todas as reservas até o mês, inclusive.
+         */
+        get: operations["SummaryController_findStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary/annual": {
         parameters: {
             query?: never;
@@ -541,6 +561,61 @@ export interface paths {
          * @description Despesas do cartão entram pelo mês da fatura, sem as excluídas. A reserva do mês fica fora de expensesTotal, mas entra no saldo e na divisão como gasto compartilhado. Líquido individual = (entrada − compartilhadas − reserva) / pessoas ativas − despesas individuais. No anual, o líquido de cada pessoa é a soma dos líquidos mensais.
          */
         get: operations["SummaryController_findByYear"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/summary/dispatches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Envios do mês, do mais recente para o mais antigo (até 20) */
+        get: operations["SummaryDispatchController_history"];
+        put?: never;
+        /**
+         * Envia por e-mail o resumo do mês para cada pessoa ativa (ou só para personIds)
+         * @description Responde 200 mesmo com falhas parciais: cada pessoa vira um item (SENT, SKIPPED_NO_EMAIL ou FAILED, com mensagem). A mesma Idempotency-Key devolve o resultado gravado, sem reenviar. Outro envio do mês em andamento: 409 SUMMARY_DISPATCH_IN_PROGRESS. E-mail desligado ou fora do ar: 503 MAIL_DISABLED / MAIL_UNAVAILABLE (ninguém recebe). Só ADMIN.
+         */
+        post: operations["SummaryDispatchController_dispatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/summary/dispatches/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quem vai receber o resumo do mês (e-mail mascarado) e o último envio, para a confirmação na tela */
+        get: operations["SummaryDispatchController_preview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/summary/dispatches/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** O e-mail de uma pessoa (assunto, HTML e texto) como ela vai receber, sem enviar */
+        get: operations["SummaryDispatchController_emailPreview"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1317,6 +1392,104 @@ export interface components {
              */
             month: string;
         };
+        SummaryStatementColumnDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @example A */
+            initial: string;
+            /** @description Pessoa inativa com gasto individual no mês: aparece, mas não entra na divisão */
+            inactive: boolean;
+        };
+        SummaryStatementRowDto: {
+            /** @example shared-fixed */
+            id: string;
+            /** @example Gastos fixos */
+            label: string;
+            /** @example despesas fora do cartão */
+            note: string | null;
+            /**
+             * @description Coluna "Total"; null = não se aplica
+             * @example 1234.56
+             */
+            total: string | null;
+            /**
+             * @description Um valor por coluna (mesma ordem de columns); null = não se aplica
+             * @example [
+             *       "1000.00",
+             *       "1000.00"
+             *     ]
+             */
+            cells: string[] | null;
+            /** @description Linhas de detalhe (cada despesa, cada cartão) */
+            children: components["schemas"]["SummaryStatementRowDto"][];
+            /** @enum {string} */
+            style: "item" | "detail" | "subtotal" | "result" | "highlight";
+        };
+        SummaryStatementSectionDto: {
+            /** @enum {string} */
+            id: "income" | "shared" | "individual" | "result";
+            /** @example Compartilhado */
+            title: string;
+            /** @example Dividido igualmente entre as pessoas ativas */
+            hint: string;
+            rows: components["schemas"]["SummaryStatementRowDto"][];
+        };
+        SummaryStatementBreakdownDto: {
+            /** Format: uuid */
+            personId: string;
+            name: string;
+            /**
+             * @description (entrada − despesas compartilhadas) dividido: antes da reserva e dos gastos individuais
+             * @example 1234.56
+             */
+            beforeReserve: string;
+            /**
+             * @description Gastos individuais da pessoa no mês
+             * @example 1234.56
+             */
+            individual: string;
+            /**
+             * @description Parte da pessoa na reserva do mês
+             * @example 1234.56
+             */
+            reserve: string;
+            /**
+             * @description beforeReserve − individual − reserve; igual ao net de GET /summary; pode ser negativo
+             * @example 1234.56
+             */
+            net: string;
+        };
+        SummaryStatementReserveDto: {
+            /**
+             * @description Quanto foi guardado no mês (todas as pessoas); null = sem reserva no mês
+             * @example 1234.56
+             */
+            month: string | null;
+            /**
+             * @description Soma de todas as reservas até o mês, inclusive
+             * @example 1234.56
+             */
+            accumulated: string;
+        };
+        SummaryStatementResponse: {
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /** @description Pessoas ativas em ordem alfabética, depois as inativas com gasto individual */
+            columns: components["schemas"]["SummaryStatementColumnDto"][];
+            /** @description Entrada, Compartilhado, Individual e Resultado */
+            sections: components["schemas"]["SummaryStatementSectionDto"][];
+            /** @description Líquido de cada pessoa ativa em etapas, em ordem alfabética */
+            breakdown: components["schemas"]["SummaryStatementBreakdownDto"][];
+            reserve: components["schemas"]["SummaryStatementReserveDto"];
+            /** @description Há pessoas ativas para dividir o compartilhado */
+            hasPeople: boolean;
+            /** @description Mês sem entrada cadastrada (as contas usam zero) */
+            incomeMissing: boolean;
+        };
         SummaryMonthDto: {
             /**
              * @description Mês no formato AAAA-MM
@@ -1378,6 +1551,104 @@ export interface components {
             year: number;
             /** @description Sempre os 12 meses, de janeiro a dezembro, inclusive os vazios */
             months: components["schemas"]["SummaryMonthDto"][];
+        };
+        SummaryDispatchCountsDto: {
+            sent: number;
+            skipped: number;
+            failed: number;
+        };
+        SummaryDispatchItemDto: {
+            /** Format: uuid */
+            personId: string;
+            name: string;
+            /** @enum {string} */
+            status: "SENT" | "SKIPPED_NO_EMAIL" | "FAILED";
+            /**
+             * @description E-mail mascarado; null quando a pessoa não tem e-mail cadastrado
+             * @example ay•••@gmail.com
+             */
+            recipient: string | null;
+            /**
+             * @description Só em FAILED
+             * @enum {string|null}
+             */
+            errorCode: "MAIL_RECIPIENT_REJECTED" | "MAIL_CONNECTION_FAILED" | "MAIL_SEND_FAILED" | null;
+            /**
+             * @description Mensagem pronta para a tela (em SKIPPED_NO_EMAIL e FAILED)
+             * @example Ayanne não tem e-mail cadastrado.
+             */
+            message: string | null;
+        };
+        SummaryDispatchResponse: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /** @enum {string} */
+            channel: "EMAIL";
+            /**
+             * @description INTERRUPTED = a função parou no meio
+             * @enum {string}
+             */
+            status: "RUNNING" | "DONE" | "INTERRUPTED";
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            finishedAt: string | null;
+            counts: components["schemas"]["SummaryDispatchCountsDto"];
+            /** @description Uma linha por pessoa, em ordem alfabética */
+            items: components["schemas"]["SummaryDispatchItemDto"][];
+        };
+        CreateSummaryDispatchDto: {
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /** @description Só estas pessoas (por exemplo, reenviar para quem falhou). Vazio = todas as pessoas ativas do mês */
+            personIds?: string[];
+        };
+        SummaryDispatchRecipientDto: {
+            /** Format: uuid */
+            personId: string;
+            name: string;
+            hasEmail: boolean;
+            /**
+             * @description E-mail mascarado; null quando a pessoa não tem e-mail cadastrado
+             * @example ay•••@gmail.com
+             */
+            recipient: string | null;
+        };
+        SummaryDispatchPreviewResponse: {
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /** @description Envio de e-mail ligado neste ambiente (MAIL_ENABLED=1) */
+            enabled: boolean;
+            /** @description Pessoas ativas do mês, em ordem alfabética */
+            recipients: components["schemas"]["SummaryDispatchRecipientDto"][];
+            /** @description Último envio do mês; null se nunca foi enviado */
+            lastDispatch: components["schemas"]["SummaryDispatchResponse"] | null;
+        };
+        SummaryEmailPreviewResponse: {
+            /** Format: uuid */
+            personId: string;
+            /**
+             * @description E-mail mascarado; null quando a pessoa não tem e-mail cadastrado
+             * @example ay•••@gmail.com
+             */
+            recipient: string | null;
+            /** @example Golduck · Resumo de novembro/2026 (até 08/11) */
+            subject: string;
+            /** @description Corpo do e-mail em HTML (como a pessoa recebe) */
+            html: string;
+            /** @description Versão em texto puro */
+            text: string;
         };
     };
     responses: never;
@@ -2994,6 +3265,40 @@ export interface operations {
             };
         };
     };
+    SummaryController_findStatement: {
+        parameters: {
+            query: {
+                /** @description Mês no formato AAAA-MM */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SummaryStatementResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     SummaryController_findByYear: {
         parameters: {
             query: {
@@ -3013,6 +3318,147 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["AnnualSummaryResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryDispatchController_history: {
+        parameters: {
+            query: {
+                /** @description Mês no formato AAAA-MM */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SummaryDispatchResponse"][];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryDispatchController_dispatch: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description UUID gerado pelo front a cada intenção de envio */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSummaryDispatchDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SummaryDispatchResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryDispatchController_preview: {
+        parameters: {
+            query: {
+                /** @description Mês no formato AAAA-MM */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SummaryDispatchPreviewResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    SummaryDispatchController_emailPreview: {
+        parameters: {
+            query: {
+                /** @description Mês no formato AAAA-MM */
+                month: string;
+                personId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SummaryEmailPreviewResponse"];
                     };
                 };
             };

@@ -84,7 +84,6 @@ os testes dela e a meta de cobertura correspondente):
 
 | Onde | O que calcula hoje |
 | --- | --- |
-| `features/summary/data-access/summary-statement.ts` | a tabela do resumo por pessoa inteira (divisão, centavos, líquidos) a partir de 6 listas |
 | `features/summary/data-access/summary-view.ts` e `summary-page.component.ts` | comparação com o mês anterior, percentuais e medidores |
 | `incomes-page`, `manual-expenses-page`, `card-expenses-page`, `card-import-review` | totais das listas (`sumAmounts`) |
 

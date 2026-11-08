@@ -86,6 +86,6 @@ As listas atuais do Golduck não são paginadas.
 | manual-expenses | `GET /manual-expenses?month=`, `GET /manual-expenses/:id`, `POST`, `PATCH` e `DELETE /manual-expenses` (`{ ids, changes }` / `{ ids }`) |
 | card-expenses | `GET /card-expenses?month=&cardId=[&includeExcluded=true]`, `GET /card-expenses/:id`, `PATCH /card-expenses`, `DELETE /card-expenses` e `POST /card-expenses/restore` (`{ ids, scope }`) |
 | card-imports | `POST /card-imports/preview` e `POST /card-imports` (multipart), `POST /card-imports/manual`, `GET /card-imports[?cardId=&month=]`, `DELETE /card-imports/:id` |
-| summary | `GET /summary?month=`, `GET /summary/annual?year=` |
+| summary | `GET /summary?month=`, `GET /summary/annual?year=`, `GET /summary/statement?month=` |
 
 Cada linha desta tabela tem um teste de contrato no `*.service.spec.ts` da feature.

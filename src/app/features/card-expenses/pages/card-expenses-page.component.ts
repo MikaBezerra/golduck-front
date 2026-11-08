@@ -53,6 +53,7 @@ import {
 } from '../../credit-cards/data-access/credit-card.models';
 import { CreditCardService } from '../../credit-cards/data-access/credit-card.service';
 import { ExpenseLookupsService } from '../../manual-expenses/data-access/expense-lookups.service';
+import { CardBillsSummaryComponent } from '../components/card-bills-summary.component';
 import { CardExpenseCreateDialogComponent } from '../components/card-expense-create-dialog.component';
 import { CardExpenseEditDialogComponent } from '../components/card-expense-edit-dialog.component';
 import { CardExpenseExclusionDialogComponent } from '../components/card-expense-exclusion-dialog.component';
@@ -94,6 +95,7 @@ interface CardExpenseRow extends CardExpense {
         IsoDatePipe,
         MonthPipe,
         PageHeaderComponent,
+        CardBillsSummaryComponent,
         CardExpenseCreateDialogComponent,
         CardExpenseEditDialogComponent,
         CardExpenseExclusionDialogComponent,

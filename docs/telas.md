@@ -92,6 +92,9 @@ Cada pessoa ativa recebe por e-mail o próprio resumo do mês (regras e configur
   todas) ou excluir.
   Trocar de mês limpa a seleção.
 - Excluir pede confirmação e não pode ser desfeito.
+- **Resumo do mês** no topo (`GET /manual-expenses/summary?month`, pronto do back): total, pago e a pagar,
+  com a barra do quanto já foi pago, e o total **por categoria** em barras do maior para o menor (o mesmo
+  componente da Visão geral, `summary-bar-list`). Recarrega depois de qualquer mudança na lista.
 - **Paga**: o botão ✓ de cada linha marca a despesa como paga (ou desmarca); a linha paga fica com o texto
   apagado e a etiqueta verde "Paga". Na seleção, "Marcar como pagas" e "Desmarcar pagas" (só aparecem quando
   cabem). Qualquer mês pode ser marcado (`PATCH /manual-expenses` com `changes.paid`).
@@ -105,6 +108,12 @@ chegam pela **sincronização com o Meu Pluggy** (botão "Atualizar"), por **"Ad
 B, pelo **envio do arquivo da fatura** (menu ⋮). Cada linha tem a origem (`origin`: `SYNC`, `UPLOAD` ou
 `MANUAL`; as adicionadas à mão aparecem com a etiqueta "À mão").
 
+- **Resumo das faturas** no topo (`GET /credit-cards/bills/summary?month`, pronto do back): total geral e um
+  bloco por cartão (ativos e os inativos com compras no mês) com o total, a situação e o **limite
+  disponível** — medidor verde, ou "Limite estourado em R$ X" em vermelho; "Sem limite cadastrado" quando o
+  cartão não tem limite. O disponível é o de hoje (limite menos as faturas não pagas deste mês em diante),
+  não muda com o mês. Clicar num cartão ativo mostra as compras dele logo abaixo (o mesmo que escolher no
+  campo Cartão).
 - **Período da fatura**: com o vencimento e o melhor dia do cartão preenchidos, um bloco mostra as compras
   que entram na fatura do mês (início e fechamento), o melhor dia de compra e o vencimento
   (`GET /credit-cards/{id}/bills?from=M&to=M`), com a origem do melhor dia: padrão do cartão, ajustado pelo
@@ -172,7 +181,8 @@ Telas de cadastro com o mesmo jeito de funcionar:
 - lista em ordem alfabética, com "Mostrar inativas" (categorias e pessoas) para reativar;
 - cadastrar e editar num diálogo; desativar pede confirmação (o que já foi lançado continua ligado ao item);
 - **Cartões**: nome e banco (não muda depois de cadastrado: define o tradutor da sincronização e o formato do
-  arquivo da fatura), **ciclo da fatura** (dia do vencimento e melhor dia de compra, de 1 a 31; depois de
+  arquivo da fatura), **limite** (opcional, em reais; apagar envia `null`; usado no limite disponível de
+  Faturas), **ciclo da fatura** (dia do vencimento e melhor dia de compra, de 1 a 31; depois de
   informados não podem ser apagados, só trocados) e **sincronização** (id do item no Meu Pluggy e primeira
   fatura sincronizada; apagar o item envia `null` e desliga a sincronização). Com o item preenchido, o
   formulário exige também vencimento, melhor dia e primeira fatura. Na edição, mostra a situação da

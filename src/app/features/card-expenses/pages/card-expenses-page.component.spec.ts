@@ -40,6 +40,7 @@ interface Internals {
     readonly onlyPending: Signal<boolean>;
     readonly billStatus: Signal<CreditCardBillSummaryItem | null>;
     togglePendingFilter(): void;
+    selectCard(cardId: string | null): void;
     markBillPaid(): void;
     unmarkBillPaid(): void;
     syncCard(): void;
@@ -329,5 +330,24 @@ describe('CardExpensesPageComponent (faturas do cartão)', () => {
             expect(page.billStatus()).toBeNull();
             expect(creditCards.markBillPaid).not.toHaveBeenCalled();
         });
+    });
+
+    it('resumo das faturas no topo: clicar num cartão mostra as compras dele', () => {
+        const { page, text } = render(
+            [aSyncedCreditCard({ id: 'card-1', name: 'C6' }), aCreditCard({ id: 'card-2', name: 'Nubank' })],
+            undefined,
+            [
+                aBillSummaryItem({ cardId: 'card-1', cardName: 'C6' }),
+                aBillSummaryItem({ cardId: 'card-2', cardName: 'Nubank' }),
+            ],
+        );
+
+        expect(text()).toContain('Total geral');
+
+        page.selectCard('card-2');
+        TestBed.tick();
+
+        expect(page.selectedCard()?.id).toBe('card-2');
+        expect(cardExpenses.findByMonth).toHaveBeenLastCalledWith('2026-11', 'card-2', false);
     });
 });

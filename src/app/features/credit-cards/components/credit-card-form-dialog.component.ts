@@ -28,6 +28,8 @@ import type { Observable } from 'rxjs';
 import { NotificationService } from '../../../core/notification/notification.service';
 import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
 import { applyServerErrors, revealFormErrors } from '../../../shared/forms/form-errors';
+import { amountToNumber, numberToAmount } from '../../../shared/money/money';
+import { MONEY_MAX, MONEY_MIN } from '../../../shared/money/money-input';
 import { dateToMonthKey, monthKeyToDate } from '../../../shared/month/month';
 import {
     BILLING_DAY_MAX,
@@ -69,7 +71,15 @@ interface FormValue {
     readonly bestPurchaseDay: number | null;
     readonly pluggyItemId: string | null;
     readonly syncFromMonth: string | null;
+    /** Limite em reais (`"8000.00"`); `null` sem limite. */
+    readonly creditLimit: string | null;
 }
+
+/** Mensagens do campo de limite (opcional). */
+const LIMIT_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+    min: 'O limite precisa ser maior que zero',
+    max: 'Valor alto demais',
+};
 
 /**
  * Diálogo para cadastrar ou editar um cartão: nome, banco (só na criação), ciclo da fatura e a
@@ -105,6 +115,8 @@ export class CreditCardFormDialogComponent {
     protected readonly dayMax = BILLING_DAY_MAX;
     protected readonly bankOptions = CARD_BANK_OPTIONS;
     protected readonly bankLabels = CARD_BANK_LABELS;
+    protected readonly moneyMax = MONEY_MAX;
+    protected readonly limitMessages = LIMIT_ERROR_MESSAGES;
     protected readonly saving = signal(false);
     protected readonly form = new FormGroup(
         {
@@ -126,6 +138,7 @@ export class CreditCardFormDialogComponent {
                 validators: [Validators.pattern(PLUGGY_ITEM_ID_PATTERN)],
             }),
             syncFromMonth: new FormControl<Date | null>(null),
+            creditLimit: new FormControl<number | null>(null, [Validators.min(MONEY_MIN), Validators.max(MONEY_MAX)]),
         },
         { validators: [syncSettingsValidator] },
     );
@@ -146,6 +159,7 @@ export class CreditCardFormDialogComponent {
                     bestPurchaseDay: card?.bestPurchaseDay ?? null,
                     pluggyItemId: card?.pluggyItemId ?? '',
                     syncFromMonth: card?.syncFromMonth ? monthKeyToDate(card.syncFromMonth) : null,
+                    creditLimit: card?.creditLimit ? amountToNumber(card.creditLimit) : null,
                 });
 
                 // O back não aceita apagar o vencimento nem o melhor dia: depois de informados, ficam obrigatórios.
@@ -218,6 +232,7 @@ export class CreditCardFormDialogComponent {
             bestPurchaseDay: raw.bestPurchaseDay,
             pluggyItemId: raw.pluggyItemId.trim().toLowerCase() || null,
             syncFromMonth: raw.syncFromMonth ? dateToMonthKey(raw.syncFromMonth) : null,
+            creditLimit: raw.creditLimit === null ? null : numberToAmount(raw.creditLimit),
         };
     }
 }
@@ -241,6 +256,7 @@ function createRequest(value: FormValue, bank: CardBank): CreateCreditCardReques
         ...(value.bestPurchaseDay !== null ? { bestPurchaseDay: value.bestPurchaseDay } : {}),
         ...(value.pluggyItemId ? { pluggyItemId: value.pluggyItemId } : {}),
         ...(value.syncFromMonth ? { syncFromMonth: value.syncFromMonth } : {}),
+        ...(value.creditLimit ? { creditLimit: value.creditLimit } : {}),
     };
 }
 
@@ -266,6 +282,14 @@ function updateChanges(current: CreditCard, value: FormValue): UpdateCreditCardR
 
     if (value.syncFromMonth !== current.syncFromMonth) {
         changes.syncFromMonth = value.syncFromMonth;
+    }
+
+    // Compara em centavos ("8000" e "8000.00" são o mesmo limite); apagado vai como `null`.
+    const currentLimit = current.creditLimit === null ? null : amountToNumber(current.creditLimit);
+    const newLimit = value.creditLimit === null ? null : amountToNumber(value.creditLimit);
+
+    if (newLimit !== currentLimit) {
+        changes.creditLimit = value.creditLimit;
     }
 
     return changes;

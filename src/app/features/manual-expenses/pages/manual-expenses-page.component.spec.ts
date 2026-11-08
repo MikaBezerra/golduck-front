@@ -32,7 +32,7 @@ interface Internals {
 }
 
 describe('ManualExpensesPageComponent (despesas do mês)', () => {
-    const expenses = { findByMonth: vi.fn(), deleteMany: vi.fn(), setPaid: vi.fn() };
+    const expenses = { findByMonth: vi.fn(), deleteMany: vi.fn(), setPaid: vi.fn(), summarize: vi.fn() };
     let notifications: NotificationsMock;
     let confirm: ConfirmMock;
 
@@ -52,6 +52,19 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
         );
         expenses.deleteMany.mockReset();
         expenses.setPaid.mockReset();
+        expenses.summarize.mockReset().mockReturnValue(
+            of({
+                month: '2026-11',
+                total: '2000.00',
+                paid: '500.00',
+                unpaid: '1500.00',
+                count: 2,
+                categories: [
+                    { categoryId: 'c-casa', name: 'Casa', total: '1500.00', count: 1 },
+                    { categoryId: 'c-velha', name: 'Velha', total: '500.00', count: 1 },
+                ],
+            }),
+        );
         notifications = notificationsMock();
         confirm = confirmMock(confirmAnswer);
 
@@ -75,7 +88,13 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
         month.set('2026-11');
         TestBed.tick();
 
-        return { page: internals<Internals>(fixture), month };
+        const text = (): string => {
+            fixture.detectChanges();
+
+            return (fixture.nativeElement as HTMLElement).textContent ?? '';
+        };
+
+        return { page: internals<Internals>(fixture), month, text };
     }
 
     afterEach(() => sessionStorage.clear());
@@ -187,5 +206,34 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
         page.togglePaid(page.rows()[0]);
 
         expect(notifications.error).toHaveBeenCalledWith(error);
+    });
+
+    it('resumo do mês no topo: total, pago, a pagar e por categoria; recarrega depois de mudar algo', () => {
+        const { page, text } = render();
+        expenses.setPaid.mockReturnValue(of([]));
+
+        expect(expenses.summarize).toHaveBeenLastCalledWith('2026-11');
+        expect(text()).toContain('Resumo de');
+        expect(text()).toContain('25% pago');
+        expect(text()).toContain('Por categoria');
+        expect(text()).toContain('75% das despesas');
+
+        page.togglePaid(page.rows()[0]);
+
+        expect(expenses.summarize).toHaveBeenCalledTimes(2);
+    });
+
+    it('mês sem despesas: só os totais zerados, sem barras', () => {
+        const { text } = render();
+        expenses.summarize.mockReturnValue(
+            of({ month: '2026-12', total: '0.00', paid: '0.00', unpaid: '0.00', count: 0, categories: [] }),
+        );
+        expenses.findByMonth.mockReturnValue(of([]));
+
+        TestBed.inject(SelectedMonthService).next();
+        TestBed.tick();
+
+        expect(text()).not.toContain('Por categoria');
+        expect(text()).toContain('A pagar');
     });
 });

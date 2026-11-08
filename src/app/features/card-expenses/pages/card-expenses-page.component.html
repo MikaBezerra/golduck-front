@@ -31,6 +31,16 @@
         <a routerLink="/cartoes" class="font-medium text-primary">Ir para Cartões</a>
     </div>
 } @else {
+    @if (billsSummary.value(); as summary) {
+        @if (summary.cards.length > 0) {
+            <app-card-bills-summary
+                [summary]="summary"
+                [selectedCardId]="selectedCardId()"
+                (cardSelected)="selectCard($event)"
+            />
+        }
+    }
+
     <div class="mb-4 flex flex-wrap items-center gap-3">
         <label for="card-select" class="font-medium">Cartão</label>
         <p-select
@@ -146,7 +156,7 @@
                         role="status"
                     >
                         <i class="pi pi-exclamation-circle text-cantaloupe" aria-hidden="true"></i>
-                        <p class="m-0 flex-1 text-sm">
+                        <p class="m-0 flex-1 basis-56 text-sm">
                             O total mudou depois do pagamento: pago {{ payment.paidAmount ?? '0' | brl }}, agora
                             {{ payment.total | brl }}.
                         </p>

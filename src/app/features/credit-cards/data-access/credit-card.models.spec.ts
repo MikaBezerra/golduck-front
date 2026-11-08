@@ -6,6 +6,7 @@ import {
     describeConsentWarning,
     hasBillingCycle,
     isPluggyProblem,
+    limitUsage,
     pluggyStatusLabel,
 } from './credit-card.models';
 
@@ -73,5 +74,13 @@ describe('credit-card.models', () => {
         expect(canMarkBillPaid('overdue')).toBe(true);
         expect(canMarkBillPaid('open')).toBe(false);
         expect(canMarkBillPaid('paid')).toBe(false);
+    });
+
+    it('limitUsage: parte ocupada do limite (0 a 100%), estourado e sem limite', () => {
+        expect(limitUsage('5000.00', '3500.00')).toEqual({ usedPercent: 30, exceeded: false });
+        expect(limitUsage('5000.00', '6000.00')).toEqual({ usedPercent: 0, exceeded: false });
+        expect(limitUsage('500.00', '-100.00')).toEqual({ usedPercent: 100, exceeded: true });
+        expect(limitUsage(null, null)).toBeNull();
+        expect(limitUsage('0.00', '0.00')).toEqual({ usedPercent: 0, exceeded: false });
     });
 });

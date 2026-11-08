@@ -43,6 +43,26 @@
             }
         </div>
 
+        <div class="flex flex-col gap-2">
+            <label for="card-limit" class="font-medium">Limite <span class="text-muted-color">(opcional)</span></label>
+            <p-inputnumber
+                inputId="card-limit"
+                formControlName="creditLimit"
+                mode="currency"
+                currency="BRL"
+                locale="pt-BR"
+                [min]="0"
+                [max]="moneyMax"
+                placeholder="R$ 0,00"
+                [fluid]="true"
+                aria-describedby="card-limit-help"
+            />
+            <small id="card-limit-help" class="text-muted-color">
+                Com o limite, a tela de Faturas mostra quanto ainda está disponível.
+            </small>
+            <app-field-error [control]="form.controls.creditLimit" [messages]="limitMessages" />
+        </div>
+
         <fieldset class="m-0 flex flex-col gap-3 rounded-lg border border-line p-3">
             <legend class="px-1 font-medium">Ciclo da fatura</legend>
             <div class="grid grid-cols-2 gap-3">

@@ -15,7 +15,7 @@ interface Internals {
 }
 
 const ITEM_ID = '11111111-2222-4333-8444-555555555555';
-const EMPTY_BILLING = { dueDay: null, bestPurchaseDay: null, pluggyItemId: '', syncFromMonth: null };
+const EMPTY_BILLING = { dueDay: null, bestPurchaseDay: null, pluggyItemId: '', syncFromMonth: null, creditLimit: null };
 
 describe('CreditCardFormDialogComponent', () => {
     const creditCards = { create: vi.fn(), update: vi.fn() };
@@ -67,6 +67,7 @@ describe('CreditCardFormDialogComponent', () => {
             bestPurchaseDay: 25,
             pluggyItemId: ` ${ITEM_ID.toUpperCase()} `,
             syncFromMonth: new Date(2026, 10, 1),
+            creditLimit: 8000,
         });
         form.save();
 
@@ -77,6 +78,7 @@ describe('CreditCardFormDialogComponent', () => {
             bestPurchaseDay: 25,
             pluggyItemId: ITEM_ID,
             syncFromMonth: '2026-11',
+            creditLimit: '8000.00',
         });
     });
 
@@ -192,5 +194,27 @@ describe('CreditCardFormDialogComponent', () => {
         creditCards.create.mockReturnValue(apiError(500, 'INTERNAL_ERROR', 'Erro interno do servidor'));
         form.save();
         expect(notifications.error).toHaveBeenCalled();
+    });
+
+    it('limite: abre com o do cartão, envia só quando muda e apagar envia null; zero ou negativo é recusado', () => {
+        const card = aCreditCard({ creditLimit: '8000.00' });
+        const { form } = open(card);
+        creditCards.update.mockReturnValue(of(card));
+
+        expect(form.form.get('creditLimit')?.value).toBe(8000);
+
+        form.form.patchValue({ creditLimit: 9500.5 });
+        form.save();
+        expect(creditCards.update).toHaveBeenLastCalledWith(card.id, { creditLimit: '9500.50' });
+
+        const reopened = open(card);
+        creditCards.update.mockReturnValue(of(card));
+        reopened.form.form.patchValue({ creditLimit: null });
+        reopened.form.save();
+        expect(creditCards.update).toHaveBeenLastCalledWith(card.id, { creditLimit: null });
+
+        const invalid = open();
+        invalid.form.form.patchValue({ creditLimit: 0 });
+        expect(invalid.form.form.get('creditLimit')?.hasError('min')).toBe(true);
     });
 });

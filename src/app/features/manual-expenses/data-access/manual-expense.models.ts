@@ -19,5 +19,11 @@ export type ManualExpenseChanges = ApiSchemas['ManualExpenseChangesDto'];
 /** Altera uma ou várias despesas de uma vez. */
 export type UpdateManualExpensesRequest = ApiSchemas['UpdateManualExpensesDto'];
 
+/**
+ * Resumo do mês da aba Despesas (`GET /manual-expenses/summary`): total, pago, a pagar e o total por
+ * categoria, do maior para o menor.
+ */
+export type ManualExpensesSummary = ApiSchemas['ManualExpensesSummaryResponse'];
+
 /** Limite do back (VARCHAR 160). */
 export const EXPENSE_TITLE_MAX_LENGTH = 160;

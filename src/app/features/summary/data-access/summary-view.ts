@@ -60,10 +60,10 @@ export function personBars(people: readonly SummaryPerson[], total: string): Bar
     );
 }
 
-type BarSource = Pick<BarItem, 'id' | 'label' | 'note' | 'amount' | 'count'>;
+export type BarSource = Pick<BarItem, 'id' | 'label' | 'note' | 'amount' | 'count'>;
 
 /** A API já manda em ordem decrescente de valor; a maior barra ocupa a largura toda. */
-function toBars(items: readonly BarSource[], total: string): BarItem[] {
+export function toBars(items: readonly BarSource[], total: string): BarItem[] {
     const largest = items.reduce((max, item) => Math.max(max, amountToCents(item.amount)), 0);
 
     return items.map((item) => {

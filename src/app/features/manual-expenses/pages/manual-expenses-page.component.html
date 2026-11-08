@@ -2,6 +2,10 @@
     <p-button label="Nova despesa" icon="pi pi-plus" (onClick)="openCreate()" />
 </app-page-header>
 
+@if (summary.value(); as monthSummary) {
+    <app-manual-expenses-summary [summary]="monthSummary" />
+}
+
 @if (selected().length > 0) {
     <div
         class="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/40 bg-primary/15 px-4 py-2.5 backdrop-blur-md"

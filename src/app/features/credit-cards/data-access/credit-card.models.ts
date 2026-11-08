@@ -1,4 +1,5 @@
 import type { ApiSchemas } from '../../../core/api/api-types';
+import { amountToCents } from '../../../shared/money/money';
 import { addMonths, parseMonthKey } from '../../../shared/month/month';
 
 /** Banco emissor: define o tradutor da sincronização e o formato da fatura no upload (NUBANK e C6 em CSV, NEON em PDF). */
@@ -167,4 +168,24 @@ export function billDateRange(month: string): { readonly min: string; readonly m
     const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
 
     return { min: `${addMonths(month, -1)}-01`, max: `${month}-${String(lastDay).padStart(2, '0')}` };
+}
+
+export interface LimitUsage {
+    /** Quanto do limite está ocupado, em % (0 a 100), para o medidor. */
+    readonly usedPercent: number;
+    /** Disponível negativo: o limite estourou. */
+    readonly exceeded: boolean;
+}
+
+/** Medidor do limite no resumo das faturas; `null` sem limite cadastrado. */
+export function limitUsage(creditLimit: string | null, availableLimit: string | null): LimitUsage | null {
+    if (creditLimit === null || availableLimit === null) {
+        return null;
+    }
+
+    const limit = amountToCents(creditLimit);
+    const available = amountToCents(availableLimit);
+    const used = limit > 0 ? ((limit - available) / limit) * 100 : 0;
+
+    return { usedPercent: Math.min(100, Math.max(0, used)), exceeded: available < 0 };
 }

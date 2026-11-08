@@ -2,7 +2,12 @@ import { inject, Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
 
 import { ApiService } from '../../../core/api/api.service';
-import type { CreateManualExpenseRequest, ManualExpense, UpdateManualExpensesRequest } from './manual-expense.models';
+import type {
+    CreateManualExpenseRequest,
+    ManualExpense,
+    ManualExpensesSummary,
+    UpdateManualExpensesRequest,
+} from './manual-expense.models';
 
 /** Chamadas HTTP de `/manual-expenses` (ver `manual-expenses/controller` no back). */
 @Injectable({ providedIn: 'root' })
@@ -12,6 +17,11 @@ export class ManualExpenseService {
     /** Despesas de um mês, em ordem alfabética de título. */
     public findByMonth(month: string): Observable<ManualExpense[]> {
         return this.api.get<ManualExpense[]>('manual-expenses', { month });
+    }
+
+    /** Total, pago, a pagar e total por categoria do mês. */
+    public summarize(month: string): Observable<ManualExpensesSummary> {
+        return this.api.get<ManualExpensesSummary>('manual-expenses/summary', { month });
     }
 
     public findById(id: string): Observable<ManualExpense> {

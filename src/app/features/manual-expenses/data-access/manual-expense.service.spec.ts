@@ -88,4 +88,15 @@ describe('ManualExpenseService (contrato com /api/manual-expenses)', () => {
 
         await expect(result).resolves.toEqual([expect.objectContaining({ paidAt: '2026-11-08T12:00:00.000Z' })]);
     });
+
+    it('resumo do mês com GET /manual-expenses/summary?month', async () => {
+        const summary = { month: '2026-11', total: '10.00', paid: '0.00', unpaid: '10.00', count: 1, categories: [] };
+        const result = firstValueFrom(service.summarize('2026-11'));
+        const request = expectApiCall(http, 'GET', 'manual-expenses/summary');
+
+        expect(request.request.params.get('month')).toBe('2026-11');
+        respondData(request, summary);
+
+        await expect(result).resolves.toEqual(summary);
+    });
 });

@@ -24,8 +24,9 @@ import { MonthPipe } from '../../../shared/month/month.pipe';
 import { PageHeaderComponent } from '../../../shared/ui/page-header.component';
 import { ExpenseBulkEditDialogComponent } from '../components/expense-bulk-edit-dialog.component';
 import { ExpenseFormDialogComponent } from '../components/expense-form-dialog.component';
+import { ManualExpensesSummaryComponent } from '../components/manual-expenses-summary.component';
 import { ExpenseLookupsService } from '../data-access/expense-lookups.service';
-import type { ManualExpense } from '../data-access/manual-expense.models';
+import type { ManualExpense, ManualExpensesSummary } from '../data-access/manual-expense.models';
 import { ManualExpenseService } from '../data-access/manual-expense.service';
 
 /** Despesa pronta para a tabela: já com os nomes de categoria e pessoa. */
@@ -50,6 +51,7 @@ interface ExpenseRow extends ManualExpense {
         PageHeaderComponent,
         ExpenseFormDialogComponent,
         ExpenseBulkEditDialogComponent,
+        ManualExpensesSummaryComponent,
     ],
     providers: [ExpenseLookupsService],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,6 +68,13 @@ export class ManualExpensesPageComponent implements OnInit {
         params: () => this.month(),
         load: (month) => this.expenseService.findByMonth(month),
         initialValue: [] as ManualExpense[],
+    });
+
+    /** Total, pago, a pagar e total por categoria, prontos do back. */
+    protected readonly summary = remoteData({
+        params: () => this.month(),
+        load: (month) => this.expenseService.summarize(month),
+        initialValue: null as ManualExpensesSummary | null,
     });
 
     protected readonly rows = computed<ExpenseRow[]>(() => {
@@ -120,6 +129,7 @@ export class ManualExpensesPageComponent implements OnInit {
     protected afterSave(): void {
         this.selected.set([]);
         this.expenses.reload();
+        this.summary.reload();
     }
 
     /** Botão ✓ da linha: alterna entre paga e a pagar. */

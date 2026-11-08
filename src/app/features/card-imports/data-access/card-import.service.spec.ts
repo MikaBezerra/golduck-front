@@ -99,21 +99,6 @@ describe('CardImportService (contrato com /api/card-imports)', () => {
         await expect(result).resolves.toEqual(RESULT);
     });
 
-    it('cria a fatura manual com JSON em /card-imports/manual', async () => {
-        const body = {
-            cardId: 'card-1',
-            month: '2026-11',
-            transactions: [{ date: '2026-10-10', description: 'Padaria', amount: '12.00', installment: null }],
-        };
-        const result = firstValueFrom(service.createManual(body as never));
-        const request = expectApiCall(http, 'POST', 'card-imports/manual');
-
-        expect(request.request.body).toEqual(body);
-        respondData(request, RESULT);
-
-        await expect(result).resolves.toEqual(RESULT);
-    });
-
     it('lista o histórico com os filtros na query e apaga um envio pelo id', async () => {
         const listed = firstValueFrom(service.findAll({ cardId: 'card-1', month: '2026-11' }));
         const listRequest = expectApiCall(http, 'GET', 'card-imports');

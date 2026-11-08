@@ -2,7 +2,13 @@ import { inject, Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
 
 import { ApiService } from '../../../core/api/api.service';
-import type { CardExpense, CardExpenseScopeRequest, UpdateCardExpensesRequest } from './card-expense.models';
+import type {
+    CardExpense,
+    CardExpenseScopeRequest,
+    CreateCardExpenseRequest,
+    MoveCardExpenseRequest,
+    UpdateCardExpensesRequest,
+} from './card-expense.models';
 
 /** Chamadas HTTP de `/card-expenses` (ver `card-expenses/controller` no back). */
 @Injectable({ providedIn: 'root' })
@@ -25,6 +31,19 @@ export class CardExpenseService {
 
     public findById(id: string): Observable<CardExpense> {
         return this.api.get<CardExpense>(`card-expenses/${id}`);
+    }
+
+    /** "Adicionar compra". Devolve as linhas criadas: a do mês e, se parcelada, as parcelas seguintes. */
+    public create(body: CreateCardExpenseRequest): Observable<CardExpense[]> {
+        return this.api.post<CardExpense[]>('card-expenses', body);
+    }
+
+    /**
+     * Muda a compra de fatura ou de parcela a partir desta linha; devolve as linhas da compra como
+     * ficaram. Compras sincronizadas guardam a correção para as próximas sincronizações.
+     */
+    public move(id: string, body: MoveCardExpenseRequest): Observable<CardExpense[]> {
+        return this.api.post<CardExpense[]>(`card-expenses/${id}/move`, body);
     }
 
     /** Devolve todas as linhas alteradas, inclusive as parcelas seguintes. */

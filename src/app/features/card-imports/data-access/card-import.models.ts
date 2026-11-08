@@ -2,7 +2,7 @@ import type { ApiSchemas } from '../../../core/api/api-types';
 import type { CardBank } from '../../credit-cards/data-access/credit-card.models';
 
 /**
- * Um envio de fatura (arquivo ou lançamento manual). `expenseCount` são as despesas cuja
+ * Um envio de fatura por arquivo (o plano B da sincronização). `expenseCount` são as despesas cuja
  * última gravação veio deste envio: são as que a exclusão remove.
  */
 export type CardImport = ApiSchemas['CardImportResponse'];
@@ -32,11 +32,6 @@ export type CardImportExclusion = ApiSchemas['CardImportExclusionDto'];
 /** Escolha do usuário para uma compra (`key` da pré-visualização), enviada ao salvar. */
 export type CardImportOverride = ApiSchemas['CardImportOverrideDto'];
 
-/** Um lançamento da fatura digitada à mão (`installment: null` para compra à vista). */
-export type ManualCardTransaction = ApiSchemas['ManualCardTransactionDto'];
-
-export type CreateManualCardImportRequest = ApiSchemas['CreateManualCardImportDto'];
-
 /** Arquivo aceito por banco (o back confere a extensão). */
 export const STATEMENT_FILE_EXTENSION: Readonly<Record<CardBank, string>> = {
     NUBANK: '.csv',
@@ -52,11 +47,6 @@ export const STATEMENT_PASSWORD_MAX_LENGTH = 100;
 
 /** Limite do back para o arquivo da fatura. */
 export const MAX_STATEMENT_FILE_BYTES = 2 * 1024 * 1024;
-
-/** Limites do back para a fatura manual. */
-export const MAX_MANUAL_TRANSACTIONS = 500;
-export const MAX_INSTALLMENTS = 99;
-export const MANUAL_DESCRIPTION_MAX_LENGTH = 200;
 
 /**
  * Resumo do envio em frases curtas, para mostrar ao usuário.

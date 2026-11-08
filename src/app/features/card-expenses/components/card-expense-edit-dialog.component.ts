@@ -23,6 +23,7 @@ import { FieldErrorComponent } from '../../../shared/forms/field-error.component
 import { applyServerErrors, revealFormErrors, setServerError } from '../../../shared/forms/form-errors';
 import { ExpenseLookupsService } from '../../manual-expenses/data-access/expense-lookups.service';
 import {
+    canMoveCardExpense,
     type CardExpense,
     type CardExpenseChanges,
     CARD_EXPENSE_NICKNAME_MAX_LENGTH,
@@ -39,7 +40,8 @@ interface SelectOption {
 
 /**
  * Edita apelido, categoria e pessoa de uma despesa do cartão ou de várias de uma vez.
- * Valor, data e descrição vêm da fatura e não mudam aqui.
+ * Valor, data e descrição vêm da fatura e não mudam aqui. Com uma despesa só, oferece também
+ * "Mudar de fatura" (o diálogo próprio é aberto pela página).
  */
 @Component({
     selector: 'app-card-expense-edit-dialog',
@@ -51,6 +53,8 @@ export class CardExpenseEditDialogComponent {
     public readonly visible = model(false);
     public readonly expenses = input.required<readonly CardExpense[]>();
     public readonly saved = output();
+    /** Pediu "Mudar de fatura" para a despesa aberta. */
+    public readonly moveRequested = output<CardExpense>();
 
     private readonly cardExpenses = inject(CardExpenseService);
     private readonly notifications = inject(NotificationService);
@@ -65,6 +69,11 @@ export class CardExpenseEditDialogComponent {
         const expenses = this.expenses();
 
         return expenses.length === 1 ? expenses[0] : null;
+    });
+    protected readonly canMove = computed(() => {
+        const single = this.single();
+
+        return single !== null && canMoveCardExpense(single);
     });
     protected readonly hasInstallments = computed(() => this.expenses().some((expense) => expense.installment));
 
@@ -185,6 +194,15 @@ export class CardExpenseEditDialogComponent {
                 }
             },
         });
+    }
+
+    protected requestMove(): void {
+        const single = this.single();
+
+        if (single && this.canMove()) {
+            this.visible.set(false);
+            this.moveRequested.emit(single);
+        }
     }
 
     /** Uma despesa: envia só o que mudou (reenviar uma categoria desativada daria erro). */

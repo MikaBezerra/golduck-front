@@ -142,7 +142,11 @@ export interface paths {
         /** Lista as despesas do cartão em um mês de fatura (sem as excluídas, salvo includeExcluded=true) */
         get: operations["CardExpenseController_findAll"];
         put?: never;
-        post?: never;
+        /**
+         * Adicionar compra: lança uma compra que está faltando na fatura
+         * @description Parcelada, lança também as parcelas seguintes. A sincronização não apaga estas linhas; quando o banco trouxer a mesma compra (mesmo valor, até 3 dias de diferença), ela substitui a lançada à mão e herda apelido, categoria e pessoa. Devolve as linhas criadas.
+         */
+        post: operations["CardExpenseController_create"];
         /**
          * Exclui despesas do cartão (exclusão suave)
          * @description As linhas saem das listas e dos totais, e os próximos uploads as mantêm excluídas. Em compras parceladas, scope define quais parcelas.
@@ -168,6 +172,26 @@ export interface paths {
         get: operations["CardExpenseController_findById"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-expenses/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Muda a compra de fatura (e, se quiser, de parcela)
+         * @description Esta linha passa a ser a parcela informada no mês informado e as outras seguem a partir dela: a compra inteira muda e os meses que ficaram sem ela deixam de tê-la. Em compras sincronizadas, a sincronização passa a respeitar a correção. Compras de upload não mudam (409 CARD_EXPENSE_MOVE_NOT_ALLOWED). Devolve as linhas da compra.
+         */
+        post: operations["CardExpenseController_move"];
         delete?: never;
         options?: never;
         head?: never;
@@ -266,85 +290,6 @@ export interface paths {
         patch: operations["PersonController_update"];
         trace?: never;
     };
-    "/api/card-imports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Histórico de uploads, mais recentes primeiro */
-        get: operations["CardImportController_findAll"];
-        put?: never;
-        /**
-         * Importa a fatura enviada pelo banco do cartão
-         * @description O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês. Os campos opcionais overrides e exclusions (JSON) aplicam as escolhas feitas na pré-visualização.
-         */
-        post: operations["CardImportController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/card-imports/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Pré-visualiza a fatura sem gravar nada
-         * @description Faz as mesmas validações e a mesma leitura do upload e calcula o mesmo plano, sem criar upload nem despesas.
-         */
-        post: operations["CardImportController_preview"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/card-imports/manual": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Registra uma fatura digitada, sem arquivo
-         * @description O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês.
-         */
-        post: operations["CardImportController_createManual"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/card-imports/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Consulta um upload */
-        get: operations["CardImportController_findById"];
-        put?: never;
-        post?: never;
-        /** Apaga o upload e as despesas que ele gravou (não restaura o estado anterior) */
-        delete: operations["CardImportController_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/credit-cards": {
         parameters: {
             query?: never;
@@ -377,8 +322,167 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Altera nome ou estado ativo (o banco não muda) */
+        /** Altera nome, estado ativo, ciclo da fatura ou a ligação com o Meu Pluggy (o banco não muda) */
         patch: operations["CreditCardController_update"];
+        trace?: never;
+    };
+    "/api/credit-cards/{id}/bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista as faturas do cartão: início, fechamento, melhor dia e vencimento
+         * @description Exige o dia do vencimento e o melhor dia de compra configurados (409 CREDIT_CARD_BILLING_NOT_CONFIGURED).
+         */
+        get: operations["CreditCardController_listBills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/credit-cards/{id}/bills/{month}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Ajusta o melhor dia de compra de uma fatura
+         * @description Vale até o banco informar o fechamento. Para reorganizar as compras já gravadas, sincronize o cartão depois.
+         */
+        put: operations["CreditCardController_updateBill"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Histórico de uploads, mais recentes primeiro */
+        get: operations["CardImportController_findAll"];
+        put?: never;
+        /**
+         * Importa a fatura enviada pelo banco do cartão
+         * @description O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês, menos as compras lançadas em "Adicionar compra". Os campos opcionais overrides e exclusions (JSON) aplicam as escolhas feitas na pré-visualização.
+         */
+        post: operations["CardImportController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pré-visualiza a fatura sem gravar nada
+         * @description Faz as mesmas validações e a mesma leitura do upload e calcula o mesmo plano, sem criar upload nem despesas.
+         */
+        post: operations["CardImportController_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta um upload */
+        get: operations["CardImportController_findById"];
+        put?: never;
+        post?: never;
+        /** Apaga o upload e as despesas que ele gravou (não restaura o estado anterior) */
+        delete: operations["CardImportController_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/credit-cards/{id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sincroniza um cartão com o Meu Pluggy (botão "Atualizar")
+         * @description Busca as compras no Meu Pluggy (que atualiza os dados 1 vez por dia) e grava as faturas a partir da primeira fatura sincronizada do cartão: compras novas entram, as que mudaram de fatura mudam, as que sumiram saem. Apelido, categoria, pessoa, exclusões e as correções de mês/parcela são mantidos.
+         */
+        post: operations["CardSyncController_syncCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sincroniza todos os cartões ligados ao Meu Pluggy
+         * @description Busca as compras no Meu Pluggy (que atualiza os dados 1 vez por dia) e grava as faturas a partir da primeira fatura sincronizada do cartão: compras novas entram, as que mudaram de fatura mudam, as que sumiram saem. Apelido, categoria, pessoa, exclusões e as correções de mês/parcela são mantidos. O erro de um cartão não impede os outros: ele vem no resultado daquele cartão.
+         */
+        post: operations["CardSyncController_syncAll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-sync/cron": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rotina diária da Vercel: sincroniza todos os cartões
+         * @description Sem login: exige o header Authorization: Bearer <CRON_SECRET> (401 CRON_UNAUTHORIZED).
+         */
+        get: operations["CardSyncController_cron"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/incomes": {
@@ -750,9 +854,14 @@ export interface components {
             cardId: string;
             /**
              * Format: uuid
-             * @description Upload que gravou esta linha por último
+             * @description Upload que gravou esta linha por último; null quando veio da sincronização ou de "Adicionar compra"
              */
-            importId: string;
+            importId: string | null;
+            /**
+             * @description UPLOAD (fatura enviada por arquivo), SYNC (Meu Pluggy) ou MANUAL ("Adicionar compra")
+             * @enum {string}
+             */
+            origin: "UPLOAD" | "SYNC" | "MANUAL";
             /**
              * @description Mês da fatura
              * @example 2026-11
@@ -791,6 +900,58 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        CreateCardExpenseDto: {
+            /** Format: uuid */
+            cardId: string;
+            /**
+             * @description Mês da fatura (o do vencimento)
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * Format: date
+             * @description Data da compra
+             * @example 2026-11-06
+             */
+            date: string;
+            /** @example Padaria */
+            description: string;
+            /**
+             * @description Valor da parcela (ou da compra à vista) em reais
+             * @example 1234.56
+             */
+            amount: string;
+            /** @description Parcela que cai neste mês; as seguintes são lançadas nos meses seguintes. Omitido ou null = à vista. */
+            installment?: components["schemas"]["CardInstallmentDto"] | null;
+            nickname?: string | null;
+            /**
+             * Format: uuid
+             * @description Padrão: a categoria padrão ("Outros")
+             */
+            categoryId?: string;
+            /**
+             * Format: uuid
+             * @description null ou omitido = compartilhada
+             */
+            personId?: string | null;
+        };
+        MoveCardExpenseDto: {
+            /**
+             * @description Fatura em que esta linha deve ficar
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description Parcela que esta linha passa a ser; padrão: a atual
+             * @example 1
+             */
+            installmentNumber?: number;
+            /**
+             * @description Total de parcelas; padrão: o atual
+             * @example 5
+             */
+            installmentTotal?: number;
         };
         CardExpenseChangesDto: {
             /** @description null remove o apelido */
@@ -870,6 +1031,170 @@ export interface components {
              */
             phone?: string | null;
             active?: boolean;
+        };
+        /**
+         * @description Banco do cartão: define o tradutor da sincronização e o formato de fatura aceito no upload (NUBANK e C6 em CSV, NEON em PDF)
+         * @enum {string}
+         */
+        CardBank: "NUBANK" | "C6" | "NEON";
+        CreditCardSyncResponse: {
+            /** @description Cartão ligado a um item do Meu Pluggy e com vencimento, melhor dia e mês inicial */
+            configured: boolean;
+            /**
+             * Format: date-time
+             * @description Fim da última sincronização que deu certo
+             */
+            syncedAt: string | null;
+            /**
+             * Format: date-time
+             * @description Última atualização dos dados na Pluggy (atualiza 1 vez por dia)
+             */
+            dataUpdatedAt: string | null;
+            /**
+             * @description Situação do item na Pluggy
+             * @example UPDATED
+             */
+            status: string | null;
+            /** @description Erro da última tentativa; null quando ela deu certo */
+            error: string | null;
+            /**
+             * Format: date-time
+             * @description Fim da autorização do Open Finance (renovar no Meu Pluggy)
+             */
+            consentExpiresAt: string | null;
+        };
+        CreditCardResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description Banco do cartão: define o tradutor da sincronização e o formato de fatura aceito no upload (NUBANK e C6 em CSV, NEON em PDF) */
+            bank: components["schemas"]["CardBank"];
+            active: boolean;
+            /**
+             * @description Dia do vencimento: a fatura recebe o nome do mês em que vence
+             * @example 1
+             */
+            dueDay: number | null;
+            /**
+             * @description Melhor dia de compra padrão: compras a partir dele vão para a fatura seguinte. Ajustável por fatura.
+             * @example 25
+             */
+            bestPurchaseDay: number | null;
+            /**
+             * Format: uuid
+             * @description Id do item (conexão do banco) no Meu Pluggy
+             */
+            pluggyItemId: string | null;
+            /**
+             * @description Primeira fatura (mês do vencimento) controlada pela sincronização; as anteriores ficam como estão
+             * @example 2026-11
+             */
+            syncFromMonth: string | null;
+            sync: components["schemas"]["CreditCardSyncResponse"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateCreditCardDto: {
+            /** @example Nubank Mikaell */
+            name: string;
+            /** @description Banco do cartão: define o tradutor da sincronização e o formato de fatura aceito no upload (NUBANK e C6 em CSV, NEON em PDF) */
+            bank: components["schemas"]["CardBank"];
+            /**
+             * @description Dia do vencimento: a fatura recebe o nome do mês em que vence
+             * @example 1
+             */
+            dueDay?: number;
+            /**
+             * @description Melhor dia de compra padrão: compras a partir dele vão para a fatura seguinte. Ajustável por fatura.
+             * @example 25
+             */
+            bestPurchaseDay?: number;
+            /**
+             * Format: uuid
+             * @description Id do item (conexão do banco) no Meu Pluggy
+             */
+            pluggyItemId?: string;
+            /**
+             * @description Primeira fatura (mês do vencimento) controlada pela sincronização; as anteriores ficam como estão
+             * @example 2026-11
+             */
+            syncFromMonth?: string;
+        };
+        UpdateCreditCardDto: {
+            name?: string;
+            active?: boolean;
+            /**
+             * @description Dia do vencimento: a fatura recebe o nome do mês em que vence
+             * @example 1
+             */
+            dueDay?: number;
+            /**
+             * @description Melhor dia de compra padrão: compras a partir dele vão para a fatura seguinte. Ajustável por fatura.
+             * @example 25
+             */
+            bestPurchaseDay?: number;
+            /**
+             * Format: uuid
+             * @description null desliga a sincronização do cartão
+             */
+            pluggyItemId?: string | null;
+            /**
+             * @description Primeira fatura (mês do vencimento) controlada pela sincronização; as anteriores ficam como estão
+             * @example 2026-11
+             */
+            syncFromMonth?: string | null;
+        };
+        CreditCardBillResponse: {
+            /**
+             * @description Mês da fatura (o do vencimento)
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * Format: date
+             * @description Primeiro dia de compra desta fatura
+             * @example 2026-11-25
+             */
+            startDate: string;
+            /**
+             * Format: date
+             * @description Último dia de compra desta fatura (o fechamento)
+             * @example 2026-11-25
+             */
+            closingDate: string;
+            /**
+             * Format: date
+             * @description Melhor dia de compra: a partir dele, a compra vai para a fatura seguinte
+             * @example 2026-11-25
+             */
+            bestPurchaseDate: string;
+            /**
+             * Format: date
+             * @description Vencimento informado pelo banco ou, antes disso, o dia do vencimento do cartão
+             * @example 2026-11-25
+             */
+            dueDate: string;
+            /**
+             * @description De onde veio o melhor dia: bank (fechamento informado pelo banco), user (ajuste do usuário) ou default (padrão do cartão)
+             * @enum {string}
+             */
+            source: "bank" | "user" | "default";
+            /**
+             * Format: date
+             * @description Ajuste do usuário, mesmo quando o fechamento do banco prevalece
+             * @example 2026-11-25
+             */
+            userBestPurchaseDate: string | null;
+        };
+        UpdateCreditCardBillDto: {
+            /**
+             * Format: date
+             * @description Melhor dia de compra desta fatura (o app do banco mostra). null volta ao padrão do cartão. Depois que a fatura fecha, o fechamento informado pelo banco prevalece.
+             * @example 2026-11-25
+             */
+            bestPurchaseDate: string | null;
         };
         CardImportResponse: {
             /** Format: uuid */
@@ -1057,61 +1382,34 @@ export interface components {
              */
             password?: string;
         };
-        ManualCardTransactionDto: {
-            /**
-             * Format: date
-             * @description Data da compra
-             * @example 2026-10-18
-             */
-            date: string;
-            /** @example AMAZON BR */
-            description: string;
-            /**
-             * @description Valor da parcela deste mês em reais
-             * @example 1234.56
-             */
-            amount: string;
-            /** @description Parcela deste mês; omitido ou null para compra à vista */
-            installment?: components["schemas"]["CardInstallmentDto"] | null;
-            /** @example 0192 */
-            cardLastDigits?: string | null;
+        CardSyncSummaryResponse: {
+            /** @description Linhas criadas (compras novas e parcelas lançadas) */
+            created: number;
+            /** @description Linhas que mudaram (valor, descrição, parcela...) */
+            updated: number;
+            /** @description Linhas que continuaram iguais */
+            unchanged: number;
+            /** @description Linhas removidas (compra que sumiu ou mudou de fatura) */
+            removed: number;
+            /** @description Compras de "Adicionar compra" substituídas pela do banco */
+            replacedManual: number;
+            /** @description Lançamentos ignorados: pagamentos da fatura e estornos */
+            ignored: number;
         };
-        CreateManualCardImportDto: {
+        CardSyncErrorResponse: {
+            /** @example PLUGGY_UNAVAILABLE */
+            code: string;
+            message: string;
+        };
+        CardSyncResultResponse: {
             /** Format: uuid */
             cardId: string;
-            /**
-             * @description Mês da fatura, AAAA-MM
-             * @example 2026-11
-             */
-            month: string;
-            transactions: components["schemas"]["ManualCardTransactionDto"][];
-        };
-        /**
-         * @description Define o formato de fatura aceito: NUBANK e C6 em CSV, NEON em PDF
-         * @enum {string}
-         */
-        CardBank: "NUBANK" | "C6" | "NEON";
-        CreditCardResponse: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            /** @description Define o formato de fatura aceito: NUBANK e C6 em CSV, NEON em PDF */
-            bank: components["schemas"]["CardBank"];
-            active: boolean;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-        };
-        CreateCreditCardDto: {
-            /** @example Nubank Mikaell */
-            name: string;
-            /** @description Define o formato de fatura aceito: NUBANK e C6 em CSV, NEON em PDF */
-            bank: components["schemas"]["CardBank"];
-        };
-        UpdateCreditCardDto: {
-            name?: string;
-            active?: boolean;
+            cardName: string;
+            /** @description null quando deu erro */
+            summary: components["schemas"]["CardSyncSummaryResponse"] | null;
+            /** @description Só em POST /card-sync: o erro deste cartão */
+            error: components["schemas"]["CardSyncErrorResponse"] | null;
+            sync: components["schemas"]["CreditCardSyncResponse"];
         };
         IncomeResponse: {
             /** Format: uuid */
@@ -1948,6 +2246,41 @@ export interface operations {
             };
         };
     };
+    CardExpenseController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCardExpenseDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardExpenseResponse"][];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     CardExpenseController_exclude: {
         parameters: {
             query?: never;
@@ -2033,6 +2366,43 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["CardExpenseResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardExpenseController_move: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveCardExpenseDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardExpenseResponse"][];
                     };
                 };
             };
@@ -2360,208 +2730,6 @@ export interface operations {
             };
         };
     };
-    CardImportController_findAll: {
-        parameters: {
-            query?: {
-                cardId?: string;
-                /** @description Mês no formato AAAA-MM */
-                month?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Sucesso */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["CardImportResponse"][];
-                    };
-                };
-            };
-            /** @description Erro: { error: { code, message, requestId, details? } } */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorResponseDto"];
-                };
-            };
-        };
-    };
-    CardImportController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["CardImportSaveUploadDto"];
-            };
-        };
-        responses: {
-            /** @description Sucesso */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["CardImportResultResponse"];
-                    };
-                };
-            };
-            /** @description Erro: { error: { code, message, requestId, details? } } */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorResponseDto"];
-                };
-            };
-        };
-    };
-    CardImportController_preview: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["CardImportUploadDto"];
-            };
-        };
-        responses: {
-            /** @description Sucesso */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["CardImportPreviewResponse"];
-                    };
-                };
-            };
-            /** @description Erro: { error: { code, message, requestId, details? } } */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorResponseDto"];
-                };
-            };
-        };
-    };
-    CardImportController_createManual: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateManualCardImportDto"];
-            };
-        };
-        responses: {
-            /** @description Sucesso */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["CardImportResultResponse"];
-                    };
-                };
-            };
-            /** @description Erro: { error: { code, message, requestId, details? } } */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorResponseDto"];
-                };
-            };
-        };
-    };
-    CardImportController_findById: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Sucesso */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["CardImportResponse"];
-                    };
-                };
-            };
-            /** @description Erro: { error: { code, message, requestId, details? } } */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorResponseDto"];
-                };
-            };
-        };
-    };
-    CardImportController_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Upload apagado */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Erro: { error: { code, message, requestId, details? } } */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorResponseDto"];
-                };
-            };
-        };
-    };
     CreditCardController_findAll: {
         parameters: {
             query?: never;
@@ -2684,6 +2852,348 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["CreditCardResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CreditCardController_listBills: {
+        parameters: {
+            query?: {
+                /** @description Primeira fatura; padrão: a anterior à aberta */
+                from?: string;
+                /** @description Última fatura; padrão: duas depois da aberta (no máximo 24 faturas) */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CreditCardBillResponse"][];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CreditCardController_updateBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                /** @description Mês da fatura, AAAA-MM */
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCreditCardBillDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CreditCardBillResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardImportController_findAll: {
+        parameters: {
+            query?: {
+                cardId?: string;
+                /** @description Mês no formato AAAA-MM */
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardImportResponse"][];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardImportController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["CardImportSaveUploadDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardImportResultResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardImportController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["CardImportUploadDto"];
+            };
+        };
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardImportPreviewResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardImportController_findById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardImportResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardImportController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload apagado */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardSyncController_syncCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardSyncResultResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardSyncController_syncAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardSyncResultResponse"][];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CardSyncController_cron: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer <CRON_SECRET> */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CardSyncResultResponse"][];
                     };
                 };
             };

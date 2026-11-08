@@ -26,17 +26,17 @@ export default defineConfig({
                     lines: 90,
                 },
                 // Contrato com o back: cada service chama a rota, o método, a query e o corpo certos.
-                'src/app/features/{people,categories,credit-cards,incomes,reserves,manual-expenses,card-expenses,card-imports,summary-dispatch}/data-access/**':
+                'src/app/features/{people,categories,credit-cards,incomes,reserves,manual-expenses,card-expenses,card-imports,card-sync,summary-dispatch}/data-access/**':
                     { statements: 95, branches: 95, functions: 95, lines: 95 },
                 // Formulários: validação (as mesmas regras do back), o que é enviado e os erros do back nos campos.
-                'src/app/features/{people,categories,credit-cards,incomes,manual-expenses,card-expenses}/components/**':
+                'src/app/features/{people,categories,credit-cards,incomes,manual-expenses,card-expenses,card-sync}/components/**':
                     {
                         statements: 90,
                         branches: 85,
                         functions: 70,
                         lines: 90,
                     },
-                // Envio de fatura: arquivo, revisão, fatura manual e histórico.
+                // Envio de fatura (plano B da sincronização): arquivo, revisão e histórico.
                 'src/app/features/card-imports/components/**': {
                     statements: 70,
                     branches: 70,

@@ -8,7 +8,6 @@ import type {
     CardImportOverride,
     CardImportPreview,
     CardImportResult,
-    CreateManualCardImportRequest,
 } from './card-import.models';
 
 export interface UploadStatementRequest {
@@ -52,11 +51,6 @@ export class CardImportService {
         }
 
         return this.api.post<CardImportResult>('card-imports', form);
-    }
-
-    /** Fatura digitada à mão: substitui tudo o que existe no cartão para o mês. */
-    public createManual(body: CreateManualCardImportRequest): Observable<CardImportResult> {
-        return this.api.post<CardImportResult>('card-imports/manual', body);
     }
 
     /** Envios do cartão, do mais recente para o mais antigo. */

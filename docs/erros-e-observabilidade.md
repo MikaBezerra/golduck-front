@@ -29,6 +29,21 @@ requisição.
 - `ConfirmService.danger({ header, message, acceptLabel })`: confirmação antes de ações destrutivas, com o foco
   em "Cancelar". Devolve `true` se o usuário confirmar.
 
+## Erros com tratamento próprio
+
+As mensagens vêm prontas do back (em pt-BR). O front só decide **onde** mostrá-las e, em alguns casos,
+acrescenta o que fazer:
+
+| Código | Onde aparece |
+| --- | --- |
+| `CARD_SYNC_NOT_CONFIGURED`, `CARD_SYNC_NO_CREDIT_ACCOUNT`, `CARD_SYNC_ITEM_NOT_FOUND`, `PLUGGY_DISABLED`, `PLUGGY_UNAVAILABLE` | painel do resultado da sincronização (Faturas), com uma dica (`cardSyncErrorHint` em `features/card-sync/data-access/card-sync.models.ts`) |
+| `PLUGGY_AUTH_FAILED` e os demais erros da sincronização | mesmo painel, só com a mensagem do back e o código de suporte |
+| `CREDIT_CARD_BILL_DATE_OUT_OF_RANGE` | embaixo da data no ajuste do melhor dia da fatura (o front já confere o intervalo antes de enviar) |
+| `CREDIT_CARD_BILLING_NOT_CONFIGURED` | aviso; a tela de Faturas nem busca o período sem vencimento e melhor dia |
+| `CARD_EXPENSE_INSTALLMENT_INVALID` | embaixo da parcela em "Adicionar compra" e "Mudar de fatura" |
+| `CARD_EXPENSE_MOVE_NOT_ALLOWED` | evitado: compras de upload já chegam com "Mudar de fatura" desligado e a explicação; se vier, vira aviso |
+| `CARD_EXPENSE_INACTIVE_CATEGORY` / `_PERSON` | embaixo do campo de categoria ou pessoa |
+
 ## Limite de tentativas (429)
 
 A mensagem diz quanto esperar, a partir do header `Retry-After` (exposto pelo back no CORS).

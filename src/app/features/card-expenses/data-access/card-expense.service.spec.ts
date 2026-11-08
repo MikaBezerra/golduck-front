@@ -81,4 +81,32 @@ describe('CardExpenseService (contrato com /api/card-expenses)', () => {
         respondData(restoreRequest, [aCardExpense()]);
         await expect(restored).resolves.toHaveLength(1);
     });
+
+    it('"Adicionar compra" com POST /card-expenses devolve as linhas criadas', async () => {
+        const body = {
+            cardId: 'card-1',
+            month: '2026-11',
+            date: '2026-10-20',
+            description: 'Padaria',
+            amount: '30.00',
+            installment: { number: 1, total: 3 },
+        };
+        const result = firstValueFrom(service.create(body));
+        const request = expectApiCall(http, 'POST', 'card-expenses');
+
+        expect(request.request.body).toEqual(body);
+        respondData(request, [aCardExpense({ origin: 'MANUAL' }), aCardExpense({ origin: 'MANUAL' })]);
+
+        await expect(result).resolves.toHaveLength(2);
+    });
+
+    it('muda de fatura com POST /card-expenses/{id}/move', async () => {
+        const result = firstValueFrom(service.move('ce-9', { month: '2026-12', installmentNumber: 1 }));
+        const request = expectApiCall(http, 'POST', 'card-expenses/ce-9/move');
+
+        expect(request.request.body).toEqual({ month: '2026-12', installmentNumber: 1 });
+        respondData(request, [aCardExpense({ month: '2026-12', origin: 'SYNC' })]);
+
+        await expect(result).resolves.toMatchObject([{ month: '2026-12' }]);
+    });
 });

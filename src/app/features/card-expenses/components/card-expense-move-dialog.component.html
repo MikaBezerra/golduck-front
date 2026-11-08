@@ -1,0 +1,81 @@
+<p-dialog
+    header="Mudar de fatura"
+    [visible]="visible()"
+    (visibleChange)="visible.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: '30rem' }"
+    [breakpoints]="{ '640px': '95vw' }"
+>
+    @if (expense(); as current) {
+        <p class="mt-0 mb-4">
+            <span class="block text-sm text-muted-color">Compra</span>
+            <span class="font-medium">{{ current.description }}</span>
+            @if (current.installment; as installment) {
+                <span class="text-muted-color"> · parcela {{ installment.number }}/{{ installment.total }}</span>
+            }
+        </p>
+
+        @if (!allowed()) {
+            <p-message severity="warn" styleClass="mb-4">
+                Esta compra veio de uma fatura enviada por arquivo e não muda de fatura: envie a fatura do mês certo.
+            </p-message>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4" novalidate>
+            <div class="flex flex-col gap-2">
+                <label for="move-card-expense-month" class="font-medium">Fatura em que esta linha deve ficar</label>
+                <p-datepicker
+                    inputId="move-card-expense-month"
+                    formControlName="month"
+                    view="month"
+                    dateFormat="MM 'de' yy"
+                    [readonlyInput]="true"
+                    appendTo="body"
+                    [fluid]="true"
+                />
+                <app-field-error [control]="form.controls.month" />
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <span class="font-medium"> Parcela <span class="font-normal text-muted-color">(opcional)</span> </span>
+                <div class="flex items-center gap-1">
+                    <p-inputnumber
+                        formControlName="installmentNumber"
+                        [min]="1"
+                        [max]="maxInstallments"
+                        [useGrouping]="false"
+                        placeholder="nº"
+                        ariaLabel="Número da parcela nesta fatura"
+                        inputStyleClass="w-full text-center"
+                    />
+                    <span aria-hidden="true">/</span>
+                    <p-inputnumber
+                        formControlName="installmentTotal"
+                        [min]="1"
+                        [max]="maxInstallments"
+                        [useGrouping]="false"
+                        placeholder="total"
+                        ariaLabel="Total de parcelas"
+                        inputStyleClass="w-full text-center"
+                    />
+                </div>
+                <small class="text-muted-color">Deixe como está para manter a parcela atual.</small>
+                @if (form.errors?.['installment'] && (form.touched || form.dirty)) {
+                    <small class="text-sm text-red-400" role="alert">{{ form.errors?.['installment'] }}</small>
+                }
+                <app-field-error [control]="form.controls.installmentNumber" />
+            </div>
+
+            <p-message severity="info">
+                A compra inteira muda: as outras parcelas seguem a partir desta, uma por fatura, e saem das faturas
+                antigas. A correção vale também para as próximas sincronizações.
+            </p-message>
+
+            <div class="flex justify-end gap-2">
+                <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
+                <p-button type="submit" label="Mudar" icon="pi pi-check" [loading]="saving()" [disabled]="!allowed()" />
+            </div>
+        </form>
+    }
+</p-dialog>

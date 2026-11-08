@@ -55,6 +55,10 @@ export class ApiService {
         return this.unwrap(this.http.patch<ApiSuccessResponse<T>>(this.url(path), body));
     }
 
+    public put<T>(path: string, body: unknown): Observable<T> {
+        return this.unwrap(this.http.put<ApiSuccessResponse<T>>(this.url(path), body));
+    }
+
     public delete<T = void>(path: string, body?: unknown): Observable<T> {
         return this.unwrap(this.http.delete<ApiSuccessResponse<T>>(this.url(path), { body }));
     }

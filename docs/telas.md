@@ -10,7 +10,7 @@ rodapé ([visual-e-layout.md](visual-e-layout.md)). As telas mensais usam o **m�
 | `/` | Visão geral (abre pelo logo) | `features/summary` |
 | `/resumo` | Resumo do mês em tabela | `features/summary` |
 | `/despesas` | Despesas fora do cartão | `features/manual-expenses` |
-| `/faturas` | Despesas do cartão e envio de fatura | `features/card-expenses` + `features/card-imports` |
+| `/faturas` | Despesas do cartão: sincronização, adicionar compra, mudar de fatura e envio de fatura | `features/card-expenses` + `features/card-sync` + `features/card-imports` |
 | `/entradas` | Entradas e reservas do ano | `features/incomes` + `features/reserves` |
 | `/cartoes` | Cartões | `features/credit-cards` |
 | `/categorias` | Categorias | `features/categories` |
@@ -79,10 +79,31 @@ Cada pessoa ativa recebe por e-mail o próprio resumo do mês (regras e configur
 
 ## Faturas (`/faturas`)
 
-Despesas do cartão escolhido no mês selecionado. As despesas entram só pelo envio da fatura; aqui elas
-ganham apelido, categoria e pessoa.
+Despesas do cartão escolhido no mês selecionado. A fatura leva o nome do **mês em que vence**. As compras
+chegam pela **sincronização com o Meu Pluggy** (botão "Atualizar"), por **"Adicionar compra"** ou, como plano
+B, pelo **envio do arquivo da fatura** (menu ⋮). Cada linha tem a origem (`origin`: `SYNC`, `UPLOAD` ou
+`MANUAL`; as adicionadas à mão aparecem com a etiqueta "À mão").
 
-- **Enviar fatura** (diálogo em 3 etapas):
+- **Período da fatura**: com o vencimento e o melhor dia do cartão preenchidos, um bloco mostra as compras
+  que entram na fatura do mês (início e fechamento), o melhor dia de compra e o vencimento
+  (`GET /credit-cards/{id}/bills?from=M&to=M`), com a origem do melhor dia: padrão do cartão, ajustado pelo
+  usuário ou **informado pelo banco** (depois que a fatura fecha; aí ele vale sobre qualquer ajuste e o botão
+  de ajuste some). "Ajustar melhor dia" abre um diálogo com a data (do início do mês anterior ao fim do mês
+  da fatura) e "Voltar ao padrão" (`PUT /credit-cards/{id}/bills/{month}`, `null` volta ao padrão); depois
+  do ajuste, o cartão é sincronizado para as compras irem para a fatura certa.
+- **Situação da sincronização**: dados do banco de quando, última sincronização, situação do item no Meu
+  Pluggy, erro da última tentativa e aviso quando a autorização do Open Finance vence em até 30 dias (ou já
+  venceu). Cartão sem item do Meu Pluggy mostra como ligar.
+- **Atualizar** (só em cartão com a sincronização configurada): `POST /credit-cards/{id}/sync`. **Atualizar
+  todos os cartões** fica no menu ⋮ (`POST /card-sync`). Um painel mostra o resumo de cada cartão (linhas
+  criadas, alteradas, removidas, compras à mão substituídas pelas do banco, lançamentos ignorados) ou o erro,
+  com uma dica do que fazer (configurar o cartão, usar o envio de fatura...). O painel fecha no "x".
+- **Adicionar compra**: fatura (sugere a da tela), data, descrição, valor, parcela opcional (`n/total`: as
+  parcelas seguintes são lançadas sozinhas), apelido, categoria (padrão "Outros") e pessoa
+  (`POST /card-expenses`). Se a compra entrou em outra fatura, a tela vai até ela. Nem a sincronização nem o
+  upload a apagam; quando o banco trouxer a mesma compra, a do banco a substitui e herda apelido, categoria e
+  pessoa.
+- **Enviar fatura** (plano B, no menu ⋮; diálogo em 3 etapas):
   1. *Arquivo*: mês da fatura e arquivo do banco (`.csv` para Nubank e C6, `.pdf` com senha para Neon; até
      2 MB). Extensão, arquivo vazio e tamanho são conferidos antes de enviar.
   2. *Revisão*: o back lê o arquivo sem gravar nada (`POST /card-imports/preview`) e devolve cada compra com
@@ -92,15 +113,19 @@ ganham apelido, categoria e pessoa.
      usuário mudou algo e as decisões de exclusão que mudam algo. Ao final, um resumo do que aconteceu.
   - Senha errada aparece no campo da senha; arquivo recusado volta para a primeira etapa; se a fatura mudou
     desde a pré-visualização, pede uma nova.
-- **Fatura manual**: digitar os lançamentos (data, descrição, valor, parcela e final do cartão). Começa com o
-  que o cartão já tem no mês; substitui tudo do mês. Sem nenhuma linha, pede confirmação antes de apagar tudo.
-- **Histórico de envios**: lista os envios do cartão; excluir um envio apaga as despesas gravadas por ele e
+- **Envios de fatura** (menu ⋮): lista os envios do cartão; excluir um envio apaga as despesas gravadas por ele e
   **não** restaura a situação anterior.
 - **Editar** uma ou várias despesas: apelido, categoria e pessoa. Em compras parceladas, a mudança vale também
   para as próximas parcelas (o aviso diz quantas foram atualizadas).
+- **Mudar de fatura** (no diálogo de edição de uma despesa): fatura e, opcionalmente, parcela e total
+  (`POST /card-expenses/{id}/move`; só vai o que mudou). A compra inteira muda: as outras parcelas seguem a
+  partir desta, e a correção vale para as próximas sincronizações. Compras de upload não mudam (o botão fica
+  desligado com a explicação; o back responderia `409 CARD_EXPENSE_MOVE_NOT_ALLOWED`).
 - **Excluir / restaurar**: exclusão suave, com escopo (`month`, `forward`, `backward` ou `all`); despesas
   excluídas saem dos totais e os próximos envios as mantêm excluídas.
-- Back: `/card-expenses` e `/card-imports` ([api-e-tipos.md](api-e-tipos.md)).
+- Back: `/card-expenses`, `/card-imports`, `/credit-cards/{id}/bills`, `/credit-cards/{id}/sync` e `/card-sync`
+  ([api-e-tipos.md](api-e-tipos.md)). Como a sincronização funciona está no back, em
+  `docs/sincronizacao-de-cartoes.md`.
 
 ## Entradas (`/entradas`)
 
@@ -117,7 +142,13 @@ Telas de cadastro com o mesmo jeito de funcionar:
 
 - lista em ordem alfabética, com "Mostrar inativas" (categorias e pessoas) para reativar;
 - cadastrar e editar num diálogo; desativar pede confirmação (o que já foi lançado continua ligado ao item);
-- **Cartões**: nome e banco; o banco não muda depois de cadastrado (define o formato da fatura);
+- **Cartões**: nome e banco (não muda depois de cadastrado: define o tradutor da sincronização e o formato do
+  arquivo da fatura), **ciclo da fatura** (dia do vencimento e melhor dia de compra, de 1 a 31; depois de
+  informados não podem ser apagados, só trocados) e **sincronização** (id do item no Meu Pluggy e primeira
+  fatura sincronizada; apagar o item envia `null` e desliga a sincronização). Com o item preenchido, o
+  formulário exige também vencimento, melhor dia e primeira fatura. Na edição, mostra a situação da
+  sincronização (como na tela de Faturas). A lista tem a coluna "Sincronização" (desligada, Meu Pluggy,
+  configuração incompleta ou "Precisa de atenção" com erro, item com problema ou autorização perto do fim);
 - **Categorias**: só o nome; nome repetido aparece embaixo do campo; a categoria padrão ("Outros") é usada
   quando nenhuma é escolhida;
 - **Pessoas**: nome, e-mail e celular (opcionais; apagar o campo apaga o valor no back).

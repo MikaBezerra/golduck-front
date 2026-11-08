@@ -1,4 +1,4 @@
-<app-page-header title="Cartões" subtitle="Cartões de crédito usados nas despesas.">
+<app-page-header title="Cartões" subtitle="Cartões de crédito, ciclo da fatura e sincronização com o Meu Pluggy.">
     <p-button label="Novo cartão" icon="pi pi-plus" (onClick)="openCreate()" />
 </app-page-header>
 
@@ -8,6 +8,7 @@
             <tr>
                 <th>Nome</th>
                 <th>Banco</th>
+                <th class="hidden sm:table-cell">Sincronização</th>
                 <th class="text-right sm:w-32"><span class="sr-only sm:not-sr-only">Ações</span></th>
             </tr>
         </ng-template>
@@ -19,6 +20,17 @@
                 </td>
                 <td>
                     <p-tag [value]="card.bank | cardBank" severity="secondary" />
+                </td>
+                <td class="hidden sm:table-cell">
+                    @if (!card.pluggyItemId) {
+                        <span class="text-muted-color">Desligada</span>
+                    } @else if (card.sync.error || needsAttention(card)) {
+                        <p-tag value="Precisa de atenção" severity="warn" icon="pi pi-exclamation-triangle" />
+                    } @else if (card.sync.configured) {
+                        <p-tag value="Meu Pluggy" severity="info" />
+                    } @else {
+                        <span class="text-muted-color">Configuração incompleta</span>
+                    }
                 </td>
                 <td class="text-right whitespace-nowrap">
                     <p-button
@@ -47,7 +59,7 @@
 
         <ng-template #emptymessage>
             <tr>
-                <td colspan="3" class="py-8 text-center text-muted-color">Nenhum cartão cadastrado.</td>
+                <td colspan="4" class="py-8 text-center text-muted-color">Nenhum cartão cadastrado.</td>
             </tr>
         </ng-template>
     </p-table>

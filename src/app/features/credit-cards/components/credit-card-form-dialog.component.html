@@ -4,7 +4,7 @@
     (visibleChange)="visible.set($event)"
     [modal]="true"
     [draggable]="false"
-    [style]="{ width: '28rem' }"
+    [style]="{ width: '34rem' }"
     [breakpoints]="{ '640px': '95vw' }"
 >
     <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4" novalidate>
@@ -42,6 +42,91 @@
                 <app-field-error [control]="form.controls.bank" [messages]="{ required: 'Escolha o banco' }" />
             }
         </div>
+
+        <fieldset class="m-0 flex flex-col gap-3 rounded-lg border border-line p-3">
+            <legend class="px-1 font-medium">Ciclo da fatura</legend>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-2">
+                    <label for="card-due-day" class="text-sm font-medium">Dia do vencimento</label>
+                    <p-inputnumber
+                        inputId="card-due-day"
+                        formControlName="dueDay"
+                        [min]="dayMin"
+                        [max]="dayMax"
+                        [useGrouping]="false"
+                        placeholder="Ex.: 1"
+                        [fluid]="true"
+                    />
+                    <app-field-error [control]="form.controls.dueDay" />
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label for="card-best-day" class="text-sm font-medium">Melhor dia de compra</label>
+                    <p-inputnumber
+                        inputId="card-best-day"
+                        formControlName="bestPurchaseDay"
+                        [min]="dayMin"
+                        [max]="dayMax"
+                        [useGrouping]="false"
+                        placeholder="Ex.: 25"
+                        [fluid]="true"
+                    />
+                    <app-field-error [control]="form.controls.bestPurchaseDay" />
+                </div>
+            </div>
+            <small class="text-muted-color">
+                A fatura leva o nome do mês em que vence. Compras a partir do melhor dia vão para a fatura seguinte; o
+                melhor dia de cada fatura pode ser ajustado na tela de Faturas.
+            </small>
+        </fieldset>
+
+        <fieldset class="m-0 flex flex-col gap-3 rounded-lg border border-line p-3">
+            <legend class="px-1 font-medium">Sincronização (Meu Pluggy)</legend>
+            <div class="flex flex-col gap-2">
+                <label for="card-pluggy-item" class="text-sm font-medium">
+                    Id do item <span class="font-normal text-muted-color">(opcional)</span>
+                </label>
+                <input
+                    pInputText
+                    id="card-pluggy-item"
+                    formControlName="pluggyItemId"
+                    placeholder="00000000-0000-4000-8000-000000000000"
+                    autocomplete="off"
+                    spellcheck="false"
+                    [fluid]="true"
+                    aria-describedby="card-pluggy-item-help"
+                />
+                <small id="card-pluggy-item-help" class="text-muted-color">
+                    A conexão do banco no Meu Pluggy. Deixe vazio para desligar a sincronização deste cartão.
+                </small>
+                <app-field-error
+                    [control]="form.controls.pluggyItemId"
+                    [messages]="{ pattern: 'Cole o id do item como aparece no Meu Pluggy' }"
+                />
+            </div>
+            <div class="flex flex-col gap-2">
+                <label for="card-sync-from" class="text-sm font-medium">Primeira fatura sincronizada</label>
+                <p-datepicker
+                    inputId="card-sync-from"
+                    formControlName="syncFromMonth"
+                    view="month"
+                    dateFormat="MM 'de' yy"
+                    [readonlyInput]="true"
+                    [showClear]="true"
+                    appendTo="body"
+                    [fluid]="true"
+                />
+                <small id="card-sync-from-help" class="text-muted-color">
+                    Mês do vencimento. As faturas anteriores ficam como estão.
+                </small>
+            </div>
+            @if (form.errors?.['syncSettings'] && (form.touched || form.dirty)) {
+                <small class="text-sm text-red-400" role="alert">{{ form.errors?.['syncSettings'] }}</small>
+            }
+
+            @if (card(); as current) {
+                <app-credit-card-sync-status [sync]="current.sync" />
+            }
+        </fieldset>
 
         <!-- Botões dentro do <form>: assim "Salvar" e a tecla Enter enviam o formulário. -->
         <div class="flex justify-end gap-2">

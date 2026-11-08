@@ -1,0 +1,156 @@
+<p-dialog
+    [header]="'Adicionar compra · ' + card().name"
+    [visible]="visible()"
+    (visibleChange)="visible.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: '36rem' }"
+    [breakpoints]="{ '640px': '95vw' }"
+>
+    <p class="mt-0 mb-4 text-muted-color">
+        Para uma compra que não veio do banco. Se depois o banco trouxer a mesma compra, ela substitui esta e mantém
+        apelido, categoria e pessoa.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-4" novalidate>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col gap-2">
+                <label for="new-card-expense-month" class="font-medium">Fatura</label>
+                <p-datepicker
+                    inputId="new-card-expense-month"
+                    formControlName="month"
+                    view="month"
+                    dateFormat="MM 'de' yy"
+                    [readonlyInput]="true"
+                    appendTo="body"
+                    [fluid]="true"
+                />
+                <app-field-error [control]="form.controls.month" />
+            </div>
+            <div class="flex flex-col gap-2">
+                <label for="new-card-expense-date" class="font-medium">Data da compra</label>
+                <input pInputText type="date" id="new-card-expense-date" formControlName="date" [fluid]="true" />
+                <app-field-error [control]="form.controls.date" />
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label for="new-card-expense-description" class="font-medium">Descrição</label>
+            <input
+                pInputText
+                id="new-card-expense-description"
+                formControlName="description"
+                [maxlength]="descriptionMaxLength"
+                placeholder="Como aparece na fatura"
+                autocomplete="off"
+                [fluid]="true"
+            />
+            <app-field-error [control]="form.controls.description" />
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col gap-2">
+                <label for="new-card-expense-amount" class="font-medium">Valor</label>
+                <p-inputnumber
+                    inputId="new-card-expense-amount"
+                    formControlName="amount"
+                    mode="currency"
+                    currency="BRL"
+                    locale="pt-BR"
+                    [min]="0"
+                    [max]="moneyMax"
+                    [fluid]="true"
+                    ariaDescribedBy="new-card-expense-amount-help"
+                />
+                <small id="new-card-expense-amount-help" class="text-muted-color">Parcelada: o valor da parcela.</small>
+                <app-field-error [control]="form.controls.amount" [messages]="moneyMessages" />
+            </div>
+            <div class="flex flex-col gap-2">
+                <span class="font-medium" id="new-card-expense-installment">
+                    Parcela <span class="font-normal text-muted-color">(opcional)</span>
+                </span>
+                <div class="flex items-center gap-1">
+                    <p-inputnumber
+                        formControlName="installmentNumber"
+                        [min]="1"
+                        [max]="maxInstallments"
+                        [useGrouping]="false"
+                        placeholder="nº"
+                        ariaLabel="Número da parcela"
+                        inputStyleClass="w-full text-center"
+                    />
+                    <span aria-hidden="true">/</span>
+                    <p-inputnumber
+                        formControlName="installmentTotal"
+                        [min]="1"
+                        [max]="maxInstallments"
+                        [useGrouping]="false"
+                        placeholder="total"
+                        ariaLabel="Total de parcelas"
+                        inputStyleClass="w-full text-center"
+                    />
+                </div>
+                <small class="text-muted-color">A parcela desta fatura; as seguintes são lançadas sozinhas.</small>
+                @if (form.errors?.['installment'] && (form.touched || form.dirty)) {
+                    <small class="text-sm text-red-400" role="alert">{{ form.errors?.['installment'] }}</small>
+                }
+                <app-field-error [control]="form.controls.installmentNumber" />
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label for="new-card-expense-nickname" class="font-medium">
+                Apelido <span class="font-normal text-muted-color">(opcional)</span>
+            </label>
+            <input
+                pInputText
+                id="new-card-expense-nickname"
+                formControlName="nickname"
+                [maxlength]="nicknameMaxLength"
+                autocomplete="off"
+                [fluid]="true"
+            />
+            <app-field-error [control]="form.controls.nickname" />
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col gap-2">
+                <label for="new-card-expense-category" class="font-medium">Categoria</label>
+                <p-select
+                    inputId="new-card-expense-category"
+                    formControlName="categoryId"
+                    [options]="categoryOptions()"
+                    optionLabel="label"
+                    optionValue="value"
+                    [placeholder]="defaultCategoryName() + ' (padrão)'"
+                    [showClear]="true"
+                    [filter]="categoryOptions().length > 8"
+                    appendTo="body"
+                    [fluid]="true"
+                />
+                <app-field-error [control]="form.controls.categoryId" />
+            </div>
+            <div class="flex flex-col gap-2">
+                <label for="new-card-expense-person" class="font-medium">Pessoa</label>
+                <p-select
+                    inputId="new-card-expense-person"
+                    formControlName="personId"
+                    [options]="personOptions()"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Compartilhada"
+                    [showClear]="true"
+                    [filter]="personOptions().length > 8"
+                    appendTo="body"
+                    [fluid]="true"
+                />
+                <app-field-error [control]="form.controls.personId" />
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="visible.set(false)" />
+            <p-button type="submit" label="Adicionar" icon="pi pi-check" [loading]="saving()" />
+        </div>
+    </form>
+</p-dialog>

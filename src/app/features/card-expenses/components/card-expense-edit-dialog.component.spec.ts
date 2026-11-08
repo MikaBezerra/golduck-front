@@ -17,7 +17,9 @@ interface Internals {
     readonly nothingToChange: Signal<boolean>;
     readonly personOptions: Signal<{ label: string; value: string }[]>;
     readonly categoryOptions: Signal<{ label: string; value: string }[]>;
+    readonly canMove: Signal<boolean>;
     save(): void;
+    requestMove(): void;
 }
 
 const NO_PERSON = '__no_person__';
@@ -139,6 +141,35 @@ describe('CardExpenseEditDialogComponent', () => {
             expect(cardExpenses.updateMany).not.toHaveBeenCalled();
             expect(dialog.nothingToChange()).toBe(true);
             expect(fixture.componentInstance.visible()).toBe(true);
+        });
+    });
+
+    describe('mudar de fatura', () => {
+        it('com uma despesa sincronizada, fecha e pede o diálogo de mudança', () => {
+            const expense = aCardExpense({ id: 'ce-7', origin: 'SYNC' });
+            const { fixture, dialog } = open([expense]);
+            const requested = vi.fn();
+            fixture.componentInstance.moveRequested.subscribe(requested);
+
+            expect(dialog.canMove()).toBe(true);
+            dialog.requestMove();
+
+            expect(requested).toHaveBeenCalledWith(expense);
+            expect(fixture.componentInstance.visible()).toBe(false);
+        });
+
+        it('compra de upload ou várias despesas não oferecem a mudança', () => {
+            const upload = open([aCardExpense({ origin: 'UPLOAD' })]);
+            const requested = vi.fn();
+            upload.fixture.componentInstance.moveRequested.subscribe(requested);
+
+            expect(upload.dialog.canMove()).toBe(false);
+            upload.dialog.requestMove();
+            expect(requested).not.toHaveBeenCalled();
+            expect(upload.fixture.componentInstance.visible()).toBe(true);
+
+            const many = open([aCardExpense({ id: 'a', origin: 'SYNC' }), aCardExpense({ id: 'b', origin: 'SYNC' })]);
+            expect(many.dialog.canMove()).toBe(false);
         });
     });
 });

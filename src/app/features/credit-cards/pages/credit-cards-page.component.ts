@@ -9,7 +9,7 @@ import { NotificationService } from '../../../core/notification/notification.ser
 import { PageHeaderComponent } from '../../../shared/ui/page-header.component';
 import { CardBankPipe } from '../components/card-bank.pipe';
 import { CreditCardFormDialogComponent } from '../components/credit-card-form-dialog.component';
-import type { CreditCard } from '../data-access/credit-card.models';
+import { consentWarning, type CreditCard, isPluggyProblem } from '../data-access/credit-card.models';
 import { CreditCardService } from '../data-access/credit-card.service';
 
 @Component({
@@ -45,6 +45,11 @@ export class CreditCardsPageComponent implements OnInit {
                 this.notifications.error(error);
             },
         });
+    }
+
+    /** Item com problema no Meu Pluggy ou autorização perto do fim. */
+    protected needsAttention(card: CreditCard): boolean {
+        return isPluggyProblem(card.sync.status) || consentWarning(card.sync) !== null;
     }
 
     protected openCreate(): void {

@@ -1,6 +1,10 @@
 import type { CardExpense } from '../app/features/card-expenses/data-access/card-expense.models';
 import type { Category } from '../app/features/categories/data-access/category.models';
-import type { CreditCard } from '../app/features/credit-cards/data-access/credit-card.models';
+import type {
+    CreditCard,
+    CreditCardBill,
+    CreditCardSync,
+} from '../app/features/credit-cards/data-access/credit-card.models';
 import type { Income } from '../app/features/incomes/data-access/income.models';
 import type { ManualExpense } from '../app/features/manual-expenses/data-access/manual-expense.models';
 import type { Person } from '../app/features/people/data-access/person.models';
@@ -44,8 +48,50 @@ export function aCreditCard(overrides: Partial<CreditCard> = {}): CreditCard {
         name: 'Nubank roxinho',
         bank: 'NUBANK',
         active: true,
+        dueDay: null,
+        bestPurchaseDay: null,
+        pluggyItemId: null,
+        syncFromMonth: null,
+        sync: aCardSync(),
         createdAt: TIMESTAMP,
         updatedAt: TIMESTAMP,
+        ...overrides,
+    };
+}
+
+export function aCardSync(overrides: Partial<CreditCardSync> = {}): CreditCardSync {
+    return {
+        configured: false,
+        syncedAt: null,
+        dataUpdatedAt: null,
+        status: null,
+        error: null,
+        consentExpiresAt: null,
+        ...overrides,
+    };
+}
+
+/** Cartão com o ciclo da fatura e a sincronização configurados. */
+export function aSyncedCreditCard(overrides: Partial<CreditCard> = {}): CreditCard {
+    return aCreditCard({
+        dueDay: 1,
+        bestPurchaseDay: 25,
+        pluggyItemId: '11111111-2222-4333-8444-555555555555',
+        syncFromMonth: '2026-11',
+        sync: aCardSync({ configured: true, status: 'UPDATED', dataUpdatedAt: TIMESTAMP, syncedAt: TIMESTAMP }),
+        ...overrides,
+    });
+}
+
+export function aCardBill(overrides: Partial<CreditCardBill> = {}): CreditCardBill {
+    return {
+        month: '2026-11',
+        startDate: '2026-09-25',
+        closingDate: '2026-10-24',
+        bestPurchaseDate: '2026-10-25',
+        dueDate: '2026-11-01',
+        source: 'default',
+        userBestPurchaseDate: null,
         ...overrides,
     };
 }
@@ -91,6 +137,7 @@ export function aCardExpense(overrides: Partial<CardExpense> = {}): CardExpense 
         id: 'card-expense-1',
         cardId: 'card-1',
         importId: 'import-1',
+        origin: 'UPLOAD',
         month: '2026-11',
         transactionDate: '2026-10-15',
         description: 'Mercado',

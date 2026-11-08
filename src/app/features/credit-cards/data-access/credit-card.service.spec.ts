@@ -2,7 +2,7 @@ import type { HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 
-import { aCreditCard } from '../../../../testing/fixtures';
+import { aCardBill, aCreditCard } from '../../../../testing/fixtures';
 import { expectApiCall, queryOf, respondData, setupHttpTesting } from '../../../../testing/http-testing';
 import { CreditCardService } from './credit-card.service';
 
@@ -46,5 +46,32 @@ describe('CreditCardService (contrato com /api/credit-cards)', () => {
         expect(updateRequest.request.body).toEqual({ active: false });
         respondData(updateRequest, aCreditCard({ active: false }));
         await expect(updated).resolves.toMatchObject({ active: false });
+    });
+
+    it('busca o ciclo de uma fatura com from=to=mês e devolve a fatura do mês', async () => {
+        const result = firstValueFrom(service.findBill('card-1', '2026-11'));
+        const request = expectApiCall(http, 'GET', 'credit-cards/card-1/bills');
+
+        expect(queryOf(request)).toEqual({ from: '2026-11', to: '2026-11' });
+        respondData(request, [aCardBill({ month: '2026-11', source: 'bank' })]);
+
+        await expect(result).resolves.toMatchObject({ month: '2026-11', source: 'bank' });
+    });
+
+    it('sem a fatura do mês na resposta, devolve null', async () => {
+        const result = firstValueFrom(service.findBill('card-1', '2026-11'));
+        respondData(expectApiCall(http, 'GET', 'credit-cards/card-1/bills'), []);
+
+        await expect(result).resolves.toBeNull();
+    });
+
+    it('ajusta o melhor dia da fatura com PUT (null volta ao padrão)', async () => {
+        const result = firstValueFrom(service.updateBill('card-1', '2026-11', { bestPurchaseDate: null }));
+        const request = expectApiCall(http, 'PUT', 'credit-cards/card-1/bills/2026-11');
+
+        expect(request.request.body).toEqual({ bestPurchaseDate: null });
+        respondData(request, aCardBill());
+
+        await expect(result).resolves.toMatchObject({ month: '2026-11' });
     });
 });

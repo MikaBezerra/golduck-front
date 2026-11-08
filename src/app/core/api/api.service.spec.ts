@@ -50,6 +50,17 @@ describe('ApiService', () => {
         await expect(result).resolves.toBeUndefined();
     });
 
+    it('envia PUT com o corpo', async () => {
+        const result = firstValueFrom(api.put<string>('credit-cards/c-1/bills/2026-11', { bestPurchaseDate: null }));
+
+        const request = http.expectOne('/api/credit-cards/c-1/bills/2026-11');
+        expect(request.request.method).toBe('PUT');
+        expect(request.request.body).toEqual({ bestPurchaseDate: null });
+        request.flush({ data: 'ok' });
+
+        await expect(result).resolves.toBe('ok');
+    });
+
     it('envia os headers extras da chamada (ex.: Idempotency-Key)', async () => {
         const result = firstValueFrom(
             api.post('summary/dispatches', { month: '2026-11' }, { headers: { 'Idempotency-Key': 'k-1' } }),

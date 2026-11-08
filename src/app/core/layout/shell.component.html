@@ -1,20 +1,41 @@
 <div class="flex min-h-dvh">
-    <!-- Menu lateral fixo (telas grandes): um cartão de vidro flutuando sobre o fundo. -->
-    <aside class="sticky top-0 hidden h-dvh w-72 shrink-0 p-4 pr-0 lg:block">
-        <div class="surface-card flex h-full flex-col p-3">
-            <app-brand-logo class="px-2 pt-2 pb-6" />
-            <app-sidebar-nav class="flex-1 overflow-y-auto" idPrefix="side-" />
+    <!-- Menu lateral fixo (telas grandes): um cartão de vidro flutuando sobre o fundo. Recolhido, mostra só os ícones. -->
+    <aside id="app-sidebar" aria-label="Menu lateral" [class]="sidebarClass()">
+        <div class="surface-card flex h-full flex-col overflow-hidden p-3">
+            <app-brand-logo
+                [class]="collapsed() ? 'flex justify-center pt-2 pb-6' : 'px-2 pt-2 pb-6'"
+                [iconOnly]="collapsed()"
+            />
+            <app-sidebar-nav
+                class="flex-1 overflow-x-hidden overflow-y-auto"
+                idPrefix="side-"
+                [collapsed]="collapsed()"
+            />
             <div class="mt-3 border-t border-line pt-3">
-                <app-user-badge />
-                <p-button
-                    label="Sair"
-                    icon="pi pi-sign-out"
-                    [text]="true"
-                    severity="secondary"
-                    [fluid]="true"
-                    styleClass="justify-start"
-                    (onClick)="logout()"
-                />
+                <app-user-badge [compact]="collapsed()" />
+                @if (collapsed()) {
+                    <p-button
+                        icon="pi pi-sign-out"
+                        ariaLabel="Sair"
+                        pTooltip="Sair"
+                        tooltipPosition="right"
+                        tooltipEvent="both"
+                        [text]="true"
+                        severity="secondary"
+                        [fluid]="true"
+                        (onClick)="logout()"
+                    />
+                } @else {
+                    <p-button
+                        label="Sair"
+                        icon="pi pi-sign-out"
+                        [text]="true"
+                        severity="secondary"
+                        [fluid]="true"
+                        styleClass="justify-start"
+                        (onClick)="logout()"
+                    />
+                }
             </div>
         </div>
     </aside>
@@ -23,6 +44,21 @@
         <header
             class="sticky top-0 z-20 flex min-h-16 items-center gap-3 border-b border-line bg-midnight/70 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl sm:px-6 lg:min-h-20 lg:px-8"
         >
+            <button
+                type="button"
+                class="hidden h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-muted-color transition-colors hover:bg-white/5 hover:text-color focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:inline-flex"
+                [attr.aria-label]="collapsed() ? 'Expandir menu lateral' : 'Recolher menu lateral'"
+                [attr.aria-expanded]="!collapsed()"
+                aria-controls="app-sidebar"
+                [pTooltip]="collapsed() ? 'Expandir menu' : 'Recolher menu'"
+                tooltipPosition="bottom"
+                (click)="sidebar.toggle()"
+            >
+                <i
+                    [class]="collapsed() ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'"
+                    aria-hidden="true"
+                ></i>
+            </button>
             <app-brand-logo class="lg:hidden" [compact]="true" />
             <div class="flex-1"></div>
             <app-month-picker />

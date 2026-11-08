@@ -21,7 +21,10 @@
 
 ## Moldura das telas (`core/layout`)
 
-- **Telas grandes**: menu lateral (`sidebar-nav`) com os grupos de `navigation.ts`.
+- **Telas grandes**: menu lateral (`sidebar-nav`) com os grupos de `navigation.ts`. O botão no canto esquerdo do
+  topo recolhe o menu para uma faixa só com os ícones (o nome de cada item aparece num balão ao passar o mouse ou
+  focar pelo teclado, e continua lá para leitores de tela). A escolha fica no `SidebarStateService`
+  (`sidebar-state.service.ts`), guardada no localStorage para valer nas próximas visitas.
 - **Celular**: barra no pé da tela (`bottom-nav`) com o Resumo, os grupos marcados `inMobileBar` e um botão
   "Mais" para o resto.
 - **Topo**: seletor de mês (`month-picker`, com setas e um calendário de meses; no celular o mês aparece

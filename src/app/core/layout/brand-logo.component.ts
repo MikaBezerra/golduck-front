@@ -4,7 +4,10 @@ import { RouterLink } from '@angular/router';
 import { BrandMarkComponent } from '../../shared/ui/brand-mark.component';
 import { BrandNameComponent } from '../../shared/ui/brand-name.component';
 
-/** Marca da aplicação (ícone + nome). `compact` esconde o nome em telas bem pequenas. */
+/**
+ * Marca da aplicação (ícone + nome). `compact` esconde o nome em telas bem pequenas;
+ * `iconOnly` mostra só o ícone (menu lateral recolhido).
+ */
 @Component({
     selector: 'app-brand-logo',
     imports: [RouterLink, BrandMarkComponent, BrandNameComponent],
@@ -23,7 +26,7 @@ import { BrandNameComponent } from '../../shared/ui/brand-name.component';
                 <span class="block font-display text-xl leading-tight font-bold tracking-tight">
                     <app-brand-name />
                 </span>
-                @if (!compact()) {
+                @if (!compact() && !iconOnly()) {
                     <span class="block text-[11px] text-muted-color">Make your money count.</span>
                 }
             </span>
@@ -32,6 +35,13 @@ import { BrandNameComponent } from '../../shared/ui/brand-name.component';
 })
 export class BrandLogoComponent {
     public readonly compact = input(false);
+    public readonly iconOnly = input(false);
 
-    protected readonly nameClass = computed(() => (this.compact() ? 'hidden min-[360px]:block' : 'block'));
+    protected readonly nameClass = computed(() => {
+        if (this.iconOnly()) {
+            return 'hidden';
+        }
+
+        return this.compact() ? 'hidden min-[360px]:block' : 'block';
+    });
 }

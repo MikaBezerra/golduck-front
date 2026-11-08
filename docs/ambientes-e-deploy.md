@@ -8,11 +8,12 @@ Vem do arquivo de ambiente escolhido na hora do build ([`src/environments`](../s
 | Onde | Configuração do build | Arquivo | API |
 | --- | --- | --- | --- |
 | `npm start` e testes | `development` | `environment.ts` | `/api` (o `proxy.conf.json` leva ao back) |
-| Vercel develop (`npm run build:develop`) | `develop` | `environment.develop.ts` | `https://CHANGE_ME-develop.vercel.app/api` |
-| Vercel produção (`npm run build`) | `production` | `environment.production.ts` | `https://CHANGE_ME.vercel.app/api` |
+| Vercel develop (`npm run build:develop`) | `develop` | `environment.develop.ts` | `/api` (a Vercel repassa ao back de develop) |
+| Vercel produção (`npm run build`) | `production` | `environment.production.ts` | `/api` (a Vercel repassa ao back de produção) |
 
-Os endereços `CHANGE_ME` são provisórios: troque pelos domínios reais do back. O arquivo de ambiente também
-define o nível mínimo do log ([erros-e-observabilidade.md](erros-e-observabilidade.md)).
+Em todos os ambientes o navegador chama a API pelo próprio domínio do front. Na Vercel, a rota de `/api` do
+[`vercel.json`](../vercel.json) leva ao back do ambiente (veja abaixo). O arquivo de ambiente também define o
+nível mínimo do log ([erros-e-observabilidade.md](erros-e-observabilidade.md)).
 
 Não há `.env` no front: tudo o que vai para o bundle é público, então não existem segredos aqui.
 
@@ -28,19 +29,31 @@ Não há `.env` no front: tudo o que vai para o bundle é público, então não 
 
 ## O que o back precisa liberar em cada ambiente
 
-- `API_CORS_ORIGINS` com a URL publicada do front.
-- Front e API no **mesmo site**, para o cookie da sessão funcionar em todos os navegadores
-  ([autenticacao.md](autenticacao.md)).
+- `API_CORS_ORIGINS` com a URL publicada do front: a Vercel repassa o `Origin` do navegador ao back, e ele só
+  aceita login, refresh e logout de origens confiáveis.
+- Front e API no **mesmo site**, para o cookie da sessão funcionar em todos os navegadores: é o que a rota de
+  `/api` da Vercel garante ([autenticacao.md](autenticacao.md)).
 
 ## Vercel
 
-- Crie o projeto e ligue ao repositório (`npx vercel link`). O [`vercel.json`](../vercel.json) já define:
-  instalação (`npm ci`), build (`npm run build:vercel`), saída (`dist/golduck-front/browser`), o redirecionamento
-  das rotas do Angular para o `index.html` e o deploy automático por Git **desligado** (quem publica é o
-  `deploy.yml`, veja [ci-cd.md](ci-cd.md)).
-- O `build:vercel` escolhe a configuração do Angular pela variável `ANGULAR_CONFIGURATION` (o `deploy.yml` define
-  `develop` ou `production`); sem ela, usa `VERCEL_ENV` (`production` → production, `preview` → develop).
-- Troque os `CHANGE_ME` de `src/environments` pelos domínios reais do back.
+| Ambiente | Projeto na Vercel | Endereço | `API_ORIGIN` (back) |
+| --- | --- | --- | --- |
+| develop | `golduck-front-develop` | `https://golduck-front-develop.vercel.app` | `https://golduck-back-develop.vercel.app` |
+| produção | `golduck-front` | a definir | endereço do back de produção |
+
+- Um projeto por ambiente, sempre publicado como produção daquele projeto: URL fixa e sem a proteção que o
+  plano Hobby põe nos deploys de preview.
+- O [`vercel.json`](../vercel.json) define a instalação (`npm ci`), o build (`npm run build:vercel`), a saída
+  (`dist/golduck-front/browser`) e as rotas, nesta ordem:
+  1. `/api/*` → `${API_ORIGIN}/api/*`: a Vercel repassa a chamada ao back. O valor vem da variável `API_ORIGIN`
+     do projeto (*Settings > Environment Variables*, ambiente *Production*), sem barra no fim. Para o
+     navegador, front e API são o mesmo site, então o cookie da sessão funciona em todos os navegadores.
+  2. arquivos que existem no build (JS, CSS, imagens);
+  3. o resto vai para o `index.html` (rotas do Angular).
+- O deploy automático por Git fica **desligado**: quem publica é o `deploy.yml` ([ci-cd.md](ci-cd.md)).
+- O `build:vercel` escolhe a configuração do Angular pela variável `ANGULAR_CONFIGURATION` (o `deploy.yml`
+  define `develop` ou `production`; cada projeto da Vercel também a tem, para um deploy manual pelo CLI sair
+  certo). Sem ela, usa `VERCEL_ENV` (`production` → production, `preview` → develop).
 
 ## Problemas conhecidos do ambiente
 

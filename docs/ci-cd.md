@@ -7,7 +7,7 @@
 | `ci.yml` | PR para `develop`/`main`, push nessas branches e manual | formatação, lint, tipos dos testes, testes com metas de cobertura (relatório como artefato por 14 dias) e build |
 | `pr-title.yml` | abertura/edição de PR | exige título no padrão Conventional Commits, usado no squash merge |
 | `release.yml` | push na `main` | [release-please](https://github.com/googleapis/release-please): mantém um PR de release com `CHANGELOG.md` e versão; ao fazer merge, cria a tag `vX.Y.Z` e a release |
-| `deploy.yml` | push na `develop` (preview na Vercel) e na `main` (produção) | build com a configuração do Angular do ambiente e publicação na Vercel. **Desligado** até a variável `DEPLOY_ENABLED` ser `true` |
+| `deploy.yml` | push na `develop` (projeto `golduck-front-develop`) e na `main` (projeto `golduck-front`) | build com a configuração do Angular do ambiente e publicação na Vercel, sempre como produção do projeto do ambiente. **Desligado** até a variável `DEPLOY_ENABLED` ser `true` |
 
 O `npm run verify` roda localmente os mesmos passos do `ci.yml` ([fluxo-de-trabalho.md](fluxo-de-trabalho.md)).
 O `.github/dependabot.yml` abre PRs semanais (segundas) para a `develop`.
@@ -26,8 +26,9 @@ Fluxo: branch da feature → PR (squash) para `develop` → PR de `develop` para
 - **Environments** `develop` e `production` (sem secrets próprios: o front não tem segredos), cada um aceitando
   deploy só da sua branch (`develop` e `main`).
 - **Secrets** do repositório: `VERCEL_TOKEN`.
-- **Variables** do repositório: `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (do `.vercel/project.json` gerado por
-  `npx vercel link`) e `DEPLOY_ENABLED=true` quando o deploy estiver pronto.
+- **Variables** do repositório: `VERCEL_ORG_ID` e `DEPLOY_ENABLED=true` quando o deploy estiver pronto.
+- **Variable** `VERCEL_PROJECT_ID` dentro de cada environment, com o ID do projeto da Vercel daquele ambiente
+  (do `.vercel/project.json` gerado por `npx vercel link`).
 - **Ruleset** na `develop`: PR obrigatório, só squash e os checks `Formatação, lint, testes e build` e
   `Título no padrão Conventional Commits`. O administrador do repositório pode passar por cima (por exemplo,
   para um force push).

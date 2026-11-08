@@ -1,6 +1,6 @@
 // Build usado pela Vercel (buildCommand do vercel.json): escolhe a configuração do Angular.
 //
-// 1. ANGULAR_CONFIGURATION, que o deploy.yml define (develop ou production);
+// 1. ANGULAR_CONFIGURATION, que o deploy.yml define (develop ou production) e cada projeto da Vercel também tem;
 // 2. senão, VERCEL_ENV da Vercel (production → production; preview → develop).
 import { spawnSync } from 'node:child_process';
 

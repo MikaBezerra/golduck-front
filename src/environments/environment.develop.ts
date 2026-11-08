@@ -1,12 +1,13 @@
 import type { Environment } from './environment.model';
 
 /**
- * Ambiente develop (preview na Vercel, `npm run build:develop`).
+ * Ambiente develop (projeto `golduck-front-develop` na Vercel, `npm run build:develop`).
  *
- * TODO: endereço provisório. Troque pelo domínio do back de develop na Vercel e libere o
- * domínio deste front na variável `API_CORS_ORIGINS` do back.
+ * A API fica em `/api` no próprio domínio do front: a Vercel repassa para o back de develop
+ * (rota do `vercel.json` com a variável `API_ORIGIN` do projeto). Assim front e API são o mesmo
+ * site para o navegador e o cookie da sessão funciona.
  */
 export const environment: Environment = {
-    apiBaseUrl: 'https://CHANGE_ME-develop.vercel.app/api',
+    apiBaseUrl: '/api',
     logLevel: 'info',
 };

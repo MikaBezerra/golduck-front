@@ -52,9 +52,9 @@ o front limpa a sessão e volta ao login. Logout e login feitos em outra aba sã
 - **CSRF**: o back só aceita login, refresh e logout vindos de uma origem confiável. O endereço do front
   precisa estar em `API_CORS_ORIGINS` no back (local: `http://localhost:4200`).
 - **Cookie entre domínios**: para o cookie funcionar em todos os navegadores (o Safari bloqueia cookies de
-  outro site), front e API precisam ficar no mesmo site: domínio próprio com a API num subdomínio (ex.:
-  `app.exemplo.com` e `api.exemplo.com`) ou a API servida pelo próprio domínio do front (rewrite de `/api` na
-  Vercel). Dois endereços `*.vercel.app` diferentes contam como sites diferentes.
+  outro site), front e API precisam ficar no mesmo site. Por isso a API é servida pelo próprio domínio do
+  front: a rota de `/api` do `vercel.json` repassa ao back ([ambientes-e-deploy.md](ambientes-e-deploy.md)).
+  Dois endereços `*.vercel.app` diferentes contariam como sites diferentes.
 - **Força bruta**: o back limita tentativas por IP e por e-mail; o front mostra a mensagem com o tempo de
   espera.
 

@@ -7,5 +7,9 @@
   "git": {
     "deploymentEnabled": false
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "routes": [
+    { "src": "/api/(.*)", "dest": "${API_ORIGIN}/api/$1", "env": ["API_ORIGIN"] },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }

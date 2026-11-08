@@ -15,7 +15,7 @@
         <ng-template #header>
             <tr>
                 <th>Nome</th>
-                <th class="text-right sm:w-32"><span class="sr-only sm:not-sr-only">Ações</span></th>
+                <th class="text-right sm:w-40"><span class="sr-only sm:not-sr-only">Ações</span></th>
             </tr>
         </ng-template>
 
@@ -48,6 +48,16 @@
                             [ariaLabel]="'Reativar ' + category.name"
                             (onClick)="reactivate(category)"
                         />
+                        <p-button
+                            icon="pi pi-trash"
+                            [text]="true"
+                            [rounded]="true"
+                            severity="danger"
+                            [ariaLabel]="'Excluir ' + category.name"
+                            pTooltip="Excluir"
+                            tooltipPosition="top"
+                            (onClick)="remove(category)"
+                        />
                     } @else {
                         <p-button
                             icon="pi pi-pencil"
@@ -68,6 +78,16 @@
                             pTooltip="Desativar"
                             tooltipPosition="top"
                             (onClick)="deactivate(category)"
+                        />
+                        <p-button
+                            icon="pi pi-trash"
+                            [text]="true"
+                            [rounded]="true"
+                            severity="danger"
+                            [ariaLabel]="'Excluir ' + category.name"
+                            pTooltip="Excluir"
+                            tooltipPosition="top"
+                            (onClick)="remove(category)"
                         />
                     }
                 </td>

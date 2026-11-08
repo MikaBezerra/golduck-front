@@ -48,4 +48,17 @@ describe('CategoryService (contrato com /api/categories)', () => {
         respondData(updateRequest, aCategory({ name: 'Feira' }));
         await expect(renamed).resolves.toMatchObject({ name: 'Feira' });
     });
+
+    it('exclui com DELETE e recebe para onde foram as despesas', async () => {
+        const moved = {
+            movedTo: aCategory({ id: 'outros', name: 'Outros', isDefault: true }),
+            movedManualExpenses: 2,
+            movedCardExpenses: 1,
+        };
+        const result = firstValueFrom(service.delete('category-1'));
+
+        respondData(expectApiCall(http, 'DELETE', 'categories/category-1'), moved);
+
+        await expect(result).resolves.toEqual(moved);
+    });
 });

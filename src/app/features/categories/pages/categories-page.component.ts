@@ -10,7 +10,7 @@ import { ConfirmService } from '../../../core/notification/confirm.service';
 import { NotificationService } from '../../../core/notification/notification.service';
 import { PageHeaderComponent } from '../../../shared/ui/page-header.component';
 import { CategoryFormDialogComponent } from '../components/category-form-dialog.component';
-import type { Category } from '../data-access/category.models';
+import { type Category, describeMovedExpenses } from '../data-access/category.models';
 import { CategoryService } from '../data-access/category.service';
 
 @Component({
@@ -90,6 +90,29 @@ export class CategoriesPageComponent implements OnInit {
         this.categoryService.update(category.id, { active: false }).subscribe({
             next: () => {
                 this.notifications.success(`Categoria "${category.name}" desativada.`);
+                this.load();
+            },
+            error: (error: unknown) => this.notifications.error(error),
+        });
+    }
+
+    /** Exclui de vez; as despesas dela vão para a categoria padrão. */
+    protected async remove(category: Category): Promise<void> {
+        const confirmed = await this.confirm.danger({
+            header: 'Excluir categoria',
+            message:
+                `Excluir "${category.name}"? As despesas e compras do cartão que usam essa categoria passam para ` +
+                'a categoria padrão ("Outros"). Essa ação não pode ser desfeita; para só tirar das escolhas, desative.',
+            acceptLabel: 'Excluir',
+        });
+
+        if (!confirmed) {
+            return;
+        }
+
+        this.categoryService.delete(category.id).subscribe({
+            next: (result) => {
+                this.notifications.success(`Categoria "${category.name}" excluída. ${describeMovedExpenses(result)}`);
                 this.load();
             },
             error: (error: unknown) => this.notifications.error(error),

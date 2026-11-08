@@ -179,6 +179,8 @@ Telas de cadastro com o mesmo jeito de funcionar:
   sincronização (como na tela de Faturas). A lista tem a coluna "Sincronização" (desligada, Meu Pluggy,
   configuração incompleta ou "Precisa de atenção" com erro, item com problema ou autorização perto do fim);
 - **Categorias**: só o nome; nome repetido aparece embaixo do campo; a categoria padrão ("Outros") é usada
-  quando nenhuma é escolhida;
+  quando nenhuma é escolhida e não pode ser alterada nem excluída. **Excluir** (ativa ou inativa) pede
+  confirmação: as despesas e compras do cartão dela passam para "Outros" e o aviso diz quantas
+  (`DELETE /categories/{id}`). Desativar continua existindo para só tirar a categoria das escolhas;
 - **Pessoas**: nome, e-mail e celular (opcionais; apagar o campo apaga o valor no back).
 - Back: `/credit-cards`, `/categories` e `/people`.

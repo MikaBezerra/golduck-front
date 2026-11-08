@@ -97,6 +97,71 @@
                 </p>
             }
 
+            @if (billStatus(); as payment) {
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2" role="group" aria-label="Pagamento da fatura">
+                    <p-tag
+                        [value]="billStatusLabels[payment.status]"
+                        [severity]="billStatusSeverities[payment.status]"
+                        [icon]="payment.status === 'paid' ? 'pi pi-check-circle' : ''"
+                    />
+                    @switch (payment.status) {
+                        @case ('paid') {
+                            <span class="text-sm text-muted-color">
+                                Paga em {{ payment.paidAt | date: 'dd/MM' }} · {{ payment.paidAmount ?? '0' | brl }}
+                            </span>
+                            <p-button
+                                label="Desmarcar"
+                                icon="pi pi-undo"
+                                size="small"
+                                [text]="true"
+                                severity="secondary"
+                                [disabled]="savingPayment()"
+                                (onClick)="unmarkBillPaid()"
+                            />
+                        }
+                        @case ('open') {
+                            <span class="text-sm text-muted-color">Dá para marcar como paga depois do fechamento.</span>
+                        }
+                        @default {
+                            @if (payment.dueDate) {
+                                <span class="text-sm text-muted-color"
+                                    >Vence {{ payment.dueDate | isoDate: 'short' }}</span
+                                >
+                            }
+                            @if (canMarkBillPaid(payment.status)) {
+                                <p-button
+                                    label="Marcar como paga"
+                                    icon="pi pi-check"
+                                    size="small"
+                                    [loading]="savingPayment()"
+                                    (onClick)="markBillPaid()"
+                                />
+                            }
+                        }
+                    }
+                </div>
+                @if (payment.changedAfterPayment) {
+                    <div
+                        class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-cantaloupe/50 bg-cantaloupe/10 px-3 py-2"
+                        role="status"
+                    >
+                        <i class="pi pi-exclamation-circle text-cantaloupe" aria-hidden="true"></i>
+                        <p class="m-0 flex-1 text-sm">
+                            O total mudou depois do pagamento: pago {{ payment.paidAmount ?? '0' | brl }}, agora
+                            {{ payment.total | brl }}.
+                        </p>
+                        <p-button
+                            label="Confirmar novo valor"
+                            icon="pi pi-check"
+                            size="small"
+                            [outlined]="true"
+                            [loading]="savingPayment()"
+                            (onClick)="markBillPaid()"
+                        />
+                    </div>
+                }
+            }
+
             @if (card.pluggyItemId) {
                 <app-credit-card-sync-status [sync]="card.sync" [compact]="true" />
                 @if (!card.sync.configured) {
@@ -316,7 +381,12 @@
                     <tr>
                         <td></td>
                         <td class="hidden sm:table-cell"></td>
-                        <td class="font-semibold">Total da fatura</td>
+                        <td class="font-semibold">
+                            Total da fatura
+                            @if (billStatus()?.status === 'paid') {
+                                <p-tag value="Paga" icon="pi pi-check-circle" severity="success" styleClass="ml-2" />
+                            }
+                        </td>
                         <td class="hidden md:table-cell"></td>
                         <td class="hidden lg:table-cell"></td>
                         <td class="text-right font-semibold whitespace-nowrap tabular-nums">{{ total() | brl }}</td>

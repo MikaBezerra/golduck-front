@@ -17,6 +17,7 @@ import { ManualExpensesPageComponent } from './manual-expenses-page.component';
 interface Row extends ManualExpense {
     readonly categoryName: string;
     readonly personName: string;
+    readonly paid: boolean;
 }
 
 interface Internals {
@@ -24,24 +25,33 @@ interface Internals {
     readonly selected: WritableSignal<Row[]>;
     remove(expense: ManualExpense): Promise<void>;
     removeSelected(): Promise<void>;
+    readonly selectedHasPaid: Signal<boolean>;
+    readonly selectedHasUnpaid: Signal<boolean>;
+    togglePaid(expense: Row): void;
+    markSelectedPaid(paid: boolean): void;
 }
 
 describe('ManualExpensesPageComponent (despesas do mês)', () => {
-    const expenses = { findByMonth: vi.fn(), deleteMany: vi.fn() };
+    const expenses = { findByMonth: vi.fn(), deleteMany: vi.fn(), setPaid: vi.fn() };
     let notifications: NotificationsMock;
     let confirm: ConfirmMock;
 
     function render(confirmAnswer = true) {
         sessionStorage.clear();
-        expenses.findByMonth
-            .mockReset()
-            .mockReturnValue(
-                of([
-                    aManualExpense({ id: 'e-1', title: 'Aluguel', categoryId: 'c-casa', personId: null }),
-                    aManualExpense({ id: 'e-2', title: 'Curso', categoryId: 'c-velha', personId: 'p-ana' }),
-                ]),
-            );
+        expenses.findByMonth.mockReset().mockReturnValue(
+            of([
+                aManualExpense({ id: 'e-1', title: 'Aluguel', categoryId: 'c-casa', personId: null }),
+                aManualExpense({
+                    id: 'e-2',
+                    title: 'Curso',
+                    categoryId: 'c-velha',
+                    personId: 'p-ana',
+                    paidAt: '2026-11-05T12:00:00.000Z',
+                }),
+            ]),
+        );
         expenses.deleteMany.mockReset();
+        expenses.setPaid.mockReset();
         notifications = notificationsMock();
         confirm = confirmMock(confirmAnswer);
 
@@ -125,6 +135,57 @@ describe('ManualExpensesPageComponent (despesas do mês)', () => {
         const error = new Error('falhou');
         expenses.deleteMany.mockReturnValue(throwError(() => error));
         await failing.page.remove(failing.page.rows()[0]);
+        expect(notifications.error).toHaveBeenCalledWith(error);
+    });
+
+    it('paga: a linha sabe se foi paga; o botão ✓ alterna e recarrega', () => {
+        const { page } = render();
+        expenses.setPaid.mockReturnValue(of([]));
+        expenses.findByMonth.mockClear();
+
+        expect(page.rows().map((row) => row.paid)).toEqual([false, true]);
+
+        page.togglePaid(page.rows()[0]);
+        expect(expenses.setPaid).toHaveBeenLastCalledWith(['e-1'], true);
+        expect(notifications.success).toHaveBeenLastCalledWith('"Aluguel" marcada como paga.');
+
+        page.togglePaid(page.rows()[1]);
+        expect(expenses.setPaid).toHaveBeenLastCalledWith(['e-2'], false);
+        expect(notifications.success).toHaveBeenLastCalledWith('"Curso" voltou para a pagar.');
+        expect(expenses.findByMonth).toHaveBeenCalledTimes(2);
+    });
+
+    it('seleção: mostra as ações que cabem e marca ou desmarca todas de uma vez', () => {
+        const { page } = render();
+        expenses.setPaid.mockReturnValue(of([]));
+
+        page.selected.set([page.rows()[0]]);
+        expect([page.selectedHasUnpaid(), page.selectedHasPaid()]).toEqual([true, false]);
+        page.markSelectedPaid(true);
+        expect(notifications.success).toHaveBeenLastCalledWith('1 despesa marcada como paga.');
+
+        page.selected.set(page.rows());
+        expect([page.selectedHasUnpaid(), page.selectedHasPaid()]).toEqual([true, true]);
+        page.markSelectedPaid(false);
+        expect(expenses.setPaid).toHaveBeenLastCalledWith(['e-1', 'e-2'], false);
+        expect(notifications.success).toHaveBeenLastCalledWith('2 despesas voltaram para a pagar.');
+
+        page.selected.set(page.rows());
+        page.markSelectedPaid(true);
+        expect(notifications.success).toHaveBeenLastCalledWith('2 despesas marcadas como pagas.');
+
+        page.selected.set([page.rows()[1]]);
+        page.markSelectedPaid(false);
+        expect(notifications.success).toHaveBeenLastCalledWith('1 despesa voltou para a pagar.');
+    });
+
+    it('erro ao marcar como paga vira aviso', () => {
+        const { page } = render();
+        const error = new Error('falhou');
+        expenses.setPaid.mockReturnValue(throwError(() => error));
+
+        page.togglePaid(page.rows()[0]);
+
         expect(notifications.error).toHaveBeenCalledWith(error);
     });
 });

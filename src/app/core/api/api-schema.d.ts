@@ -247,7 +247,11 @@ export interface paths {
         get: operations["CategoryController_findById"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Exclui a categoria e passa as despesas dela para a padrão
+         * @description Despesas fora do cartão e compras do cartão (inclusive as excluídas) vão para "Outros". A categoria padrão não pode ser excluída (409 CATEGORY_DEFAULT_PROTECTED).
+         */
+        delete: operations["CategoryController_delete"];
         options?: never;
         head?: never;
         /** Altera nome ou estado ativo (a categoria padrão é protegida) */
@@ -308,6 +312,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/credit-cards/bills/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resumo das faturas do mês: total e situação de cada cartão, total geral e limite disponível
+         * @description Cartões ativos e os inativos com compras no mês. O limite disponível é o de hoje, qualquer que seja o mês.
+         */
+        get: operations["CreditCardController_summarizeBills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/credit-cards/{id}": {
         parameters: {
             query?: never;
@@ -361,6 +385,27 @@ export interface paths {
         put: operations["CreditCardController_updateBill"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/credit-cards/{id}/bills/{month}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Marca a fatura como paga
+         * @description Só depois do fechamento (409 CREDIT_CARD_BILL_NOT_CLOSED). Guarda o total do momento; se a fatura mudar depois, changedAfterPayment avisa, e marcar de novo confirma o valor novo.
+         */
+        put: operations["CreditCardController_markBillPaid"];
+        post?: never;
+        /** Desmarca o pagamento da fatura */
+        delete: operations["CreditCardController_unmarkBillPaid"];
         options?: never;
         head?: never;
         patch?: never;
@@ -540,6 +585,23 @@ export interface paths {
         head?: never;
         /** Altera as despesas dos IDs enviados, em uma transação */
         patch: operations["ManualExpenseController_updateMany"];
+        trace?: never;
+    };
+    "/api/manual-expenses/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumo das despesas do mês: total por categoria, total geral, pago e a pagar */
+        get: operations["ManualExpenseController_summarize"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/manual-expenses/{id}": {
@@ -999,7 +1061,7 @@ export interface components {
             id: string;
             name: string;
             active: boolean;
-            /** @description Categoria padrão ("Outros"); não pode ser alterada */
+            /** @description Categoria padrão ("Outros"); não pode ser alterada nem excluída */
             isDefault: boolean;
             /** Format: date-time */
             createdAt: string;
@@ -1013,6 +1075,14 @@ export interface components {
         UpdateCategoryDto: {
             name?: string;
             active?: boolean;
+        };
+        DeleteCategoryResponse: {
+            /** @description Categoria que recebeu as despesas (a padrão) */
+            movedTo: components["schemas"]["CategoryResponse"];
+            /** @description Despesas fora do cartão que mudaram de categoria */
+            movedManualExpenses: number;
+            /** @description Compras do cartão que mudaram de categoria (inclusive as excluídas) */
+            movedCardExpenses: number;
         };
         PersonResponse: {
             /** Format: uuid */
@@ -1107,6 +1177,11 @@ export interface components {
              * @example 2026-11
              */
             syncFromMonth: string | null;
+            /**
+             * @description Limite do cartão, em reais (base do limite disponível)
+             * @example 8000.00
+             */
+            creditLimit: string | null;
             sync: components["schemas"]["CreditCardSyncResponse"];
             /** Format: date-time */
             createdAt: string;
@@ -1138,6 +1213,83 @@ export interface components {
              * @example 2026-11
              */
             syncFromMonth?: string;
+            /**
+             * @description Limite do cartão, em reais (base do limite disponível)
+             * @example 8000.00
+             */
+            creditLimit?: string;
+        };
+        CreditCardBillSummaryItem: {
+            /** Format: uuid */
+            cardId: string;
+            /**
+             * @description Mês da fatura (o do vencimento)
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description open (antes do fechamento), closed (fechada, a pagar), overdue (fechada, vencida e não paga) ou paid (marcada como paga)
+             * @enum {string}
+             */
+            status: "open" | "closed" | "overdue" | "paid";
+            /**
+             * @description Soma das compras da fatura (sem as excluídas)
+             * @example 1234.56
+             */
+            total: string;
+            /**
+             * Format: date
+             * @description Último dia de compra; null sem o ciclo da fatura configurado no cartão
+             * @example 2026-11-25
+             */
+            closingDate: string | null;
+            /**
+             * Format: date
+             * @description Vencimento; null sem o ciclo da fatura configurado no cartão
+             * @example 2026-11-25
+             */
+            dueDate: string | null;
+            /**
+             * Format: date-time
+             * @description Quando foi marcada como paga
+             */
+            paidAt: string | null;
+            /**
+             * @description Total da fatura no momento em que foi marcada como paga
+             * @example 1234.56
+             */
+            paidAmount: string | null;
+            /** @description Paga, mas o total mudou depois (compra que chegou atrasada): marque como paga de novo para confirmar o valor novo */
+            changedAfterPayment: boolean;
+            cardName: string;
+            /** @description Banco do cartão: define o tradutor da sincronização e o formato de fatura aceito no upload (NUBANK e C6 em CSV, NEON em PDF) */
+            bank: components["schemas"]["CardBank"];
+            /** @description false: cartão inativo, listado porque tem compras no mês */
+            active: boolean;
+            /**
+             * @description Limite do cartão, em reais (base do limite disponível)
+             * @example 8000.00
+             */
+            creditLimit: string | null;
+            /**
+             * @description Limite menos as faturas não pagas, do mês atual em diante (parcelas futuras incluídas); negativo quando estourou; null sem limite cadastrado. Não depende do mês pedido.
+             * @example 1234.56
+             */
+            availableLimit: string | null;
+        };
+        CreditCardBillsSummaryResponse: {
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description Soma das faturas de todos os cartões no mês
+             * @example 1234.56
+             */
+            total: string;
+            /** @description Cartões ativos e os inativos com compras no mês, por nome */
+            cards: components["schemas"]["CreditCardBillSummaryItem"][];
         };
         UpdateCreditCardDto: {
             name?: string;
@@ -1162,6 +1314,11 @@ export interface components {
              * @example 2026-11
              */
             syncFromMonth?: string | null;
+            /**
+             * @description null apaga o limite
+             * @example 8000.00
+             */
+            creditLimit?: string | null;
         };
         CreditCardBillResponse: {
             /**
@@ -1212,6 +1369,49 @@ export interface components {
              * @example 2026-11-25
              */
             bestPurchaseDate: string | null;
+        };
+        CreditCardBillStatusResponse: {
+            /** Format: uuid */
+            cardId: string;
+            /**
+             * @description Mês da fatura (o do vencimento)
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description open (antes do fechamento), closed (fechada, a pagar), overdue (fechada, vencida e não paga) ou paid (marcada como paga)
+             * @enum {string}
+             */
+            status: "open" | "closed" | "overdue" | "paid";
+            /**
+             * @description Soma das compras da fatura (sem as excluídas)
+             * @example 1234.56
+             */
+            total: string;
+            /**
+             * Format: date
+             * @description Último dia de compra; null sem o ciclo da fatura configurado no cartão
+             * @example 2026-11-25
+             */
+            closingDate: string | null;
+            /**
+             * Format: date
+             * @description Vencimento; null sem o ciclo da fatura configurado no cartão
+             * @example 2026-11-25
+             */
+            dueDate: string | null;
+            /**
+             * Format: date-time
+             * @description Quando foi marcada como paga
+             */
+            paidAt: string | null;
+            /**
+             * @description Total da fatura no momento em que foi marcada como paga
+             * @example 1234.56
+             */
+            paidAmount: string | null;
+            /** @description Paga, mas o total mudou depois (compra que chegou atrasada): marque como paga de novo para confirmar o valor novo */
+            changedAfterPayment: boolean;
         };
         CardImportResponse: {
             /** Format: uuid */
@@ -1507,6 +1707,11 @@ export interface components {
              * @description Só na despesa individual (PERSONAL)
              */
             personId: string | null;
+            /**
+             * Format: date-time
+             * @description Quando foi marcada como paga; null = não paga
+             */
+            paidAt: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1543,6 +1748,44 @@ export interface components {
             /** @description Cria uma despesa independente em cada mês até dezembro */
             replicateUntilYearEnd?: boolean;
         };
+        ManualExpenseCategoryTotal: {
+            /** Format: uuid */
+            categoryId: string;
+            name: string;
+            /**
+             * @description Valor em reais, como texto com ponto decimal
+             * @example 1234.56
+             */
+            total: string;
+            /** @description Quantidade de despesas */
+            count: number;
+        };
+        ManualExpensesSummaryResponse: {
+            /**
+             * @description Mês no formato AAAA-MM
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description Soma de todas as despesas do mês
+             * @example 1234.56
+             */
+            total: string;
+            /**
+             * @description Soma das despesas marcadas como pagas
+             * @example 1234.56
+             */
+            paid: string;
+            /**
+             * @description Soma das despesas ainda não pagas
+             * @example 1234.56
+             */
+            unpaid: string;
+            /** @description Quantidade de despesas do mês */
+            count: number;
+            /** @description Do maior total para o menor (empate pelo nome) */
+            categories: components["schemas"]["ManualExpenseCategoryTotal"][];
+        };
         ManualExpenseChangesDto: {
             title?: string;
             /**
@@ -1562,6 +1805,8 @@ export interface components {
              * @description Obrigatório com split PERSONAL; nos outros casos, omitido ou null
              */
             personId?: string | null;
+            /** @description true marca como paga (agora); false desmarca */
+            paid?: boolean;
         };
         UpdateManualExpensesDto: {
             ids: string[];
@@ -2617,6 +2862,39 @@ export interface operations {
             };
         };
     };
+    CategoryController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DeleteCategoryResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     CategoryController_update: {
         parameters: {
             query?: never;
@@ -2859,6 +3137,40 @@ export interface operations {
             };
         };
     };
+    CreditCardController_summarizeBills: {
+        parameters: {
+            query: {
+                /** @description Mês das faturas (o do vencimento) */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CreditCardBillsSummaryResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     CreditCardController_findById: {
         parameters: {
             query?: never;
@@ -2992,6 +3304,76 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["CreditCardBillResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CreditCardController_markBillPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                /** @description Mês da fatura, AAAA-MM */
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CreditCardBillStatusResponse"];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    CreditCardController_unmarkBillPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                /** @description Mês da fatura, AAAA-MM */
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CreditCardBillStatusResponse"];
                     };
                 };
             };
@@ -3559,6 +3941,40 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["ManualExpenseResponse"][];
+                    };
+                };
+            };
+            /** @description Erro: { error: { code, message, requestId, details? } } */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    ManualExpenseController_summarize: {
+        parameters: {
+            query: {
+                /** @description Mês no formato AAAA-MM */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sucesso */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ManualExpensesSummaryResponse"];
                     };
                 };
             };

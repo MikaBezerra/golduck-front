@@ -8,6 +8,7 @@ import {
     signal,
     untracked,
 } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import type { MenuItem } from 'primeng/api';
@@ -42,8 +43,12 @@ import { CreditCardBillDialogComponent } from '../../credit-cards/components/cre
 import { CreditCardSyncStatusComponent } from '../../credit-cards/components/credit-card-sync-status.component';
 import {
     BILL_SOURCE_LABELS,
+    BILL_STATUS_LABELS,
+    BILL_STATUS_SEVERITIES,
+    canMarkBillPaid,
     type CreditCard,
     type CreditCardBillSource,
+    type CreditCardBillsSummary,
     hasBillingCycle,
 } from '../../credit-cards/data-access/credit-card.models';
 import { CreditCardService } from '../../credit-cards/data-access/credit-card.service';
@@ -74,6 +79,7 @@ interface CardExpenseRow extends CardExpense {
 @Component({
     selector: 'app-card-expenses-page',
     imports: [
+        DatePipe,
         FormsModule,
         RouterLink,
         Button,
@@ -153,6 +159,21 @@ export class CardExpensesPageComponent implements OnInit {
         load: ({ month, cardId }) => (cardId ? this.creditCardService.findBill(cardId, month) : of(null)),
         initialValue: null,
     });
+
+    /** Faturas do mês de todos os cartões (total, situação e limite); daqui sai a situação do cartão da tela. */
+    protected readonly billsSummary = remoteData({
+        params: () => this.month(),
+        load: (month) => this.creditCardService.summarizeBills(month),
+        initialValue: null as CreditCardBillsSummary | null,
+    });
+    protected readonly billStatus = computed(
+        () => this.billsSummary.value()?.cards.find((item) => item.cardId === this.currentCardId()) ?? null,
+    );
+    protected readonly billStatusLabels = BILL_STATUS_LABELS;
+    protected readonly billStatusSeverities = BILL_STATUS_SEVERITIES;
+    protected readonly canMarkBillPaid = canMarkBillPaid;
+    /** Marcando ou desmarcando o pagamento (desabilita os botões). */
+    protected readonly savingPayment = signal(false);
 
     protected readonly rows = computed<CardExpenseRow[]>(() => {
         const categories = this.lookups.categoryById();
@@ -308,6 +329,15 @@ export class CardExpensesPageComponent implements OnInit {
         this.createVisible.set(true);
     }
 
+    /** Marca a fatura do mês como paga; marcar de novo confirma um total que mudou depois do pagamento. */
+    protected markBillPaid(): void {
+        this.changePayment(true);
+    }
+
+    protected unmarkBillPaid(): void {
+        this.changePayment(false);
+    }
+
     /** Depois de "Adicionar compra", mostra a fatura em que a compra entrou. */
     protected afterCreate(month: string): void {
         if (month !== this.month()) {
@@ -345,6 +375,7 @@ export class CardExpensesPageComponent implements OnInit {
     protected afterChange(): void {
         this.selected.set([]);
         this.expenses.reload();
+        this.billsSummary.reload();
     }
 
     /** Depois de um envio, mostra o mês da fatura enviada. */
@@ -354,6 +385,34 @@ export class CardExpensesPageComponent implements OnInit {
         }
 
         this.afterChange();
+    }
+
+    private changePayment(paid: boolean): void {
+        const cardId = this.currentCardId();
+
+        if (!cardId || this.savingPayment()) {
+            return;
+        }
+
+        const month = this.month();
+        const request = paid
+            ? this.creditCardService.markBillPaid(cardId, month)
+            : this.creditCardService.unmarkBillPaid(cardId, month);
+
+        this.savingPayment.set(true);
+
+        request.subscribe({
+            next: () => {
+                this.savingPayment.set(false);
+                this.notifications.success(paid ? 'Fatura marcada como paga.' : 'Pagamento da fatura desmarcado.');
+                this.billsSummary.reload();
+            },
+            error: (error: unknown) => {
+                this.savingPayment.set(false);
+                this.notifications.error(error);
+                this.billsSummary.reload();
+            },
+        });
     }
 
     private loadCards(): void {

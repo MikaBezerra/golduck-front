@@ -92,6 +92,9 @@ Cada pessoa ativa recebe por e-mail o próprio resumo do mês (regras e configur
   todas) ou excluir.
   Trocar de mês limpa a seleção.
 - Excluir pede confirmação e não pode ser desfeito.
+- **Paga**: o botão ✓ de cada linha marca a despesa como paga (ou desmarca); a linha paga fica com o texto
+  apagado e a etiqueta verde "Paga". Na seleção, "Marcar como pagas" e "Desmarcar pagas" (só aparecem quando
+  cabem). Qualquer mês pode ser marcado (`PATCH /manual-expenses` com `changes.paid`).
 - Back: `GET/POST/PATCH/DELETE /manual-expenses`, mais `GET /categories?includeInactive=true` e
   `GET /people?includeInactive=true` para os nomes.
 
@@ -109,6 +112,13 @@ B, pelo **envio do arquivo da fatura** (menu ⋮). Cada linha tem a origem (`ori
   de ajuste some). "Ajustar melhor dia" abre um diálogo com a data (do início do mês anterior ao fim do mês
   da fatura) e "Voltar ao padrão" (`PUT /credit-cards/{id}/bills/{month}`, `null` volta ao padrão); depois
   do ajuste, o cartão é sincronizado para as compras irem para a fatura certa.
+- **Pagamento da fatura** (todo cartão, com ou sem ciclo): etiqueta da situação — *Aberta* (azul),
+  *Fechada · a pagar* (laranja), *Vencida* (vermelha) ou *Paga* (verde, com a data e o valor pago) — vinda de
+  `GET /credit-cards/bills/summary?month`. Fechada ou vencida tem "Marcar como paga"; paga tem "Desmarcar";
+  aberta explica que só dá depois do fechamento (`PUT`/`DELETE /credit-cards/{id}/bills/{month}/payment`).
+  O total da tabela ganha a etiqueta "Paga". Se o total mudou depois do pagamento (compra que chegou
+  atrasada), um aviso mostra o valor pago e o atual, com "Confirmar novo valor" (marca de novo). Cartão sem
+  ciclo conta como fechada a partir do mês do vencimento (regra do back).
 - **Situação da sincronização**: dados do banco de quando, última sincronização, situação do item no Meu
   Pluggy, erro da última tentativa e aviso quando a autorização do Open Finance vence em até 30 dias (ou já
   venceu). Cartão sem item do Meu Pluggy mostra como ligar.

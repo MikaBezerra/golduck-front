@@ -2,7 +2,7 @@ import type { HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 
-import { aCardBill, aCreditCard } from '../../../../testing/fixtures';
+import { aBillStatus, aBillSummaryItem, aCardBill, aCreditCard } from '../../../../testing/fixtures';
 import { expectApiCall, queryOf, respondData, setupHttpTesting } from '../../../../testing/http-testing';
 import { CreditCardService } from './credit-card.service';
 
@@ -73,5 +73,29 @@ describe('CreditCardService (contrato com /api/credit-cards)', () => {
         respondData(request, aCardBill());
 
         await expect(result).resolves.toMatchObject({ month: '2026-11' });
+    });
+
+    it('resumo das faturas do mês com GET ?month', async () => {
+        const summary = { month: '2026-11', total: '1500.00', cards: [aBillSummaryItem()] };
+        const result = firstValueFrom(service.summarizeBills('2026-11'));
+        const request = expectApiCall(http, 'GET', 'credit-cards/bills/summary');
+
+        expect(request.request.params.get('month')).toBe('2026-11');
+        respondData(request, summary);
+
+        await expect(result).resolves.toEqual(summary);
+    });
+
+    it('marca a fatura como paga com PUT e desmarca com DELETE em /payment', async () => {
+        const paid = firstValueFrom(service.markBillPaid('card-1', '2026-11'));
+        respondData(
+            expectApiCall(http, 'PUT', 'credit-cards/card-1/bills/2026-11/payment'),
+            aBillStatus({ status: 'paid' }),
+        );
+        await expect(paid).resolves.toMatchObject({ status: 'paid' });
+
+        const unpaid = firstValueFrom(service.unmarkBillPaid('card-1', '2026-11'));
+        respondData(expectApiCall(http, 'DELETE', 'credit-cards/card-1/bills/2026-11/payment'), aBillStatus());
+        await expect(unpaid).resolves.toMatchObject({ status: 'closed' });
     });
 });

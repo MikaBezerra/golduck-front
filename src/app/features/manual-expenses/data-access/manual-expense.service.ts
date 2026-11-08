@@ -27,6 +27,11 @@ export class ManualExpenseService {
         return this.api.patch<ManualExpense[]>('manual-expenses', body);
     }
 
+    /** Marca (ou desmarca) as despesas como pagas; devolve as despesas alteradas. */
+    public setPaid(ids: string[], paid: boolean): Observable<ManualExpense[]> {
+        return this.updateMany({ ids, changes: { paid } });
+    }
+
     public deleteMany(ids: string[]): Observable<void> {
         return this.api.delete('manual-expenses', { ids });
     }

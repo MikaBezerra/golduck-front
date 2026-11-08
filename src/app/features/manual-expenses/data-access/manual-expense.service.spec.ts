@@ -78,4 +78,14 @@ describe('ManualExpenseService (contrato com /api/manual-expenses)', () => {
 
         await expect(result).resolves.toBeUndefined();
     });
+
+    it('marca ou desmarca como pagas com PATCH { ids, changes: { paid } }', async () => {
+        const result = firstValueFrom(service.setPaid(['expense-1'], true));
+        const request = expectApiCall(http, 'PATCH', 'manual-expenses');
+
+        expect(request.request.body).toEqual({ ids: ['expense-1'], changes: { paid: true } });
+        respondData(request, [aManualExpense({ paidAt: '2026-11-08T12:00:00.000Z' })]);
+
+        await expect(result).resolves.toEqual([expect.objectContaining({ paidAt: '2026-11-08T12:00:00.000Z' })]);
+    });
 });

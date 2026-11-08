@@ -3,6 +3,8 @@ import type { Category } from '../app/features/categories/data-access/category.m
 import type {
     CreditCard,
     CreditCardBill,
+    CreditCardBillStatus,
+    CreditCardBillSummaryItem,
     CreditCardSync,
 } from '../app/features/credit-cards/data-access/credit-card.models';
 import type { Income } from '../app/features/incomes/data-access/income.models';
@@ -52,6 +54,7 @@ export function aCreditCard(overrides: Partial<CreditCard> = {}): CreditCard {
         bestPurchaseDay: null,
         pluggyItemId: null,
         syncFromMonth: null,
+        creditLimit: null,
         sync: aCardSync(),
         createdAt: TIMESTAMP,
         updatedAt: TIMESTAMP,
@@ -96,6 +99,35 @@ export function aCardBill(overrides: Partial<CreditCardBill> = {}): CreditCardBi
     };
 }
 
+/** Situação de uma fatura (`PUT /credit-cards/{id}/bills/{month}/payment`): fechada e a pagar. */
+export function aBillStatus(overrides: Partial<CreditCardBillStatus> = {}): CreditCardBillStatus {
+    return {
+        cardId: 'card-1',
+        month: '2026-11',
+        status: 'closed',
+        total: '1500.00',
+        closingDate: '2026-10-24',
+        dueDate: '2026-11-01',
+        paidAt: null,
+        paidAmount: null,
+        changedAfterPayment: false,
+        ...overrides,
+    };
+}
+
+/** Um cartão no resumo das faturas do mês (`GET /credit-cards/bills/summary`). */
+export function aBillSummaryItem(overrides: Partial<CreditCardBillSummaryItem> = {}): CreditCardBillSummaryItem {
+    return {
+        ...aBillStatus(),
+        cardName: 'Nubank roxinho',
+        bank: 'NUBANK',
+        active: true,
+        creditLimit: null,
+        availableLimit: null,
+        ...overrides,
+    };
+}
+
 export function anIncome(overrides: Partial<Income> = {}): Income {
     return {
         id: 'income-1',
@@ -128,6 +160,7 @@ export function aManualExpense(overrides: Partial<ManualExpense> = {}): ManualEx
         personId: null,
         // Com pessoa, individual; sem, compartilhada (passe split: 'PENDING' para uma compra sem pessoa).
         split: overrides.personId ? 'PERSONAL' : 'SHARED',
+        paidAt: null,
         createdAt: TIMESTAMP,
         updatedAt: TIMESTAMP,
         ...overrides,

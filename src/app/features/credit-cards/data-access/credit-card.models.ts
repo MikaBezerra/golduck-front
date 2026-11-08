@@ -28,6 +28,42 @@ export type CreditCardBillSource = CreditCardBill['source'];
 /** `bestPurchaseDate: null` volta ao padrão do cartão. */
 export type UpdateCreditCardBillRequest = ApiSchemas['UpdateCreditCardBillDto'];
 
+/**
+ * Quanto é a fatura e se já foi paga. `changedAfterPayment`: paga, mas o total mudou depois
+ * (compra que chegou atrasada); marcar como paga de novo confirma o valor novo.
+ */
+export type CreditCardBillStatus = ApiSchemas['CreditCardBillStatusResponse'];
+
+/**
+ * Resumo das faturas do mês (`GET /credit-cards/bills/summary`): uma por cartão (ativos e os inativos
+ * com compras no mês) e o total geral. `availableLimit` é o limite de hoje, qualquer que seja o mês.
+ */
+export type CreditCardBillsSummary = ApiSchemas['CreditCardBillsSummaryResponse'];
+
+export type CreditCardBillSummaryItem = ApiSchemas['CreditCardBillSummaryItem'];
+
+/** `open` (antes do fechamento), `closed` (fechada, a pagar), `overdue` (vencida) ou `paid`. */
+export type BillStatus = CreditCardBillStatus['status'];
+
+export const BILL_STATUS_LABELS: Readonly<Record<BillStatus, string>> = {
+    open: 'Aberta',
+    closed: 'Fechada · a pagar',
+    overdue: 'Vencida',
+    paid: 'Paga',
+};
+
+export const BILL_STATUS_SEVERITIES: Readonly<Record<BillStatus, 'info' | 'warn' | 'danger' | 'success'>> = {
+    open: 'info',
+    closed: 'warn',
+    overdue: 'danger',
+    paid: 'success',
+};
+
+/** Só fatura fechada (ou vencida) pode ser marcada como paga; a paga pode ser desmarcada. */
+export function canMarkBillPaid(status: BillStatus): boolean {
+    return status === 'closed' || status === 'overdue';
+}
+
 export const CARD_BANK_LABELS: Readonly<Record<CardBank, string>> = {
     NUBANK: 'Nubank',
     C6: 'C6 Bank',

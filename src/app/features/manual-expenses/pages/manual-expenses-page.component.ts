@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { Button } from 'primeng/button';
 import { TableModule } from 'primeng/table';
+import { Tag } from 'primeng/tag';
 import { Tooltip } from 'primeng/tooltip';
 
 import { SelectedMonthService } from '../../../core/month/selected-month.service';
@@ -32,6 +33,8 @@ interface ExpenseRow extends ManualExpense {
     readonly categoryName: string;
     /** Nome da pessoa ou "Compartilhada". */
     readonly personName: string;
+    /** Marcada como paga (`paidAt` preenchido). */
+    readonly paid: boolean;
 }
 
 /** Despesas do mês selecionado no topo, com seleção múltipla para editar ou excluir em lote. */
@@ -40,6 +43,7 @@ interface ExpenseRow extends ManualExpense {
     imports: [
         Button,
         TableModule,
+        Tag,
         Tooltip,
         BrlPipe,
         MonthPipe,
@@ -72,12 +76,16 @@ export class ManualExpensesPageComponent implements OnInit {
             ...expense,
             categoryName: categories.get(expense.categoryId)?.name ?? '…',
             personName: splitLabel(expense, (id) => people.get(id)?.name),
+            paid: expense.paidAt !== null,
         }));
     });
     protected readonly total = computed(() => sumAmounts(this.expenses.value().map((expense) => expense.amount)));
 
     protected readonly selected = signal<ExpenseRow[]>([]);
     protected readonly selectedTotal = computed(() => sumAmounts(this.selected().map((expense) => expense.amount)));
+    /** Na seleção há despesas a pagar (mostra "Marcar como pagas") e/ou pagas (mostra "Desmarcar pagas"). */
+    protected readonly selectedHasUnpaid = computed(() => this.selected().some((expense) => !expense.paid));
+    protected readonly selectedHasPaid = computed(() => this.selected().some((expense) => expense.paid));
 
     protected readonly formVisible = signal(false);
     protected readonly editing = signal<ManualExpense | null>(null);
@@ -114,6 +122,31 @@ export class ManualExpensesPageComponent implements OnInit {
         this.expenses.reload();
     }
 
+    /** Botão ✓ da linha: alterna entre paga e a pagar. */
+    protected togglePaid(expense: ExpenseRow): void {
+        const paid = !expense.paid;
+
+        this.setPaid(
+            [expense.id],
+            paid,
+            paid ? `"${expense.title}" marcada como paga.` : `"${expense.title}" voltou para a pagar.`,
+        );
+    }
+
+    protected markSelectedPaid(paid: boolean): void {
+        const ids = this.selected().map((expense) => expense.id);
+        const single = ids.length === 1;
+        const message = paid
+            ? single
+                ? '1 despesa marcada como paga.'
+                : `${ids.length} despesas marcadas como pagas.`
+            : single
+              ? '1 despesa voltou para a pagar.'
+              : `${ids.length} despesas voltaram para a pagar.`;
+
+        this.setPaid(ids, paid, message);
+    }
+
     protected async remove(expense: ManualExpense): Promise<void> {
         const confirmed = await this.confirm.danger({
             header: 'Excluir despesa',
@@ -137,6 +170,16 @@ export class ManualExpensesPageComponent implements OnInit {
         if (confirmed) {
             this.deleteMany(ids, ids.length === 1 ? '1 despesa excluída.' : `${ids.length} despesas excluídas.`);
         }
+    }
+
+    private setPaid(ids: string[], paid: boolean, successMessage: string): void {
+        this.expenseService.setPaid(ids, paid).subscribe({
+            next: () => {
+                this.notifications.success(successMessage);
+                this.afterSave();
+            },
+            error: (error: unknown) => this.notifications.error(error),
+        });
     }
 
     private deleteMany(ids: string[], successMessage: string): void {

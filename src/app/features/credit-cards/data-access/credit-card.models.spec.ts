@@ -1,6 +1,7 @@
 import { aCardSync, aCreditCard } from '../../../../testing/fixtures';
 import {
     billDateRange,
+    canMarkBillPaid,
     consentWarning,
     describeConsentWarning,
     hasBillingCycle,
@@ -65,5 +66,12 @@ describe('credit-card.models', () => {
         expect(billDateRange('2026-11')).toEqual({ min: '2026-10-01', max: '2026-11-30' });
         expect(billDateRange('2027-01')).toEqual({ min: '2026-12-01', max: '2027-01-31' });
         expect(billDateRange('2028-02')).toEqual({ min: '2028-01-01', max: '2028-02-29' });
+    });
+
+    it('canMarkBillPaid: só fatura fechada ou vencida pode ser marcada como paga', () => {
+        expect(canMarkBillPaid('closed')).toBe(true);
+        expect(canMarkBillPaid('overdue')).toBe(true);
+        expect(canMarkBillPaid('open')).toBe(false);
+        expect(canMarkBillPaid('paid')).toBe(false);
     });
 });

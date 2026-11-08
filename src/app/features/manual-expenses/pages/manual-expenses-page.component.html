@@ -13,6 +13,25 @@
             {{ selectedTotal() | brl }}
         </span>
         <div class="flex-1"></div>
+        @if (selectedHasUnpaid()) {
+            <p-button
+                label="Marcar como pagas"
+                icon="pi pi-check"
+                size="small"
+                [outlined]="true"
+                (onClick)="markSelectedPaid(true)"
+            />
+        }
+        @if (selectedHasPaid()) {
+            <p-button
+                label="Desmarcar pagas"
+                icon="pi pi-undo"
+                size="small"
+                [outlined]="true"
+                severity="secondary"
+                (onClick)="markSelectedPaid(false)"
+            />
+        }
         <p-button label="Editar" icon="pi pi-pencil" size="small" [outlined]="true" (onClick)="openBulkEdit()" />
         <p-button
             label="Excluir"
@@ -37,7 +56,7 @@
                 <th class="hidden md:table-cell">Categoria</th>
                 <th class="hidden md:table-cell">Pessoa</th>
                 <th class="text-right">Valor</th>
-                <th class="text-right sm:w-28"><span class="sr-only sm:not-sr-only">Ações</span></th>
+                <th class="text-right sm:w-36"><span class="sr-only sm:not-sr-only">Ações</span></th>
             </tr>
         </ng-template>
 
@@ -47,15 +66,33 @@
                     <p-tableCheckbox [value]="expense" [ariaLabel]="'Selecionar ' + expense.title" />
                 </td>
                 <td>
-                    <span class="font-medium">{{ expense.title }}</span>
+                    <span class="font-medium" [class.text-muted-color]="expense.paid">{{ expense.title }}</span>
+                    @if (expense.paid) {
+                        <p-tag value="Paga" icon="pi pi-check-circle" severity="success" styleClass="ml-2" />
+                    }
                     <span class="block text-sm text-muted-color md:hidden">
                         {{ expense.categoryName }} · {{ expense.personName }}
                     </span>
                 </td>
                 <td class="hidden md:table-cell">{{ expense.categoryName }}</td>
                 <td class="hidden text-muted-color md:table-cell">{{ expense.personName }}</td>
-                <td class="text-right font-medium whitespace-nowrap tabular-nums">{{ expense.amount | brl }}</td>
+                <td
+                    class="text-right font-medium whitespace-nowrap tabular-nums"
+                    [class.text-muted-color]="expense.paid"
+                >
+                    {{ expense.amount | brl }}
+                </td>
                 <td class="text-right whitespace-nowrap">
+                    <p-button
+                        [icon]="expense.paid ? 'pi pi-check-circle' : 'pi pi-circle'"
+                        [text]="true"
+                        [rounded]="true"
+                        [severity]="expense.paid ? 'success' : 'secondary'"
+                        [ariaLabel]="(expense.paid ? 'Desmarcar como paga: ' : 'Marcar como paga: ') + expense.title"
+                        [pTooltip]="expense.paid ? 'Paga · clique para desmarcar' : 'Marcar como paga'"
+                        tooltipPosition="top"
+                        (onClick)="togglePaid(expense)"
+                    />
                     <p-button
                         icon="pi pi-pencil"
                         [text]="true"

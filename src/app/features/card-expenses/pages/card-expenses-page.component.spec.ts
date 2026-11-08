@@ -8,6 +8,7 @@ import { ConfirmService } from '../../../core/notification/confirm.service';
 import { NotificationService } from '../../../core/notification/notification.service';
 import { apiError, internals, renderComponent } from '../../../../testing/components';
 import {
+    aBillSummaryItem,
     aCardBill,
     aCardExpense,
     aCardSync,
@@ -20,7 +21,7 @@ import { CardImportService } from '../../card-imports/data-access/card-import.se
 import type { CardSyncResult } from '../../card-sync/data-access/card-sync.models';
 import { CardSyncService } from '../../card-sync/data-access/card-sync.service';
 import { CategoryService } from '../../categories/data-access/category.service';
-import type { CreditCard } from '../../credit-cards/data-access/credit-card.models';
+import type { CreditCard, CreditCardBillSummaryItem } from '../../credit-cards/data-access/credit-card.models';
 import { CreditCardService } from '../../credit-cards/data-access/credit-card.service';
 import { PersonService } from '../../people/data-access/person.service';
 import type { CardExpense } from '../data-access/card-expense.models';
@@ -37,7 +38,10 @@ interface Internals {
     readonly rows: Signal<readonly { readonly id: string; readonly personName: string; readonly pending: boolean }[]>;
     readonly pendingCount: Signal<number>;
     readonly onlyPending: Signal<boolean>;
+    readonly billStatus: Signal<CreditCardBillSummaryItem | null>;
     togglePendingFilter(): void;
+    markBillPaid(): void;
+    unmarkBillPaid(): void;
     syncCard(): void;
     syncAll(): void;
     afterBillChange(): void;
@@ -57,18 +61,30 @@ const RESULT: CardSyncResult = {
 
 describe('CardExpensesPageComponent (faturas do cartão)', () => {
     const cardExpenses = { findByMonth: vi.fn() };
-    const creditCards = { findAll: vi.fn(), findBill: vi.fn() };
+    const creditCards = {
+        findAll: vi.fn(),
+        findBill: vi.fn(),
+        summarizeBills: vi.fn(),
+        markBillPaid: vi.fn(),
+        unmarkBillPaid: vi.fn(),
+    };
     const cardSync = { syncCard: vi.fn(), syncAll: vi.fn() };
     let notifications: NotificationsMock;
 
     function render(
         cards: CreditCard[] = [aSyncedCreditCard({ id: 'card-1', name: 'C6' })],
         expenses: CardExpense[] = [aCardExpense({ origin: 'MANUAL' })],
+        summaryCards: CreditCardBillSummaryItem[] = [aBillSummaryItem({ cardId: 'card-1', cardName: 'C6' })],
     ) {
         sessionStorage.clear();
         cardExpenses.findByMonth.mockReset().mockReturnValue(of(expenses));
         creditCards.findAll.mockReset().mockReturnValue(of(cards));
         creditCards.findBill.mockReset().mockReturnValue(of(aCardBill({ source: 'bank' })));
+        creditCards.summarizeBills
+            .mockReset()
+            .mockReturnValue(of({ month: '2026-11', total: '1500.00', cards: summaryCards }));
+        creditCards.markBillPaid.mockReset();
+        creditCards.unmarkBillPaid.mockReset();
         cardSync.syncCard.mockReset();
         cardSync.syncAll.mockReset();
         notifications = notificationsMock();
@@ -229,5 +245,89 @@ describe('CardExpensesPageComponent (faturas do cartão)', () => {
 
         expect(page.moving()).toEqual(expense);
         expect(page.moveVisible()).toBe(true);
+    });
+
+    describe('pagamento da fatura', () => {
+        it('fatura fechada: situação, vencimento e "Marcar como paga"', () => {
+            const { page, text } = render();
+
+            expect(creditCards.summarizeBills).toHaveBeenLastCalledWith('2026-11');
+            expect(page.billStatus()?.status).toBe('closed');
+            expect(text()).toContain('Fechada · a pagar');
+            expect(text()).toContain('Vence 01/11');
+            expect(text()).toContain('Marcar como paga');
+        });
+
+        it('marcar como paga avisa e recarrega o resumo; erro vira aviso e também recarrega', () => {
+            const { page } = render();
+            const loads = creditCards.summarizeBills.mock.calls.length;
+            creditCards.markBillPaid.mockReturnValue(of(aBillSummaryItem({ status: 'paid' })));
+
+            page.markBillPaid();
+
+            expect(creditCards.markBillPaid).toHaveBeenCalledWith('card-1', '2026-11');
+            expect(notifications.success).toHaveBeenCalledWith('Fatura marcada como paga.');
+            expect(creditCards.summarizeBills.mock.calls.length).toBe(loads + 1);
+
+            creditCards.markBillPaid.mockReturnValue(apiError(409, 'CREDIT_CARD_BILL_NOT_CLOSED', 'Ainda não fechou.'));
+            page.markBillPaid();
+
+            expect(notifications.error).toHaveBeenCalled();
+            expect(creditCards.summarizeBills.mock.calls.length).toBe(loads + 2);
+        });
+
+        it('paga: data e valor, etiqueta no total e "Desmarcar"', () => {
+            const { page, text } = render(undefined, undefined, [
+                aBillSummaryItem({
+                    cardId: 'card-1',
+                    status: 'paid',
+                    paidAt: '2026-11-03T15:00:00.000Z',
+                    paidAmount: '1500.00',
+                }),
+            ]);
+            creditCards.unmarkBillPaid.mockReturnValue(of(aBillSummaryItem()));
+
+            expect(text()).toMatch(/Paga em \d{2}\/11/);
+            expect(text()).toContain('Desmarcar');
+
+            page.unmarkBillPaid();
+
+            expect(creditCards.unmarkBillPaid).toHaveBeenCalledWith('card-1', '2026-11');
+            expect(notifications.success).toHaveBeenCalledWith('Pagamento da fatura desmarcado.');
+        });
+
+        it('total mudou depois do pagamento: aviso com os dois valores e "Confirmar novo valor"', () => {
+            const { text } = render(undefined, undefined, [
+                aBillSummaryItem({
+                    cardId: 'card-1',
+                    status: 'paid',
+                    paidAt: '2026-11-03T15:00:00.000Z',
+                    paidAmount: '1400.00',
+                    total: '1500.00',
+                    changedAfterPayment: true,
+                }),
+            ]);
+
+            expect(text()).toContain('O total mudou depois do pagamento');
+            expect(text()).toContain('Confirmar novo valor');
+        });
+
+        it('aberta: explica que só dá para marcar depois do fechamento; vencida mostra a etiqueta', () => {
+            expect(
+                render(undefined, undefined, [aBillSummaryItem({ cardId: 'card-1', status: 'open' })]).text(),
+            ).toContain('Dá para marcar como paga depois do fechamento.');
+            expect(
+                render(undefined, undefined, [aBillSummaryItem({ cardId: 'card-1', status: 'overdue' })]).text(),
+            ).toContain('Vencida');
+        });
+
+        it('sem cartão na tela não chama o back', () => {
+            const { page } = render([]);
+
+            page.markBillPaid();
+
+            expect(page.billStatus()).toBeNull();
+            expect(creditCards.markBillPaid).not.toHaveBeenCalled();
+        });
     });
 });

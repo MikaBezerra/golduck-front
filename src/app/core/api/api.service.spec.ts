@@ -50,6 +50,18 @@ describe('ApiService', () => {
         await expect(result).resolves.toBeUndefined();
     });
 
+    it('envia os headers extras da chamada (ex.: Idempotency-Key)', async () => {
+        const result = firstValueFrom(
+            api.post('summary/dispatches', { month: '2026-11' }, { headers: { 'Idempotency-Key': 'k-1' } }),
+        );
+
+        const request = http.expectOne('/api/summary/dispatches');
+        expect(request.request.headers.get('Idempotency-Key')).toBe('k-1');
+        request.flush({ data: 'ok' });
+
+        await expect(result).resolves.toBe('ok');
+    });
+
     it('converte o erro do back em ApiError', async () => {
         const result = firstValueFrom(api.post('categories', { name: '' }));
 

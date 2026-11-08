@@ -22,6 +22,8 @@ export interface RequestOptions {
      * sessão (login, refresh e logout) precisam disso.
      */
     readonly withCredentials?: boolean;
+    /** Headers extras desta chamada (ex.: `Idempotency-Key` no envio do resumo por e-mail). */
+    readonly headers?: Readonly<Record<string, string>>;
 }
 
 /**

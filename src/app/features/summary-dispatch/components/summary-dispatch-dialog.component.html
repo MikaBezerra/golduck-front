@@ -1,0 +1,162 @@
+<p-dialog
+    [header]="'Enviar o resumo de ' + monthLabel()"
+    [visible]="visible()"
+    (visibleChange)="visible.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [closable]="!sending()"
+    [closeOnEscape]="!sending()"
+    [style]="{ width: '34rem' }"
+    [breakpoints]="{ '640px': '95vw' }"
+>
+    @if (email(); as view) {
+        <!-- Prévia do e-mail de uma pessoa, como ela vai receber. -->
+        <div class="flex flex-col gap-3">
+            <p class="m-0 text-sm text-muted-color">
+                E-mail de <strong class="text-color">{{ view.name }}</strong> · {{ view.subject }}
+            </p>
+            <iframe
+                sandbox=""
+                [srcdoc]="view.html"
+                [title]="'Prévia do e-mail de ' + view.name"
+                class="h-[60vh] w-full rounded-lg border border-line bg-white"
+            ></iframe>
+            <div class="flex justify-end">
+                <p-button
+                    label="Voltar"
+                    icon="pi pi-arrow-left"
+                    severity="secondary"
+                    [text]="true"
+                    (onClick)="closeEmail()"
+                />
+            </div>
+        </div>
+    } @else if (items().length > 0) {
+        <!-- Resultado: cada pessoa com a situação e a mensagem do back. -->
+        <div class="flex flex-col gap-4">
+            <ul class="m-0 flex list-none flex-col gap-3 p-0" aria-label="Resultado do envio">
+                @for (item of items(); track item.personId) {
+                    <li class="flex items-start gap-2">
+                        <i
+                            [class]="statuses[item.status].icon + ' ' + statuses[item.status].tone"
+                            class="mt-1"
+                            aria-hidden="true"
+                        ></i>
+                        <div>
+                            <span class="font-medium">{{ item.name }}</span>
+                            <span class="text-sm text-muted-color"> · {{ statuses[item.status].label }}</span>
+                            @if (item.recipient) {
+                                <span class="text-sm text-muted-color"> ({{ item.recipient }})</span>
+                            }
+                            @if (item.message) {
+                                <p class="m-0 mt-0.5 text-sm text-muted-color">{{ item.message }}</p>
+                            }
+                        </div>
+                    </li>
+                }
+            </ul>
+
+            <div class="flex flex-wrap justify-end gap-2">
+                <p-button
+                    label="Fechar"
+                    severity="secondary"
+                    [text]="true"
+                    [disabled]="sending()"
+                    (onClick)="close()"
+                />
+                @if (failedIds().length > 0) {
+                    <p-button
+                        [label]="sending() ? 'Enviando…' : 'Tentar de novo para quem falhou'"
+                        icon="pi pi-replay"
+                        [loading]="sending()"
+                        [disabled]="sending()"
+                        (onClick)="retryFailed()"
+                    />
+                }
+            </div>
+        </div>
+    } @else if (preview(); as p) {
+        <!-- Confirmação: quem vai receber. -->
+        <div class="flex flex-col gap-4">
+            @if (!p.enabled) {
+                <p class="m-0 flex items-center gap-2 text-sm" role="alert">
+                    <i class="pi pi-info-circle text-cantaloupe" aria-hidden="true"></i>
+                    O envio de e-mail está desligado neste ambiente.
+                </p>
+            }
+
+            @if (p.recipients.length === 0) {
+                <p class="m-0 text-muted-color">Não há pessoas ativas neste mês para receber o resumo.</p>
+            } @else {
+                <p class="m-0">Cada pessoa recebe o próprio resumo do mês:</p>
+                <ul class="m-0 flex list-none flex-col gap-2 p-0">
+                    @for (recipient of p.recipients; track recipient.personId) {
+                        <li class="flex items-start gap-2">
+                            @if (recipient.hasEmail) {
+                                <i class="pi pi-check mt-1 text-primary-300" aria-hidden="true"></i>
+                                <span class="min-w-0 flex-1">
+                                    <strong>{{ recipient.name }}</strong>
+                                    <span class="break-all text-muted-color"> ({{ recipient.recipient }})</span>
+                                </span>
+                            } @else {
+                                <i class="pi pi-exclamation-triangle mt-1 text-cantaloupe" aria-hidden="true"></i>
+                                <span class="min-w-0 flex-1">
+                                    <strong>{{ recipient.name }}</strong
+                                    >, sem e-mail: não vai receber.
+                                    <a routerLink="/pessoas" class="font-medium text-primary-300"
+                                        >Cadastrar em Pessoas</a
+                                    >
+                                </span>
+                            }
+                            <p-button
+                                label="Ver e-mail"
+                                icon="pi pi-eye"
+                                size="small"
+                                severity="secondary"
+                                [text]="true"
+                                class="-my-1 shrink-0"
+                                [ariaLabel]="'Ver o e-mail de ' + recipient.name"
+                                [loading]="loadingEmailFor() === recipient.personId"
+                                (onClick)="viewEmail(recipient)"
+                            />
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (p.lastDispatch; as last) {
+                <p class="m-0 text-sm text-muted-color">
+                    Último envio em {{ last.startedAt | date: "dd/MM 'às' HH:mm" }}. Enviar de novo?
+                </p>
+            }
+
+            <div class="flex flex-wrap justify-end gap-2">
+                <p-button
+                    label="Cancelar"
+                    severity="secondary"
+                    [text]="true"
+                    [disabled]="sending()"
+                    (onClick)="close()"
+                />
+                <p-button
+                    [label]="sending() ? 'Enviando…' : p.lastDispatch ? 'Enviar de novo' : 'Enviar'"
+                    icon="pi pi-envelope"
+                    [loading]="sending()"
+                    [disabled]="!canSend()"
+                    (onClick)="send()"
+                />
+            </div>
+        </div>
+    } @else if (loadFailed()) {
+        <div class="flex flex-col items-center gap-3 py-4 text-center" role="alert">
+            <p class="m-0">Não foi possível ver quem vai receber o resumo.</p>
+            <p-button label="Tentar de novo" icon="pi pi-refresh" [outlined]="true" (onClick)="loadPreview()" />
+        </div>
+    } @else {
+        <div class="flex flex-col gap-3" aria-busy="true" aria-label="Carregando quem vai receber">
+            <p-skeleton height="1.5rem" />
+            <p-skeleton height="1.5rem" />
+            <p-skeleton height="2.5rem" width="8rem" styleClass="self-end" />
+        </div>
+    }
+</p-dialog>

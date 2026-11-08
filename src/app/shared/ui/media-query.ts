@@ -8,7 +8,9 @@ import { DestroyRef, inject, type Signal, signal } from '@angular/core';
  * Precisa ser criado no corpo da classe do componente (contexto de injeção).
  */
 export function mediaQuery(query: string): Signal<boolean> {
-    const list = typeof window !== 'undefined' && 'matchMedia' in window ? window.matchMedia(query) : null;
+    // Sem matchMedia (ex.: o jsdom dos testes), a query vale como "não casa".
+    const list =
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(query) : null;
     const matches = signal(list?.matches ?? false);
 
     if (list) {

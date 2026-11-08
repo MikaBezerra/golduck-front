@@ -7,6 +7,7 @@ Toda chamada ao back passa por ele:
 - prefixa o endereço da API do ambiente (`/api` no local; veja [ambientes-e-deploy.md](ambientes-e-deploy.md));
 - `get(rota, query)`: monta a query string ignorando valores `undefined` e `null`;
 - `post`, `patch`, `delete`: enviam o corpo como JSON (ou `FormData`, nos uploads);
+- `options.headers`: headers extras de uma chamada (ex.: `Idempotency-Key` no envio do resumo por e-mail);
 - **desembrulha o envelope** `{ data }`: o service recebe só o conteúdo; respostas 204 viram `undefined`;
 - converte qualquer falha em `ApiError`.
 
@@ -87,5 +88,6 @@ As listas atuais do Golduck não são paginadas.
 | card-expenses | `GET /card-expenses?month=&cardId=[&includeExcluded=true]`, `GET /card-expenses/:id`, `PATCH /card-expenses`, `DELETE /card-expenses` e `POST /card-expenses/restore` (`{ ids, scope }`) |
 | card-imports | `POST /card-imports/preview` e `POST /card-imports` (multipart), `POST /card-imports/manual`, `GET /card-imports[?cardId=&month=]`, `DELETE /card-imports/:id` |
 | summary | `GET /summary?month=`, `GET /summary/annual?year=`, `GET /summary/statement?month=` |
+| summary-dispatch | `GET /summary/dispatches/preview?month=`, `POST /summary/dispatches` (header `Idempotency-Key`; `{ month, personIds? }`), `GET /summary/dispatches/email?month=&personId=` (só ADMIN) |
 
 Cada linha desta tabela tem um teste de contrato no `*.service.spec.ts` da feature.

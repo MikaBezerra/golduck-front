@@ -1,14 +1,22 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Skeleton } from 'primeng/skeleton';
+import { Tooltip } from 'primeng/tooltip';
+import { of } from 'rxjs';
 
+import { AuthService } from '../../../core/auth/auth.service';
 import { SelectedMonthService } from '../../../core/month/selected-month.service';
 import { remoteData } from '../../../shared/data/remote-data';
 import { amountToCents } from '../../../shared/money/money';
 import { BrlPipe } from '../../../shared/money/brl.pipe';
 import { formatMonth } from '../../../shared/month/month';
+import { mediaQuery } from '../../../shared/ui/media-query';
 import { PageHeaderComponent } from '../../../shared/ui/page-header.component';
+import { SummaryDispatchDialogComponent } from '../../summary-dispatch/components/summary-dispatch-dialog.component';
+import type { SummaryDispatchPreview } from '../../summary-dispatch/data-access/summary-dispatch.models';
+import { SummaryDispatchService } from '../../summary-dispatch/data-access/summary-dispatch.service';
 import type { SummaryStatement, SummaryStatementRow } from '../data-access/summary.models';
 import { SummaryService } from '../data-access/summary.service';
 
@@ -17,15 +25,29 @@ import { SummaryService } from '../data-access/summary.service';
  * compartilhado (dividido igualmente), o que é de cada um e os líquidos. As linhas com seta
  * abrem os detalhes (cada despesa, cada cartão). O mês é o do seletor do topo.
  * A tabela vem pronta do back (`GET /summary/statement`): a tela só formata e mostra.
+ *
+ * Para ADMIN, "Enviar por e-mail" manda a cada pessoa o resumo dela (diálogo de envio) e,
+ * abaixo do cabeçalho, aparece o último envio do mês.
  */
 @Component({
     selector: 'app-summary-statement-page',
-    imports: [RouterLink, Button, Skeleton, BrlPipe, PageHeaderComponent],
+    imports: [
+        DatePipe,
+        RouterLink,
+        Button,
+        Skeleton,
+        Tooltip,
+        BrlPipe,
+        PageHeaderComponent,
+        SummaryDispatchDialogComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './summary-statement-page.component.html',
 })
 export class SummaryStatementPageComponent {
     private readonly summary = inject(SummaryService);
+    private readonly dispatches = inject(SummaryDispatchService);
+    private readonly auth = inject(AuthService);
 
     protected readonly month = inject(SelectedMonthService).month;
     protected readonly source = remoteData({
@@ -40,6 +62,24 @@ export class SummaryStatementPageComponent {
 
         return statement?.month === this.month() ? statement : null;
     });
+    /** O envio por e-mail é só para ADMIN (as rotas do back também). */
+    protected readonly isAdmin = computed(() => this.auth.user()?.role === 'ADMIN');
+    /** Prévia do envio do mês: se está ligado e o último envio (só busca para ADMIN). */
+    protected readonly dispatchInfo = remoteData({
+        params: () => (this.isAdmin() ? this.month() : null),
+        load: (month) => (month === null ? of(null) : this.dispatches.preview(month)),
+        initialValue: null as SummaryDispatchPreview | null,
+    });
+    protected readonly lastDispatch = computed(() => {
+        const info = this.dispatchInfo.value();
+
+        return info?.month === this.month() ? info.lastDispatch : null;
+    });
+    protected readonly dispatchDisabled = computed(() => this.dispatchInfo.value()?.enabled === false);
+    protected readonly dispatchOpen = signal(false);
+    /** No celular o botão de envio mostra só o ícone. */
+    protected readonly wide = mediaQuery('(min-width: 640px)');
+
     protected readonly failed = computed(() => !this.source.loading() && this.statement() === null);
     protected readonly subtitle = computed(() => formatMonth(this.month()));
 

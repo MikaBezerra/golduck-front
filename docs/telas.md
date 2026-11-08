@@ -44,6 +44,26 @@ rodapé ([visual-e-layout.md](visual-e-layout.md)). As telas mensais usam o **m�
 - A tabela vem pronta do back (linhas, valores e estilos); o front só formata e mostra.
 - Back: `GET /summary/statement?month=`.
 
+### Enviar por e-mail (só ADMIN)
+
+Cada pessoa ativa recebe por e-mail o próprio resumo do mês (regras e configuração do Gmail em
+`docs/envio-de-resumos.md` do back). Código em `features/summary-dispatch/`.
+
+- Botão "Enviar por e-mail" no cabeçalho (no celular, só o ícone). Com o envio desligado no back
+  (`enabled: false`), fica desabilitado com o aviso "Envio de e-mail desligado".
+- Abaixo do cabeçalho: "Último envio: dd/mm hh:mm · N de M entregues".
+- O diálogo busca a prévia ao abrir e lista cada pessoa: com e-mail (mascarado) ou "sem e-mail: não vai
+  receber", com link para Pessoas. Se o mês já foi enviado: "Último envio em dd/mm às hh:mm. Enviar de novo?".
+  "Ver e-mail" mostra o e-mail da pessoa num iframe com `sandbox` (sem scripts).
+- **Sem envio duplicado:** cada abertura do diálogo gera uma `Idempotency-Key` (`crypto.randomUUID()`). Clicar
+  de novo ou repetir depois de um erro de rede reaproveita a chave, e o back devolve o resultado gravado em vez
+  de enviar outra vez. Enquanto envia, o botão fica em "Enviando…" e cliques extras são ignorados.
+- Resultado: aviso "X de Y enviados" e a situação de cada pessoa (enviado, sem e-mail, falhou) com a mensagem
+  do back. Com falhas, "Tentar de novo para quem falhou" envia só para elas, com uma chave nova.
+- Erros do envio (409 `SUMMARY_DISPATCH_IN_PROGRESS`, 503 `MAIL_DISABLED` / `MAIL_UNAVAILABLE`) aparecem com
+  a mensagem do back.
+- Back: `GET /summary/dispatches/preview`, `POST /summary/dispatches`, `GET /summary/dispatches/email`.
+
 ## Despesas (`/despesas`)
 
 - Despesas fora do cartão do mês selecionado, com categoria e pessoa (sem pessoa = compartilhada).

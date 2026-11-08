@@ -8,7 +8,40 @@
             (onClick)="toggleAll()"
         />
     }
+    @if (isAdmin()) {
+        <!-- O span mostra o aviso mesmo com o botão desabilitado (botão desabilitado não recebe o mouse). -->
+        <span
+            class="shrink-0 max-sm:grow-0!"
+            pTooltip="Envio de e-mail desligado"
+            tooltipPosition="bottom"
+            [tooltipDisabled]="!dispatchDisabled()"
+            [attr.tabindex]="dispatchDisabled() ? 0 : null"
+        >
+            <p-button
+                [label]="wide() ? 'Enviar por e-mail' : undefined"
+                icon="pi pi-envelope"
+                [outlined]="true"
+                severity="secondary"
+                styleClass="max-sm:w-(--p-button-icon-only-width)!"
+                [ariaLabel]="dispatchDisabled() ? 'Enviar por e-mail (envio de e-mail desligado)' : 'Enviar por e-mail'"
+                [disabled]="dispatchDisabled()"
+                (onClick)="dispatchOpen.set(true)"
+            />
+        </span>
+    }
 </app-page-header>
+
+@if (lastDispatch(); as last) {
+    <p class="-mt-3 mb-4 flex items-center gap-2 text-sm text-muted-color">
+        <i class="pi pi-envelope text-cantaloupe" aria-hidden="true"></i>
+        Último envio: {{ last.startedAt | date: 'dd/MM HH:mm' }} · {{ last.counts.sent }} de
+        {{ last.items.length }} entregues
+    </p>
+}
+
+@if (isAdmin()) {
+    <app-summary-dispatch-dialog [(visible)]="dispatchOpen" [month]="month()" (dispatched)="dispatchInfo.reload()" />
+}
 
 @if (statement(); as s) {
     @if (!s.hasPeople) {

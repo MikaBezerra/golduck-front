@@ -26,7 +26,7 @@ export default defineConfig({
                     lines: 90,
                 },
                 // Contrato com o back: cada service chama a rota, o método, a query e o corpo certos.
-                'src/app/features/{people,categories,credit-cards,incomes,reserves,manual-expenses,card-expenses,card-imports}/data-access/**':
+                'src/app/features/{people,categories,credit-cards,incomes,reserves,manual-expenses,card-expenses,card-imports,summary-dispatch}/data-access/**':
                     { statements: 95, branches: 95, functions: 95, lines: 95 },
                 // Formulários: validação (as mesmas regras do back), o que é enviado e os erros do back nos campos.
                 'src/app/features/{people,categories,credit-cards,incomes,manual-expenses,card-expenses}/components/**':
@@ -42,6 +42,13 @@ export default defineConfig({
                     branches: 70,
                     functions: 55,
                     lines: 70,
+                },
+                // Envio do resumo por e-mail: confirmação, chave de idempotência, resultado e reenvio.
+                'src/app/features/summary-dispatch/components/**': {
+                    statements: 90,
+                    branches: 80,
+                    functions: 85,
+                    lines: 90,
                 },
                 // Telas de login, cadastros, entradas e despesas.
                 'src/app/features/{auth,people,categories,credit-cards,incomes,manual-expenses}/pages/**': {
